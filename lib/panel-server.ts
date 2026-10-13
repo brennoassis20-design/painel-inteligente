@@ -227,6 +227,15 @@ export function getServerAiKey() {
   return process.env.OPENROUTER_API_KEY?.trim() || "";
 }
 
+export function getPublicAppUrl(request?: Request) {
+  const explicitUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL;
+  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "";
+  const requestOrigin = request ? new URL(request.url).origin : "";
+  const url = explicitUrl || requestOrigin || vercelUrl;
+
+  return url.replace(/\/$/, "");
+}
+
 export function getBearerToken(request: Request) {
   const authorization = request.headers.get("authorization") || "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);

@@ -1,4 +1,4 @@
-import { jsonError, supabaseAuthRequest } from "@/lib/panel-server";
+import { getPublicAppUrl, jsonError, supabaseAuthRequest } from "@/lib/panel-server";
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +15,8 @@ export async function POST(request: Request) {
       return jsonError("Preencha email e senha.", 400);
     }
 
-    const response = await supabaseAuthRequest("/signup", {
+    const redirectTo = getPublicAppUrl(request);
+    const response = await supabaseAuthRequest(`/signup?redirect_to=${encodeURIComponent(redirectTo)}`, {
       method: "POST",
       body: JSON.stringify({
         email,
