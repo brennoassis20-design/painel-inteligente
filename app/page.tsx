@@ -2262,6 +2262,8 @@ export default function Home() {
     });
   }, [trendCategory, trendOpportunities, trendSearch]);
 
+  const lockedTrendCards = useMemo(() => Array.from({ length: 6 }, (_, index) => index), []);
+
   const recentSavedProjects = useMemo(() => {
     return savedProjects.filter((project) => {
       if (!project.created_at) return true;
@@ -2497,6 +2499,11 @@ export default function Home() {
   }
 
   function applyTrendProduct(product: TrendProduct) {
+    if (!canAccess) {
+      setCopiedLabel("Acesso aguardando confirmacao");
+      return;
+    }
+
     setNiche(product.niche);
     setAudience(product.audience);
     setProductType(product.productType);
@@ -2638,7 +2645,7 @@ export default function Home() {
         )}
 
         <div className={canAccess ? "content-grid single-view" : "content-grid single-view locked"}>
-          <section className={`panel trend-panel view-panel ${activeView === "radar" ? "" : "is-hidden"}`} id="tendencias">
+          <section className={`panel trend-panel view-panel ${activeView === "radar" ? "" : "is-hidden"} ${canAccess ? "" : "is-locked"}`} id="tendencias">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">Radar de oportunidades</p>
@@ -2648,14 +2655,19 @@ export default function Home() {
               <span className="source-pill">Base de oportunidades</span>
             </div>
 
-            <div className="trend-toolbar">
+            <div className="trend-toolbar" aria-disabled={!canAccess}>
               <label>
                 Pesquisar oportunidade
-                <input value={trendSearch} onChange={(event) => setTrendSearch(event.target.value)} placeholder="Ex: beleza, alimentacao, renda extra" />
+                <input
+                  value={trendSearch}
+                  onChange={(event) => setTrendSearch(event.target.value)}
+                  placeholder="Ex: beleza, alimentacao, renda extra"
+                  disabled={!canAccess}
+                />
               </label>
               <label>
                 Categoria
-                <select value={trendCategory} onChange={(event) => setTrendCategory(event.target.value)}>
+                <select value={trendCategory} onChange={(event) => setTrendCategory(event.target.value)} disabled={!canAccess}>
                   {trendCategories.map((category) => (
                     <option key={category}>{category}</option>
                   ))}
@@ -2663,47 +2675,49 @@ export default function Home() {
               </label>
             </div>
 
-            <div className="trend-grid">
-	              {filteredTrendProducts.map((product) => (
-	                <article className="trend-card" key={product.title}>
-	                  <div className="trend-card-top">
-	                    <span>{product.productType}</span>
-	                    <strong>{product.score}</strong>
-	                  </div>
-	                  <div className="trend-tags">
-	                    <span>{getTrendStatus(product)}</span>
-	                    <span>{product.category}</span>
-	                  </div>
-	                  <h3>{product.title}</h3>
-	                  <p>{product.promise || product.angle}</p>
-	                  <div className="signal-row">
-	                    <small>Ticket sugerido</small>
-	                    <b>{product.price}</b>
-	                  </div>
-	                  <div className="signal-row">
-	                    <small>Canal</small>
-	                    <b>{product.channel || "Organico + trafego pago"}</b>
-	                  </div>
-	                  <div className="trend-meter" aria-label={`Pontuacao ${product.score} de 100`}>
-	                    <span style={{ width: `${product.score}%` }} />
-	                  </div>
-	                  <ul className="signal-list">
-	                    <li>{product.salesAngle || product.angle}</li>
-	                    <li>{product.pageType || "Landing curta com promessa clara"}</li>
-	                    <li>{product.strategicInsight || product.trendSignal}</li>
-	                  </ul>
-	                  <div className="button-pair compact">
-	                    <button className="secondary" onClick={() => setSelectedTrendProduct(product)}>
-	                      Ver plano
-	                    </button>
-	                    <button className="primary" onClick={() => applyTrendProduct(product)}>
-	                      Usar no gerador
-	                    </button>
-	                  </div>
-	                </article>
-	              ))}
-	            </div>
-	            {selectedTrendProduct && (
+            {canAccess ? (
+              <>
+                <div className="trend-grid">
+                  {filteredTrendProducts.map((product) => (
+                    <article className="trend-card" key={product.title}>
+                      <div className="trend-card-top">
+                        <span>{product.productType}</span>
+                        <strong>{product.score}</strong>
+                      </div>
+                      <div className="trend-tags">
+                        <span>{getTrendStatus(product)}</span>
+                        <span>{product.category}</span>
+                      </div>
+                      <h3>{product.title}</h3>
+                      <p>{product.promise || product.angle}</p>
+                      <div className="signal-row">
+                        <small>Ticket sugerido</small>
+                        <b>{product.price}</b>
+                      </div>
+                      <div className="signal-row">
+                        <small>Canal</small>
+                        <b>{product.channel || "Organico + trafego pago"}</b>
+                      </div>
+                      <div className="trend-meter" aria-label={`Pontuacao ${product.score} de 100`}>
+                        <span style={{ width: `${product.score}%` }} />
+                      </div>
+                      <ul className="signal-list">
+                        <li>{product.salesAngle || product.angle}</li>
+                        <li>{product.pageType || "Landing curta com promessa clara"}</li>
+                        <li>{product.strategicInsight || product.trendSignal}</li>
+                      </ul>
+                      <div className="button-pair compact">
+                        <button className="secondary" onClick={() => setSelectedTrendProduct(product)}>
+                          Ver plano
+                        </button>
+                        <button className="primary" onClick={() => applyTrendProduct(product)}>
+                          Usar no gerador
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                {selectedTrendProduct && (
 	              <div className="opportunity-drawer" role="dialog" aria-modal="true" aria-label="Plano da oportunidade">
 	                <div className="drawer-panel">
 	                  <div className="drawer-heading">
@@ -2761,6 +2775,34 @@ export default function Home() {
 	                </div>
 	              </div>
 	            )}
+              </>
+            ) : (
+              <div className="trend-locked-state" aria-live="polite">
+                <div className="trend-lock-copy">
+                  <p className="eyebrow">Acesso em analise</p>
+                  <h3>Radar liberado apos confirmacao</h3>
+                  <p>Os nichos em alta e planos de oportunidade ficam disponiveis assim que o pagamento for aprovado.</p>
+                </div>
+                <div className="trend-lock-grid" aria-hidden="true">
+                  {lockedTrendCards.map((item) => (
+                    <article className="trend-card trend-card-placeholder" key={item}>
+                      <div className="placeholder-row">
+                        <span className="placeholder-pill" />
+                        <span className="placeholder-score" />
+                      </div>
+                      <span className="placeholder-line short" />
+                      <span className="placeholder-line title" />
+                      <span className="placeholder-line" />
+                      <span className="placeholder-line medium" />
+                      <div className="trend-meter placeholder-meter">
+                        <span />
+                      </div>
+                      <span className="placeholder-button" />
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
 	          </section>
 
           <section className={`panel generator-panel view-panel ${activeView === "gerador" ? "" : "is-hidden"}`} id="gerador">
