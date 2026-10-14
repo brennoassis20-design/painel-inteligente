@@ -2355,7 +2355,8 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!sessionToken) return;
+    // Link de convite/recuperacao tem prioridade sobre a sessao salva.
+    if (!sessionToken || window.location.hash.includes("access_token")) return;
 
     const timer = window.setTimeout(() => {
       loadAccount(sessionToken).catch(() => {
@@ -2596,7 +2597,7 @@ export default function Home() {
     setCopiedLabel("Pacote do projeto baixado");
   }
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn || mode === "set-password") {
     return (
       <main className="login-shell">
         <form className="login-card" onSubmit={submitAccess}>
