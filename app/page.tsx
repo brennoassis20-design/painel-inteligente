@@ -2199,10 +2199,13 @@ function sanitizeProductLanguage(product: ProductResult): ProductResult {
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [mode, setMode] = useState<"login" | "create">("login");
+  const [mode, setMode] = useState<"login" | "forgot" | "set-password">("login");
+  const [linkToken, setLinkToken] = useState("");
+  const [loginNotice, setLoginNotice] = useState("");
   const [name, setName] = useState("Usuario");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [loginError, setLoginError] = useState("");
   const [sessionToken, setSessionToken] = useState(() =>
     typeof window === "undefined" ? "" : window.localStorage.getItem(sessionKey) || "",
@@ -2367,6 +2370,33 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Links do Supabase (convite apos a compra ou recuperacao) chegam com o token no hash.
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const linkError = params.get("error_description");
+    const token = params.get("access_token");
+    const type = params.get("type");
+
+    if (!linkError && !token) return;
+
+    window.history.replaceState(null, "", window.location.pathname);
+
+    const timer = window.setTimeout(() => {
+      if (linkError) {
+        setMode("forgot");
+        setLoginError("Este link expirou ou ja foi usado. Informe seu email para receber um novo.");
+        return;
+      }
+
+      if (token && (type === "invite" || type === "recovery")) {
+        setLinkToken(token);
+        setMode("set-password");
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     if (!copiedLabel || activeGeneration) return;
 
     const timer = window.setTimeout(() => {
@@ -2379,29 +2409,52 @@ export default function Home() {
   async function submitAccess(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
-    const cleanName = name.trim() || "Usuario";
-
-    if (!cleanEmail || !password.trim()) {
-      setLoginError("Preencha email e senha para acessar.");
-      return;
-    }
 
     setLoginError("");
+    setLoginNotice("");
 
     try {
-      if (mode === "create") {
-        const response = await fetch("/api/auth/signup", {
+      if (mode === "forgot") {
+        if (!cleanEmail) throw new Error("Informe seu email.");
+
+        const response = await fetch("/api/auth/recover", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: cleanName, email: cleanEmail, password }),
+          body: JSON.stringify({ email: cleanEmail }),
         });
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.error || "Nao foi possivel criar a conta.");
+        if (!response.ok) throw new Error(data.error || "Nao foi possivel enviar o link.");
 
-        setLoginError("Conta criada. Confirme seu email e depois faca login.");
-        setMode("login");
+        setLoginNotice(data.message);
         return;
+      }
+
+      if (mode === "set-password") {
+        if (password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
+        if (password !== passwordConfirm) throw new Error("As senhas nao conferem.");
+
+        const response = await fetch("/api/auth/password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${linkToken}` },
+          body: JSON.stringify({ password }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || "Nao foi possivel salvar a senha.");
+
+        window.localStorage.setItem(sessionKey, linkToken);
+        setSessionToken(linkToken);
+        setLinkToken("");
+        setPassword("");
+        setPasswordConfirm("");
+        setMode("login");
+        await loadAccount(linkToken);
+        return;
+      }
+
+      if (!cleanEmail || !password.trim()) {
+        throw new Error("Preencha email e senha para acessar.");
       }
 
       const response = await fetch("/api/auth/login", {
@@ -2416,7 +2469,7 @@ export default function Home() {
       const token = data.session.accessToken as string;
       window.localStorage.setItem(sessionKey, token);
       setSessionToken(token);
-      setName(data.user.name || cleanName);
+      setName(data.user.name || "Usuario");
       setEmail(cleanEmail);
       await loadAccount(token);
     } catch (error) {
@@ -2549,35 +2602,60 @@ export default function Home() {
         <form className="login-card" onSubmit={submitAccess}>
           <div>
             <p className="eyebrow">Area de acesso</p>
-            <h2>{mode === "login" ? "Entrar no Painel Inteligente" : "Criar conta"}</h2>
+            <h2>
+              {mode === "login" && "Entrar no Painel Inteligente"}
+              {mode === "forgot" && "Recuperar acesso"}
+              {mode === "set-password" && "Defina sua senha"}
+            </h2>
           </div>
 
-          <label>
-            Nome
-            <input value={name} onChange={(event) => setName(event.target.value)} />
-          </label>
-          <label>
-            Email
-            <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" />
-          </label>
-          <label>
-            Senha
-            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" />
-          </label>
+          {mode !== "set-password" && (
+            <label>
+              Email
+              <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" />
+            </label>
+          )}
+          {mode !== "forgot" && (
+            <label>
+              {mode === "set-password" ? "Nova senha" : "Senha"}
+              <input
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                autoComplete={mode === "set-password" ? "new-password" : "current-password"}
+              />
+            </label>
+          )}
+          {mode === "set-password" && (
+            <label>
+              Confirme a senha
+              <input
+                value={passwordConfirm}
+                onChange={(event) => setPasswordConfirm(event.target.value)}
+                type="password"
+                autoComplete="new-password"
+              />
+            </label>
+          )}
           {loginError && <p className="form-error">{loginError}</p>}
-
-          <div className="segmented" role="group" aria-label="Modo de acesso">
-            <button type="button" className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>
-              Login
-            </button>
-            <button type="button" className={mode === "create" ? "active" : ""} onClick={() => setMode("create")}>
-              Criar conta
-            </button>
-          </div>
+          {loginNotice && <p className="form-notice">{loginNotice}</p>}
 
           <button className="primary" type="submit">
-            Acessar painel
+            {mode === "login" && "Acessar painel"}
+            {mode === "forgot" && "Enviar link"}
+            {mode === "set-password" && "Salvar senha e entrar"}
           </button>
+
+          {mode === "login" && (
+            <button type="button" className="link-button" onClick={() => { setMode("forgot"); setLoginError(""); setLoginNotice(""); }}>
+              Esqueci minha senha
+            </button>
+          )}
+          {mode === "forgot" && (
+            <button type="button" className="link-button" onClick={() => { setMode("login"); setLoginError(""); setLoginNotice(""); }}>
+              Voltar para o login
+            </button>
+          )}
         </form>
       </main>
     );

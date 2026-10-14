@@ -254,6 +254,35 @@ export async function supabaseAuthRequest(path: string, init: RequestInit = {}) 
   });
 }
 
+export async function supabaseAdminAuthRequest(path: string, init: RequestInit = {}) {
+  const config = getSupabaseConfig();
+  return fetch(`${config.url}/auth/v1${path}`, {
+    ...init,
+    headers: {
+      apikey: config.serviceKey,
+      Authorization: `Bearer ${config.serviceKey}`,
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
+  });
+}
+
+export async function inviteBuyer(email: string, name: string | undefined, redirectTo: string) {
+  const response = await supabaseAdminAuthRequest(`/invite?redirect_to=${encodeURIComponent(redirectTo)}`, {
+    method: "POST",
+    body: JSON.stringify({ email, data: name ? { name } : {} }),
+  });
+
+  if (response.ok) return "invited";
+
+  const text = await response.text();
+
+  // Quem ja tem conta continua entrando com a propria senha.
+  if (response.status === 422 || /already|exists|registered/i.test(text)) return "existing";
+
+  throw new Error(text || `Convite falhou (${response.status}).`);
+}
+
 export async function supabaseRest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const config = getSupabaseConfig();
   const response = await fetch(`${config.url}/rest/v1${path}`, {

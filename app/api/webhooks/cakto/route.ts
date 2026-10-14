@@ -1,7 +1,8 @@
-import { jsonError, supabaseRest } from "@/lib/panel-server";
+import { getPublicAppUrl, inviteBuyer, jsonError, supabaseRest } from "@/lib/panel-server";
 
 type CaktoPayload = {
   id?: string;
+  secret?: string;
   event?: string;
   event_type?: string;
   type?: string;
@@ -37,29 +38,30 @@ export async function POST(request: Request) {
     const rawBody = await request.text();
     const secret = process.env.CAKTO_WEBHOOK_SECRET?.trim();
 
-    if (secret) {
-      const url = new URL(request.url);
-      const providedSecret =
-        url.searchParams.get("secret") ||
-        request.headers.get("x-webhook-secret") ||
-        request.headers.get("x-cakto-webhook-secret") ||
-        request.headers.get("x-cakto-secret") ||
-        request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-
-      if (providedSecret !== secret) {
-        return jsonError("Webhook nao autorizado.", 401);
-      }
+    if (!secret) {
+      return jsonError("Webhook sem segredo configurado no servidor.", 503);
     }
 
     const payload = JSON.parse(rawBody) as CaktoPayload;
+
+    const url = new URL(request.url);
+    const providedSecret =
+      payload.secret ||
+      url.searchParams.get("secret") ||
+      request.headers.get("x-webhook-secret") ||
+      request.headers.get("x-cakto-webhook-secret") ||
+      request.headers.get("x-cakto-secret") ||
+      request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+
+    if (providedSecret !== secret) {
+      return jsonError("Webhook nao autorizado.", 401);
+    }
+
+    delete payload.secret;
     const eventType = normalizeEventType(payload);
-    const eventId = String(
-      payload.id ||
-        payload.purchase?.id ||
-        payload.transaction?.id ||
-        payload.data?.id ||
-        `${eventType}:${Date.now()}`,
-    );
+    const eventId = `${eventType}:${String(
+      payload.id || payload.purchase?.id || payload.transaction?.id || payload.data?.id || Date.now(),
+    )}`;
     const email = findEmail(payload);
 
     if (!email) {
@@ -80,8 +82,15 @@ export async function POST(request: Request) {
     });
 
     const accessStatus = mapEventToAccessStatus(eventType);
-    const purchaseId = String(payload.purchase?.id || payload.transaction?.id || payload.data?.purchase_id || "");
-    const customerId = String(payload.customer?.id || payload.data?.customer_id || "");
+
+    // PIX/boleto gerado, abandono de carrinho etc. nao mexem no acesso de quem ja comprou.
+    if (!accessStatus) {
+      return Response.json({ ok: true, email, ignored: eventType });
+    }
+
+    const dataCustomer = objectFromData(payload.data, "customer");
+    const purchaseId = String(payload.purchase?.id || payload.transaction?.id || payload.data?.id || payload.data?.purchase_id || "");
+    const customerId = String(payload.customer?.id || dataCustomer?.id || payload.data?.customer_id || "");
     const expiresAt =
       payload.access_expires_at ||
       payload.expires_at ||
@@ -116,7 +125,14 @@ export async function POST(request: Request) {
       }),
     });
 
-    return Response.json({ ok: true, email, accessStatus });
+    let account = "unchanged";
+
+    if (accessStatus === "active") {
+      const name = payload.customer?.name || payload.buyer?.name || payload.client?.name || stringFrom(dataCustomer, "name");
+      account = await inviteBuyer(email, name || undefined, getPublicAppUrl(request));
+    }
+
+    return Response.json({ ok: true, email, accessStatus, account });
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Erro no webhook.", 500);
   }
@@ -133,7 +149,7 @@ function mapEventToAccessStatus(eventType: string) {
     return "active";
   }
 
-  if (matches(eventType, ["refund", "refunded", "chargeback", "canceled", "cancelled", "subscription_canceled"])) {
+  if (matches(eventType, ["refund", "refunded", "chargeback", "estorno", "canceled", "cancelled", "subscription_canceled"])) {
     return "refunded";
   }
 
@@ -141,7 +157,7 @@ function mapEventToAccessStatus(eventType: string) {
     return "expired";
   }
 
-  return "pending";
+  return null;
 }
 
 function matches(value: string, candidates: string[]) {
@@ -153,6 +169,7 @@ function findEmail(payload: CaktoPayload) {
     payload.customer?.email ||
     payload.buyer?.email ||
     payload.client?.email ||
+    stringFrom(objectFromData(payload.data, "customer"), "email") ||
     stringFromData(payload.data, "email") ||
     stringFromData(payload.data, "customer_email") ||
     stringFromData(payload.data, "buyer_email");
@@ -161,6 +178,16 @@ function findEmail(payload: CaktoPayload) {
 }
 
 function stringFromData(data: Record<string, unknown> | undefined, key: string) {
+  const value = data?.[key];
+  return typeof value === "string" ? value : "";
+}
+
+function objectFromData(data: Record<string, unknown> | undefined, key: string) {
+  const value = data?.[key];
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+}
+
+function stringFrom(data: Record<string, unknown> | undefined, key: string) {
   const value = data?.[key];
   return typeof value === "string" ? value : "";
 }
