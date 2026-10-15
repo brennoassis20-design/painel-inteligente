@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export type IconName = "home" | "spark" | "trend" | "chat" | "doc" | "folder" | "play" | "external" | "arrow" | "plus" | "mail" | "lock" | "shield" | "logout" | "menu" | "download" | "check" | "star" | "search" | "target" | "close" | "calendar" | "map" | "steps" | "list" | "page" | "code" | "copy" | "calc" | "rocket" | "cube" | "bot" | "send";
+export type IconName = "home" | "spark" | "trend" | "chat" | "doc" | "folder" | "play" | "external" | "arrow" | "plus" | "mail" | "lock" | "shield" | "logout" | "menu" | "download" | "check" | "star" | "search" | "target" | "close" | "calendar" | "map" | "steps" | "list" | "page" | "code" | "copy" | "calc" | "rocket" | "cube" | "bot" | "send" | "image";
 
 const iconPaths: Record<IconName, ReactNode> = {
   home: <path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />,
@@ -95,6 +95,13 @@ const iconPaths: Record<IconName, ReactNode> = {
     </>
   ),
   code: <path d="m9 8-4 4 4 4M15 8l4 4-4 4" />,
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2.5" />
+      <circle cx="9" cy="10" r="1.8" />
+      <path d="m21 16-5-5-9 9" />
+    </>
+  ),
   copy: (
     <>
       <rect x="8" y="8" width="12" height="12" rx="2.5" />

@@ -2,6 +2,8 @@
 
 import { CSSProperties, FormEvent, useEffect, useId, useMemo, useState } from "react";
 import { Icon, IconName } from "./icons";
+import { ImageCreatives } from "./tools/ImageCreatives";
+import type { CreativeCopy } from "./tools/creative-render";
 import { LaunchChecklist } from "./tools/LaunchChecklist";
 import { MentorChat } from "./tools/MentorChat";
 import { ProductMockup } from "./tools/ProductMockup";
@@ -9,7 +11,7 @@ import { ProfitCalculator } from "./tools/ProfitCalculator";
 import { googleFontCss, renderProductDocument, resolveDocumentStyle, type DocumentBlock } from "@/lib/product-document";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
-type ActiveView = "inicio" | "radar" | "gerador" | "produto" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor";
+type ActiveView = "inicio" | "radar" | "gerador" | "produto" | "criativos" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor";
 
 // Os campos opcionais (pontos, dica, tabela, fichas...) alimentam o PDF premium.
 type ProductContentBlock = DocumentBlock;
@@ -103,6 +105,7 @@ const menuGroups: { title?: string; items: { id: ActiveView; label: string; icon
     items: [
       { id: "gerador", label: "Fazer o pedido", icon: "spark" },
       { id: "radar", label: "Nichos em alta", icon: "trend" },
+      { id: "criativos", label: "Criativos prontos", icon: "image" },
       { id: "copy", label: "Copy de vendas", icon: "chat" },
     ],
   },
@@ -127,6 +130,7 @@ const viewLabels: Record<ActiveView, string> = {
   inicio: "Início",
   gerador: "Fazer o pedido",
   radar: "Nichos em alta",
+  criativos: "Criativos prontos",
   copy: "Copy de vendas",
   produto: "Produto criado",
   arquivos: "Meus arquivos",
@@ -794,6 +798,18 @@ function buildVideoCreatives(product: ProductResult, brief = ""): VideoCreative[
       screenText: "Pare de depender de dicas soltas",
     },
   ];
+}
+
+function buildCreativeCopy(product: ProductResult, label: string): CreativeCopy {
+  return {
+    title: getCleanProductTitle(product),
+    subtitle: product.subtitle,
+    promise: product.promise,
+    pain: inferBuyerPain(product),
+    label,
+    modules: product.modules,
+    bullets: product.copyBlocks.bullets,
+  };
 }
 
 function buildAdCopies(product: ProductResult, brief = ""): AdCopy[] {
@@ -2301,7 +2317,7 @@ export default function Home() {
   const [trailFlags, setTrailFlags] = useState<Record<string, boolean>>(() =>
     typeof window === "undefined" ? {} : readTrail(),
   );
-  const [copyMode, setCopyMode] = useState<"video" | "ad">("video");
+  const [copyMode, setCopyMode] = useState<"video" | "ad">("ad");
   const [copyBrief, setCopyBrief] = useState("");
   const [result, setResult] = useState<ProductResult | null>(() =>
     buildProduct("marmita fit", productTypes[0], "pessoas que querem vender comida saudável", toneOptions[0]),
@@ -2996,11 +3012,11 @@ export default function Home() {
                     <span className="pi-mod-text">Oportunidades low ticket para aplicar direto no pedido.</span>
                     <span className="pi-go">Ver oportunidades <Icon name="arrow" /></span>
                   </button>
-                  <button type="button" className="pi-mod" style={{ "--c": "var(--pi-pink)" } as CSSProperties} onClick={() => goTo("copy")}>
-                    <span className="pi-ico"><Icon name="chat" /></span>
-                    <strong>Copy de vendas</strong>
-                    <span className="pi-mod-text">Roteiros de criativos e anúncios para o produto escolhido.</span>
-                    <span className="pi-go">Gerar copy <Icon name="arrow" /></span>
+                  <button type="button" className="pi-mod" style={{ "--c": "var(--pi-pink)" } as CSSProperties} onClick={() => goTo("criativos")}>
+                    <span className="pi-ico"><Icon name="image" /></span>
+                    <strong>Criativos prontos</strong>
+                    <span className="pi-mod-text">Imagens, carrossel e vídeo para anunciar, sem gravar nada.</span>
+                    <span className="pi-go">Criar criativos <Icon name="arrow" /></span>
                   </button>
                   <button type="button" className="pi-mod" style={{ "--c": "var(--pi-amber)" } as CSSProperties} onClick={() => goTo("arquivos")}>
                     {savedProjects.length > 0 && <span className="pi-badge">{savedProjects.length} {savedProjects.length === 1 ? "projeto" : "projetos"}</span>}
@@ -3085,6 +3101,41 @@ export default function Home() {
               </section>
             </div>
           </div>
+        )}
+
+        {canAccess && activeView === "criativos" && (
+          <section className="pi-view">
+            <header className="pi-view-head" style={{ "--c": "var(--pi-pink)" } as CSSProperties}>
+              <span className="pi-ico"><Icon name="image" /></span>
+              <div>
+                <p className="pi-kicker">Criar</p>
+                <h2>Criativos prontos</h2>
+                <p>Imagens, carrossel e vídeo para anunciar o produto, sem gravar e sem aparecer. Escolha o produto, ajuste a cor e baixe.</p>
+              </div>
+            </header>
+            <div className="pi-card pi-cr-pick">
+              <label className="pi-label">
+                Produto
+                <select value={currentProjectId} onChange={(event) => selectSavedProject(event.target.value, "criativos")}>
+                  <option value="">{savedProjects.length ? "Selecione um produto criado" : "Exemplo (crie um produto para usar o seu)"}</option>
+                  {recentSavedProjects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {result && (
+              <ImageCreatives
+                copy={buildCreativeCopy(result, displayText(productType))}
+                captions={buildAdCopies(result).map((ad) => ad.primaryText)}
+                projectKey={currentProjectId}
+                makeZip={buildZip}
+                onCopy={copyText}
+              />
+            )}
+          </section>
         )}
 
         {canAccess && activeView === "mockup" && (
@@ -3565,7 +3616,7 @@ export default function Home() {
                   <div>
                     <p className="pi-kicker">Copy de vendas</p>
                     <h2>Copy para vender o produto</h2>
-                    <p>Roteiros de criativos em vídeo e textos de anúncio prontos para o produto escolhido.</p>
+                    <p>Textos de anúncio e, para quem quiser aparecer, roteiros para gravar. As imagens prontas ficam em Criativos prontos.</p>
                   </div>
                   {currentProjectId && (
                     <span className="pi-quota">
@@ -3590,13 +3641,13 @@ export default function Home() {
                     <div className="pi-label">
                       Tipo de copy
                       <div className="pi-segment" role="group" aria-label="Tipo de copy">
-                        <button className={copyMode === "video" ? "on" : ""} onClick={() => setCopyMode("video")} type="button">
-                          <Icon name="play" />
-                          Criativos em vídeo
-                        </button>
                         <button className={copyMode === "ad" ? "on" : ""} onClick={() => setCopyMode("ad")} type="button">
                           <Icon name="page" />
-                          Anúncios
+                          Textos de anúncio
+                        </button>
+                        <button className={copyMode === "video" ? "on" : ""} onClick={() => setCopyMode("video")} type="button">
+                          <Icon name="play" />
+                          Roteiros para gravar
                         </button>
                       </div>
                     </div>

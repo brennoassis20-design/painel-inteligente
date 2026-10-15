@@ -4028,3 +4028,287 @@ a.pi-pill:hover {
     font-size: 12px;
   }
 }
+
+/* ---------- Criativos prontos ---------- */
+.pi-cr-pick {
+  margin-bottom: 14px;
+}
+
+.pi-cr {
+  display: grid;
+  gap: 14px;
+}
+
+.pi-cr-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 620px;
+}
+
+.pi-cr-body {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.pi-cr-side {
+  position: sticky;
+  top: 20px;
+}
+
+.pi-cr-opt {
+  margin-left: 6px;
+  color: var(--pi-dim);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.pi-cr-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--pi-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.pi-cr-check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin-top: 1px;
+  padding: 0;
+  accent-color: var(--pi-violet);
+}
+
+.pi-cr-edit {
+  display: grid;
+  gap: 10px;
+}
+
+.pi-cr-edit .pi-label em {
+  margin-left: 6px;
+  color: var(--pi-dim);
+  font-size: 11.5px;
+  font-style: normal;
+}
+
+.pi-cr-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pi-cr-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pi-cr-bar p {
+  flex: 1 1 260px;
+  margin: 0;
+  color: var(--pi-muted);
+  font-size: 13px;
+}
+
+.pi-cr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.pi-cr-grid.story {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
+.pi-cr-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(230px, 260px);
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+}
+
+.pi-cr-strip .pi-cr-card {
+  scroll-snap-align: start;
+}
+
+.pi-cr-card {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--pi-line2);
+  border-radius: 18px;
+  background: var(--pi-glass);
+}
+
+.pi-cr-card.on {
+  border-color: rgba(183, 155, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(183, 155, 255, 0.18);
+}
+
+.pi-cr-card canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+.pi-cr-meta {
+  display: grid;
+  gap: 2px;
+  padding: 0 4px;
+}
+
+.pi-cr-meta span {
+  color: var(--pi-dim);
+  font-size: 11.5px;
+}
+
+.pi-cr-meta strong {
+  font-size: 14px;
+}
+
+.pi-cr-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pi-cr-actions .pi-btn-soft {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+.pi-cr-actions svg {
+  width: 15px;
+  height: 15px;
+}
+
+.pi-cr-video {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+  gap: 18px;
+  align-items: start;
+}
+
+.pi-cr-player {
+  position: relative;
+  justify-self: center;
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+  border: 1px solid var(--pi-line2);
+  border-radius: 20px;
+  line-height: 0;
+}
+
+.pi-cr-player.story {
+  max-width: 340px;
+}
+
+.pi-cr-player canvas {
+  width: 100%;
+  height: auto;
+}
+
+.pi-cr-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.pi-cr-progress i {
+  display: block;
+  height: 100%;
+  background: var(--pi-grad);
+}
+
+.pi-cr-vside {
+  display: grid;
+  gap: 12px;
+}
+
+.pi-cr-vside > p:first-child {
+  margin: 0;
+  color: var(--pi-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pi-cr-dur,
+.pi-cr-note {
+  margin: 0;
+  color: var(--pi-muted);
+  font-size: 12.5px;
+}
+
+.pi-cr-note {
+  color: var(--pi-cyan);
+}
+
+@media (max-width: 1080px) {
+  .pi-cr-body,
+  .pi-cr-video {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pi-cr-side {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .pi-cr-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .pi-cr-grid,
+  .pi-cr-grid.story {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .pi-cr-card {
+    padding: 8px;
+  }
+
+  .pi-cr-actions {
+    flex-wrap: wrap;
+  }
+
+  .pi-cr-strip {
+    grid-auto-columns: 72%;
+  }
+}
+
+.pi-cr-editprev {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .pi-cr-editprev {
+    display: block;
+    width: min(60%, 260px);
+    justify-self: center;
+  }
+
+  .pi-cr-editprev canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+  }
+}
