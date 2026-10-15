@@ -8,6 +8,7 @@ import { LaunchChecklist } from "./tools/LaunchChecklist";
 import { MentorChat } from "./tools/MentorChat";
 import { ProductMockup } from "./tools/ProductMockup";
 import { ProfitCalculator } from "./tools/ProfitCalculator";
+import { buildSalesPage, normalizeSalesExtras, withoutReadingWords, type SalesPageExtras } from "@/lib/sales-page";
 import { googleFontCss, renderProductDocument, resolveDocumentStyle, type DocumentBlock } from "@/lib/product-document";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
@@ -16,7 +17,7 @@ type ActiveView = "inicio" | "radar" | "gerador" | "produto" | "criativos" | "co
 // Os campos opcionais (pontos, dica, tabela, fichas...) alimentam o PDF premium.
 type ProductContentBlock = DocumentBlock;
 
-type SalesPageContent = {
+type SalesPageContent = SalesPageExtras & {
   headline: string;
   subheadline: string;
   sections: {
@@ -476,7 +477,7 @@ function buildProduct(niche: string, productType: string, audience: string, tone
   const cleanAudience = audience.trim() || "pessoas que querem vender comida saudável";
   const cleanType = productType || productTypes[0];
   const cleanTone = tone || toneOptions[0];
-  const title = `${displayText(cleanType)}: ${capitalize(cleanNiche)}`;
+  const title = withoutReadingWords(`${displayText(cleanType)}: ${capitalize(cleanNiche)}`);
 
   return {
     title,
@@ -588,15 +589,6 @@ function slugify(value: string) {
       .replace(/^-+|-+$/g, "")
       .slice(0, 72) || "produto"
   );
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 function cleanPdfText(value: string) {
@@ -1192,399 +1184,6 @@ async function fetchPremiumPdf(product: ProductResult, token: string) {
   }
 }
 
-function buildSalesPageHtml(product: ProductResult) {
-  const theme = resolveProjectTheme(product);
-  const format = resolveProductFormat(product);
-  const configComment =
-    '<!-- CONFIGURAÇÃO: antes de publicar, troque todos os links href="#checkout" pelo link real do seu checkout. -->';
-  const sections = product.salesPage.sections.slice(0, 6);
-  const bullets = product.copyBlocks.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join("");
-  const trustItems = [
-    "Acesso imediato",
-    "Produto digital",
-    "Aplicação passo a passo",
-    "Material editável",
-  ].map((item) => `<span>${escapeHtml(item)}</span>`).join("");
-  const modules = product.modules
-    .slice(0, 6)
-    .map(
-      (module, index) => `
-        <article class="step-card">
-          <span>${String(index + 1).padStart(2, "0")}</span>
-          <h3>${escapeHtml(module)}</h3>
-        </article>`,
-    )
-    .join("");
-  const deliverables = product.productBlueprint
-    .slice(0, 6)
-    .map((item) => `<li>${escapeHtml(item)}</li>`)
-    .join("");
-  const contentBlocks = product.productContent
-    .slice(0, 8)
-    .map(
-      (block, index) => `
-        <article class="content-card">
-          <span>${String(index + 1).padStart(2, "0")}</span>
-          <div>
-            <h3>${escapeHtml(block.title)}</h3>
-            <p>${escapeHtml(block.body)}</p>
-            <strong>${escapeHtml(block.task)}</strong>
-          </div>
-        </article>`,
-    )
-    .join("");
-  const salesSections = sections
-    .map(
-      (section, index) => `
-        <article class="argument-card">
-          <span>${String(index + 1).padStart(2, "0")}</span>
-          <h3>${escapeHtml(section.title)}</h3>
-          <p>${escapeHtml(section.body)}</p>
-        </article>`,
-    )
-    .join("");
-  const faqItems = [
-    {
-      question: "Como vou receber o acesso?",
-      answer: "Depois da compra, você recebe o material principal e pode iniciar pela primeira etapa indicada na entrega.",
-    },
-    {
-      question: "Preciso ter experiência?",
-      answer: "Não. A estrutura foi criada para começar pelo básico, seguir uma ordem clara e aplicar uma etapa por vez.",
-    },
-    {
-      question: "Em quanto tempo consigo aplicar?",
-      answer: "A proposta e usar uma rotina simples e objetiva. O tempo exato depende do tema, mas a entrega foi pensada para execução rápida.",
-    },
-    {
-      question: "E se eu não souber por onde começar?",
-      answer: "Comece pelo diagnóstico ou preparação inicial, siga o passo a passo e marque o progresso no checklist.",
-    },
-  ]
-    .map(
-      (item) => `
-        <details>
-          <summary>${escapeHtml(item.question)}</summary>
-          <p>${escapeHtml(item.answer)}</p>
-        </details>`,
-    )
-    .join("");
-
-  if (format.landing === "direct") {
-    return `${configComment}
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(product.salesPage.headline)}</title>
-  <style>
-    :root { --bg: ${theme.bg}; --ink: ${theme.ink}; --muted: ${theme.muted}; --accent: ${theme.accent}; --accent-ink: ${theme.accentInk}; --dark: ${theme.coverA}; --dark-2: ${theme.coverB}; --soft: ${theme.soft}; --line: rgba(0,0,0,.12); }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; font-family: Arial, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.55; }
-    .wrap { width: min(1080px, calc(100% - 32px)); margin: 0 auto; }
-    .top { position: sticky; top: 0; z-index: 5; border-bottom: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.78); backdrop-filter: blur(14px); color: #fff; }
-    .top .wrap { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-    .top strong { font-size: 15px; }
-    .button { display: inline-flex; min-height: 52px; align-items: center; justify-content: center; border-radius: 8px; padding: 0 22px; background: var(--accent); color: var(--accent-ink); font-weight: 900; text-decoration: none; }
-    header { padding: 76px 0 54px; background: linear-gradient(135deg, var(--dark), var(--dark-2)); color: #fffdf7; }
-    .hero { display: grid; grid-template-columns: minmax(0, .95fr) minmax(280px, .65fr); gap: 38px; align-items: end; }
-    .eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
-    h1, h2, h3, p { margin-top: 0; }
-    h1 { max-width: 720px; margin-bottom: 16px; font-size: clamp(34px, 5vw, 56px); line-height: 1.02; }
-    h2 { margin-bottom: 18px; font-size: clamp(28px, 3.5vw, 42px); line-height: 1.08; }
-    p { color: rgba(255,255,255,.76); font-size: 18px; }
-    .hero ul, .check ul { display: grid; gap: 10px; margin: 24px 0 0; padding: 0; list-style: none; }
-    .hero li, .check li { position: relative; padding: 15px 16px 15px 44px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: rgba(255,255,255,.08); font-weight: 800; }
-    .hero li::before, .check li::before { content: ""; position: absolute; left: 18px; top: 20px; width: 12px; height: 12px; border-radius: 3px; background: var(--accent); }
-    .product { min-height: 360px; display: grid; align-content: end; border: 1px solid rgba(255,255,255,.2); border-radius: 14px; padding: 26px; background: rgba(0,0,0,.18); box-shadow: 0 28px 70px rgba(0,0,0,.28); }
-    .product span { width: fit-content; margin-bottom: 16px; border-radius: 999px; padding: 8px 12px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 900; text-transform: uppercase; }
-    .product strong { font-size: clamp(26px, 3.2vw, 40px); line-height: 1.04; }
-    section { padding: 74px 0; }
-    .light p, .light li { color: rgba(0,0,0,.68); }
-    .split { display: grid; grid-template-columns: .82fr 1.18fr; gap: 42px; align-items: start; }
-    .cards, .modules, .faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .argument-card, .step-card, details, .offer { border: 1px solid var(--line); border-radius: 10px; padding: 22px; background: #fff; }
-    .argument-card span, .step-card span { display: inline-grid; min-width: 38px; height: 28px; place-items: center; margin-bottom: 14px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 900; }
-    .band { background: #090d0a; color: #fffdf7; }
-    .band .argument-card, .band .step-card, .band details { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); }
-    .offer { max-width: 760px; margin: 0 auto; text-align: center; background: linear-gradient(135deg, var(--dark), var(--dark-2)); color: #fff; }
-    .offer p { color: rgba(255,255,255,.76); }
-    summary { cursor: pointer; font-weight: 900; }
-    @media (max-width: 820px) { .hero, .split, .cards, .modules, .faq { grid-template-columns: 1fr; } .top .wrap { align-items: flex-start; flex-direction: column; padding: 12px 0; } }
-  </style>
-</head>
-<body>
-  <nav class="top"><div class="wrap"><strong>${escapeHtml(product.title)}</strong><a class="button" href="#checkout">${escapeHtml(product.salesPage.cta)}</a></div></nav>
-  <header>
-    <div class="wrap hero">
-      <div>
-        <p class="eyebrow">${escapeHtml(format.label)}</p>
-        <h1>${escapeHtml(product.salesPage.headline)}</h1>
-        <p>${escapeHtml(product.salesPage.subheadline)}</p>
-        <ul>${bullets}</ul>
-      </div>
-      <aside class="product"><span>${escapeHtml(theme.label)}</span><strong>${escapeHtml(product.title)}</strong><p>${escapeHtml(product.promise)}</p></aside>
-    </div>
-  </header>
-  <section class="light"><div class="wrap split"><div><p class="eyebrow">Diagnóstico</p><h2>Veja exatamente o que precisa sair do papel.</h2></div><div class="cards">${salesSections}</div></div></section>
-  <section class="band"><div class="wrap split"><div><p class="eyebrow">Aplicação</p><h2>Uma sequência de verificação para executar com clareza.</h2><p>${escapeHtml(product.subtitle)}</p></div><div class="modules">${modules}</div></div></section>
-  <section class="light check" id="conteudo"><div class="wrap split"><div><p class="eyebrow">O que recebe</p><h2>Itens objetivos para usar, marcar e revisar.</h2></div><ul>${deliverables}</ul></div></section>
-  <section class="band"><div class="wrap"><div class="faq">${faqItems}</div></div></section>
-  <section id="checkout"><div class="wrap"><div class="offer"><p class="eyebrow">Acesso imediato</p><h2>${escapeHtml(product.copyBlocks.headline)}</h2><p>${escapeHtml(product.copyBlocks.hook)}</p><a class="button" href="#checkout">${escapeHtml(product.copyBlocks.cta)}</a></div></div></section>
-</body>
-</html>`;
-  }
-
-  if (format.landing === "editorial") {
-    return `${configComment}
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(product.salesPage.headline)}</title>
-  <style>
-    :root { --paper: ${theme.bg}; --ink: ${theme.ink}; --muted: ${theme.muted}; --accent: ${theme.accent}; --accent-ink: ${theme.accentInk}; --dark: ${theme.coverA}; --soft: ${theme.soft}; }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; font-family: Georgia, 'Times New Roman', serif; color: var(--ink); background: var(--paper); line-height: 1.6; }
-    .wrap { width: min(1040px, calc(100% - 32px)); margin: 0 auto; }
-    .eyebrow { margin: 0 0 12px; color: var(--dark); font: 900 12px/1 Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
-    h1, h2, h3, p { margin-top: 0; }
-    h1 { max-width: 840px; margin-bottom: 18px; font-size: clamp(38px, 6vw, 70px); line-height: .98; }
-    h2 { max-width: 780px; font-size: clamp(30px, 4vw, 48px); line-height: 1.05; }
-    p, li { color: rgba(0,0,0,.68); font-size: 19px; }
-    .button { display: inline-flex; min-height: 54px; align-items: center; justify-content: center; border-radius: 8px; padding: 0 24px; background: var(--accent); color: var(--accent-ink); font: 900 16px Arial, sans-serif; text-decoration: none; }
-    header { padding: 76px 0 44px; border-bottom: 1px solid rgba(0,0,0,.1); }
-    .hero { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 42px; align-items: end; }
-    .note { border-left: 8px solid var(--accent); padding: 24px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.08); }
-    .note strong { display: block; margin-bottom: 12px; font: 900 24px/1.1 Arial, sans-serif; }
-    .strip { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid rgba(0,0,0,.1); background: #fff; }
-    .strip span { min-height: 72px; display: grid; place-items: center; padding: 14px; border-right: 1px solid rgba(0,0,0,.08); font: 900 14px Arial, sans-serif; text-align: center; }
-    section { padding: 82px 0; }
-    .split { display: grid; grid-template-columns: .72fr 1.28fr; gap: 52px; align-items: start; }
-    .timeline { display: grid; gap: 18px; }
-    .argument-card, .step-card, .content-card { display: grid; grid-template-columns: 56px 1fr; gap: 18px; border-bottom: 1px solid rgba(0,0,0,.12); padding-bottom: 20px; }
-    .argument-card span, .step-card span, .content-card > span { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 50%; background: var(--dark); color: #fff; font: 900 13px Arial, sans-serif; }
-    .dark { background: var(--dark); color: #fffdf7; }
-    .dark p, .dark li { color: rgba(255,255,255,.72); }
-    .deliver { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 0; list-style: none; }
-    .deliver li, details { border: 1px solid rgba(0,0,0,.1); border-radius: 8px; padding: 18px; background: #fff; font: 900 16px Arial, sans-serif; }
-    details { color: var(--ink); }
-    summary { cursor: pointer; }
-    .offer { border-radius: 14px; padding: 42px; background: #fff; text-align: center; box-shadow: 0 24px 70px rgba(0,0,0,.1); }
-    @media (max-width: 820px) { .hero, .split, .strip, .deliver { grid-template-columns: 1fr; } .argument-card, .step-card, .content-card { grid-template-columns: 1fr; } }
-  </style>
-</head>
-<body>
-  <header><div class="wrap hero"><div><p class="eyebrow">${escapeHtml(format.label)}</p><h1>${escapeHtml(product.salesPage.headline)}</h1><p>${escapeHtml(product.salesPage.subheadline)}</p><a class="button" href="#checkout">${escapeHtml(product.salesPage.cta)}</a></div><aside class="note"><strong>${escapeHtml(product.title)}</strong><p>${escapeHtml(product.promise)}</p></aside></div></header>
-  <div class="strip">${trustItems}</div>
-  <section><div class="wrap split"><div><p class="eyebrow">Contexto</p><h2>O problema não é falta de informação. É falta de ordem.</h2></div><div class="timeline">${salesSections}</div></div></section>
-  <section class="dark"><div class="wrap split"><div><p class="eyebrow">Método de aplicação</p><h2>Um caminho com decisões claras e próximas ações.</h2><p>${escapeHtml(product.subtitle)}</p></div><div class="timeline">${modules}</div></div></section>
-  <section id="conteudo"><div class="wrap"><p class="eyebrow">O que recebe</p><h2>Material organizado para consultar e aplicar.</h2><ul class="deliver">${deliverables}</ul></div></section>
-  <section><div class="wrap split"><div><p class="eyebrow">Perguntas comuns</p><h2>Antes de decidir</h2></div><div class="timeline">${faqItems}</div></div></section>
-  <section id="checkout"><div class="wrap"><div class="offer"><p class="eyebrow">Acesso imediato</p><h2>${escapeHtml(product.copyBlocks.headline)}</h2><p>${escapeHtml(product.copyBlocks.hook)}</p><a class="button" href="#checkout">${escapeHtml(product.copyBlocks.cta)}</a></div></div></section>
-</body>
-</html>`;
-  }
-
-  return `${configComment}
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(product.salesPage.headline)}</title>
-  <style>
-    :root { --bg: ${theme.coverA}; --panel: ${theme.ink}; --ink: #fffdf7; --muted: rgba(255,253,247,.78); --accent: ${theme.accent}; --accent-ink: ${theme.accentInk}; --cover-a: ${theme.coverA}; --cover-b: ${theme.coverB}; --soft: ${theme.soft}; --surface: ${theme.surface}; --paper: ${theme.bg}; --dark-text: ${theme.ink}; --line: rgba(255,255,255,.14); }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Arial, sans-serif; line-height: 1.55; }
-    .wrap { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
-    .narrow { width: min(880px, calc(100% - 32px)); margin: 0 auto; }
-    .eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
-    h1, h2, h3, p { margin-top: 0; }
-    h1 { max-width: 760px; margin-bottom: 18px; font-size: clamp(34px, 4.8vw, 58px); line-height: 1.02; }
-    h2 { max-width: 820px; margin-bottom: 16px; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.08; }
-    h3 { margin-bottom: 10px; font-size: 20px; line-height: 1.18; }
-    p { margin-bottom: 18px; color: var(--muted); font-size: 18px; }
-    a { color: inherit; }
-    .button { display: inline-flex; min-height: 54px; align-items: center; justify-content: center; border-radius: 8px; padding: 0 24px; background: var(--accent); color: var(--accent-ink); font-weight: 900; text-decoration: none; }
-    .button.secondary { border: 1px solid rgba(255,255,255,.26); background: rgba(255,255,255,.08); color: var(--ink); }
-    header { min-height: 82vh; display: grid; align-items: center; padding: 46px 0 58px; background: radial-gradient(circle at 12% 10%, rgba(255,255,255,.16), transparent 25rem), linear-gradient(135deg, var(--cover-a), var(--cover-b)); }
-    .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, .78fr); gap: 42px; align-items: center; }
-    .hero-copy > p:not(.eyebrow) { max-width: 700px; }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0; }
-    .hero-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 760px; margin: 24px 0 0; padding: 0; list-style: none; }
-    .hero-list li { border: 1px solid rgba(255,255,255,.16); border-radius: 8px; padding: 13px 14px; background: rgba(255,255,255,.08); color: var(--ink); font-size: 15px; font-weight: 800; }
-    .trust-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: rgba(255,255,255,.12); border-top: 1px solid rgba(255,255,255,.12); border-bottom: 1px solid rgba(255,255,255,.12); }
-    .trust-strip span { min-height: 66px; display: grid; place-items: center; padding: 12px; background: rgba(0,0,0,.16); color: var(--ink); font-size: 14px; font-weight: 900; text-align: center; }
-    .product-card { min-height: 430px; display: grid; align-content: end; gap: 14px; border: 1px solid rgba(255,255,255,.22); border-radius: 18px; padding: 28px; background: linear-gradient(135deg, rgba(255,255,255,.13), rgba(255,255,255,.05)); box-shadow: 0 28px 70px rgba(0,0,0,.34); }
-    .product-card::before { content: ""; width: 86px; height: 8px; border-radius: 999px; background: var(--accent); }
-    .product-card span { width: fit-content; border-radius: 999px; padding: 7px 12px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 900; text-transform: uppercase; }
-    .product-card strong { font-size: clamp(26px, 3.4vw, 42px); line-height: 1.02; }
-    .product-card p { font-size: 16px; }
-    section { padding: 82px 0; border-top: 1px solid rgba(248,245,237,.1); }
-    .paper { background: var(--paper); color: var(--dark-text); }
-    .paper p { color: rgba(0,0,0,.68); }
-    .section-head { max-width: 760px; margin-bottom: 34px; }
-    .split { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); gap: 44px; align-items: start; }
-    .argument-grid, .step-grid, .faq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .deliver-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-    .argument-card, .step-card, .content-card, details, .offer-box, .highlight-box { border: 1px solid rgba(0,0,0,.1); border-radius: 10px; padding: 22px; background: rgba(255,255,255,.74); }
-    .argument-card span, .step-card span, .content-card > span { display: inline-grid; min-width: 40px; height: 30px; place-items: center; margin-bottom: 16px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 900; }
-    .argument-card p, .step-card p, .content-card p { font-size: 16px; }
-    .deliver-grid { padding: 0; list-style: none; }
-    .deliver-grid li { border: 1px solid rgba(0,0,0,.12); border-radius: 12px; padding: 18px; background: #fff; color: var(--dark-text); font-weight: 800; }
-    .content-stack { display: grid; gap: 14px; }
-    .content-card { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 20px; }
-    .content-card strong { display: block; margin-top: 12px; color: var(--dark-text); }
-    .dark-band { background: #080d0a; }
-    .dark-band .argument-card, .dark-band .step-card, .dark-band details { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); }
-    .dark-band p { color: var(--muted); }
-    .check-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-    .check-list li { position: relative; padding-left: 32px; color: var(--dark-text); font-weight: 800; }
-    .check-list li::before { content: ""; position: absolute; left: 0; top: 8px; width: 14px; height: 14px; border-radius: 3px; background: var(--accent); }
-    details { color: var(--ink); }
-    summary { cursor: pointer; font-size: 18px; font-weight: 900; }
-    details p { margin: 14px 0 0; font-size: 17px; }
-    .offer { background: linear-gradient(135deg, var(--cover-a), var(--cover-b)); }
-    .offer-box { border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.1); color: var(--ink); text-align: center; }
-    .offer-box p { color: var(--muted); }
-    .price-note { display: inline-block; margin: 8px 0 24px; border-radius: 999px; padding: 8px 14px; background: rgba(255,255,255,.12); color: var(--ink); font-weight: 900; }
-    .footer-note { padding: 28px 0; color: rgba(255,255,255,.58); font-size: 13px; text-align: center; }
-    @media (max-width: 860px) {
-      header { min-height: auto; padding: 34px 0 56px; }
-      .hero, .split, .argument-grid, .step-grid, .faq-grid, .deliver-grid, .trust-strip, .hero-list { grid-template-columns: 1fr; }
-      .content-card { grid-template-columns: 1fr; }
-      .product-card { min-height: 340px; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="wrap hero">
-      <div class="hero-copy">
-        <p class="eyebrow">${escapeHtml(theme.label)}</p>
-        <h1>${escapeHtml(product.salesPage.headline)}</h1>
-        <p>${escapeHtml(product.salesPage.subheadline)}</p>
-        <div class="hero-actions">
-          <a class="button" href="#checkout">${escapeHtml(product.salesPage.cta)}</a>
-          <a class="button secondary" href="#conteudo">Ver o que recebe</a>
-        </div>
-        <ul class="hero-list">${bullets}</ul>
-      </div>
-      <aside class="product-card">
-        <span>${escapeHtml(theme.label)}</span>
-        <strong>${escapeHtml(product.title)}</strong>
-        <p>${escapeHtml(product.promise)}</p>
-      </aside>
-    </div>
-  </header>
-
-  <div class="trust-strip">
-    ${trustItems}
-  </div>
-
-  <section class="paper">
-    <div class="wrap split">
-      <div class="section-head">
-        <p class="eyebrow">O problema</p>
-        <h2>O caminho fica pesado quando falta ordem para executar.</h2>
-      </div>
-      <div class="argument-grid">
-        ${salesSections}
-      </div>
-    </div>
-  </section>
-
-  <section class="dark-band">
-    <div class="wrap split">
-      <div class="section-head">
-        <p class="eyebrow">A solução</p>
-        <h2>Uma entrega simples, direta e organizada para aplicar passo a passo.</h2>
-        <p>${escapeHtml(product.promise)}</p>
-        <a class="button" href="#checkout">${escapeHtml(product.copyBlocks.cta)}</a>
-      </div>
-      <div class="step-grid">
-        ${modules}
-      </div>
-    </div>
-  </section>
-
-  <section class="paper" id="conteudo">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">O que recebe</p>
-        <h2>Conteúdo pronto para sair da teoria e entrar na execução.</h2>
-        <p>${escapeHtml(product.subtitle)}</p>
-      </div>
-      <ul class="deliver-grid">${deliverables}</ul>
-    </div>
-  </section>
-
-  <section class="paper">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Por dentro da entrega</p>
-        <h2>Veja como o material conduz a aplicação.</h2>
-      </div>
-      <div class="content-stack">
-        ${contentBlocks}
-      </div>
-    </div>
-  </section>
-
-  <section class="dark-band">
-    <div class="wrap split">
-      <div class="section-head">
-        <p class="eyebrow">Por que funciona</p>
-        <h2>Menos excesso, mais clareza de ação.</h2>
-        <p>A entrega foi estruturada para reduzir confusão, mostrar a sequência correta e transformar a decisão em próximos passos simples.</p>
-      </div>
-      <div class="highlight-box">
-        <ul class="check-list">
-          <li>Promessa clara para saber o objetivo da aplicação.</li>
-          <li>Etapas organizadas para evitar tentativa aleatória.</li>
-          <li>Ações práticas para marcar progresso.</li>
-          <li>Checklist para revisar e continuar evoluindo.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="paper">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Dúvidas comuns</p>
-        <h2>Antes de começar</h2>
-      </div>
-      <div class="faq-grid">
-        ${faqItems}
-      </div>
-    </div>
-  </section>
-
-  <section class="offer" id="checkout">
-    <div class="wrap narrow">
-      <div class="offer-box">
-      <p class="eyebrow">Acesso imediato</p>
-      <h2>${escapeHtml(product.copyBlocks.headline)}</h2>
-      <p>${escapeHtml(product.copyBlocks.hook)}</p>
-      <span class="price-note">Produto pronto para aplicar hoje</span>
-      <!-- Troque #checkout pelo link real do checkout antes de publicar. -->
-      <a class="button" href="#checkout">${escapeHtml(product.copyBlocks.cta)}</a>
-      </div>
-    </div>
-  </section>
-
-  <div class="footer-note">Esta página e uma estrutura editável. Antes de publicar, configure o link de checkout e revise informações específicas da oferta.</div>
-</body>
-</html>`;
-}
-
 function buildProductPdf(product: ProductResult) {
   const theme = resolveProjectTheme(product);
   const format = resolveProductFormat(product);
@@ -2176,7 +1775,7 @@ async function buildProjectBundle(product: ProductResult, token: string) {
     blob: buildZip([
       { name: "01-produto-pronto.pdf", data: pdf },
       { name: "02-produto-editavel.html", data: buildProductHtml(product) },
-      { name: "03-pagina-de-vendas.html", data: buildSalesPageHtml(product) },
+      { name: "03-pagina-de-vendas.html", data: buildSalesPage(product) },
       { name: "04-copy-da-pagina.txt", data: buildCopyText(product) },
       { name: "05-prompts.txt", data: buildPromptsText(product) },
       { name: "06-revisao-da-entrega.txt", data: buildReviewText(product) },
@@ -2188,8 +1787,8 @@ async function buildProjectBundle(product: ProductResult, token: string) {
 
 function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResult): ProductResult {
   const normalized = {
-    title: data.title || fallback.title,
-    subtitle: data.subtitle || fallback.subtitle,
+    title: withoutReadingWords(data.title || fallback.title),
+    subtitle: withoutReadingWords(data.subtitle || fallback.subtitle),
     promise: data.promise || fallback.promise,
     modules: Array.isArray(data.modules) && data.modules.length ? data.modules.slice(0, 7) : fallback.modules,
     productBlueprint:
@@ -2215,6 +1814,7 @@ function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResul
       cta: data.copyBlocks?.cta || fallback.copyBlocks.cta,
     },
     salesPage: {
+      ...normalizeSalesExtras(data.salesPage),
       headline: data.salesPage?.headline || fallback.salesPage.headline,
       subheadline: data.salesPage?.subheadline || fallback.salesPage.subheadline,
       sections:
@@ -2273,6 +1873,7 @@ function sanitizeProductLanguage(product: ProductResult): ProductResult {
       cta: professionalizeText(product.copyBlocks.cta),
     },
     salesPage: {
+      ...product.salesPage,
       headline: professionalizeText(product.salesPage.headline),
       subheadline: professionalizeText(product.salesPage.subheadline),
       sections: product.salesPage.sections.map((section) => ({

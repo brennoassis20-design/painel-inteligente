@@ -1,3 +1,4 @@
+import { normalizeSalesExtras, salesCopyRules, salesExtrasJsonShape } from "@/lib/sales-page";
 import { buildProduct, normalizeAiProduct, productFormatFor, ProductResult, requestAiJson } from "@/lib/product-engine";
 
 export type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
@@ -519,12 +520,13 @@ Tom da copy: ${input.tone}
 ${input.productBrief ? `\nBriefing validado da oportunidade:\n${input.productBrief}` : ""}
 
 Regras para a entrega:
+- title e subtitle: nunca use guia, ebook, e-book, apostila, livro ou leitura (o comprador brasileiro associa a ter que ler e desiste). Use nomes de acao e resultado: metodo, plano, sistema, roteiro, kit, protocolo, mapa ou checklist.
 - productBlueprint deve listar somente componentes do produto final entregue ao comprador. Nao inclua copy, pagina de vendas, landing page, checkout, anuncios, prompts ou bastidores comerciais.
 - productContent deve ter pelo menos 10 blocos praticos, com instrucoes concretas, passo a passo, criterios de seguranca/qualidade quando fizer sentido, erros comuns e acao final clara. O produto final em PDF nunca deve parecer curto.
 - Nao prometa ilustracao, planilha, tabela, video ou arquivo adicional se isso nao estiver descrito de forma executavel no conteudo.
 - Para saude, bem-estar, financas ou assuntos sensiveis, inclua aviso responsavel sem promessa medica, juridica ou financeira.
 - A copy e a salesPage sao arquivos comerciais separados e nao devem aparecer como parte interna do produto final.
-- salesPage deve ser uma pagina longa de vendas, com argumentos para varias dobras: problema, consequencia, mecanismo, solucao, o que recebe, para quem e, como aplicar, seguranca/garantia, FAQ ou fechamento. Nao gere uma pagina curta de uma ou duas dobras.
+${salesCopyRules}
 - Escolha a arquitetura mais natural para o produto. Nao force todo projeto para o mesmo formato: checklist/curadoria deve parecer uma ferramenta de validacao; protocolo/plano deve parecer uma sequencia guiada; guia/mapa deve parecer um playbook de decisao e aplicacao.
 - Pense tambem na direcao visual do produto: lista/fornecedores deve gerar conteudo com cara de catalogo ou diretorio premium; guia consultivo deve gerar conteudo editorial com capitulos, tabelas e exemplos; protocolo deve gerar conteudo de manual pratico com rotina, fichas e acompanhamento. Varie estrutura, tipo de pagina e conteudo conforme o nicho.
 - format: use "${format}" (editorial = guia de consulta em capitulos; manual = sequencia de etapas, dias ou rotina para executar; catalogo = selecao organizada em categorias com itens e criterios).
@@ -536,10 +538,10 @@ Regras para a entrega:
   * manual: blocos sao etapas em sequencia; table como ficha de registro ou cronograma em 3 a 5 blocos; entries vazio.
   * catalogo: no maximo 2 blocos de orientacao (ex.: como escolher); TODOS os outros blocos sao categorias e cada categoria OBRIGATORIAMENTE tem entries com 4 a 6 itens (name, detail de 1 a 2 frases com criterio pratico, tag de 1 a 2 palavras); table em no maximo 1 bloco. Nao invente nomes de marcas, lojas ou pessoas reais: descreva tipos, modelos ou perfis.
 
-Use no maximo 6 modulos, 6 itens de estrutura, 10 a 12 blocos de conteudo, 8 secoes de pagina, 10 secoes de landing page e 5 prompts. Escreva textos objetivos, prontos para usar, sem alongar demais. Nao mencione aluno, aula, curso ou bastidores da ferramenta.
+Use no maximo 6 modulos, 6 itens de estrutura, 10 a 12 blocos de conteudo, 4 secoes de pagina, 10 secoes de landing page e 5 prompts. Escreva textos objetivos, prontos para usar, sem alongar demais. Nao mencione aluno, aula, curso ou bastidores da ferramenta.
 
 Retorne exatamente este formato JSON:
-{"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"format":"editorial|manual|catalogo","intro":"string","closing":"string","productContent":[{"title":"string","body":"string","task":"string","points":["string"],"tip":"string opcional","example":"string opcional","table":{"columns":["string"],"rows":[["string"]]},"entries":[{"name":"string","detail":"string","tag":"string"}]}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string","sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]}`,
+{"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"format":"editorial|manual|catalogo","intro":"string","closing":"string","productContent":[{"title":"string","body":"string","task":"string","points":["string"],"tip":"string opcional","example":"string opcional","table":{"columns":["string"],"rows":[["string"]]},"entries":[{"name":"string","detail":"string","tag":"string"}]}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string",${salesExtrasJsonShape},"sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]}`,
       12000,
     );
 
@@ -894,17 +896,24 @@ export async function updatePageForProject(userId: string, projectId: string, in
 Titulo: ${base.title}
 Promessa: ${base.promise}
 Copy principal: ${base.copyBlocks.headline}
+Conteudo do material: ${base.productContent.map((block) => block.title).slice(0, 12).join("; ")}
 Publico: ${input.audience}
 Tom: ${input.tone}
 
+Regras:
+${salesCopyRules}
+- Escreva com acentuacao correta do portugues.
+
 Retorne exatamente este JSON:
-{"salesPage":{"headline":"string","subheadline":"string","sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"]}`,
-        2200,
+{"salesPage":{"headline":"string","subheadline":"string",${salesExtrasJsonShape},"sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"]}`,
+        3000,
       );
 
       nextPayload = {
         ...base,
         salesPage: {
+          ...normalizeSalesExtras(base.salesPage),
+          ...normalizeSalesExtras(data.salesPage),
           headline: data.salesPage?.headline || base.salesPage.headline,
           subheadline: data.salesPage?.subheadline || base.salesPage.subheadline,
           sections:

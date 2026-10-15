@@ -1,3 +1,5 @@
+import { normalizeSalesExtras, withoutReadingWords, type SalesPageExtras } from "@/lib/sales-page";
+
 export type ProductContentBlock = {
   title: string;
   body: string;
@@ -20,7 +22,7 @@ export function productFormatFor(productType: string): ProductFormat {
   return "editorial";
 }
 
-export type SalesPageContent = {
+export type SalesPageContent = SalesPageExtras & {
   headline: string;
   subheadline: string;
   sections: {
@@ -77,7 +79,7 @@ export function buildProduct(niche: string, productType: string, audience: strin
   const cleanAudience = audience.trim() || "pessoas que querem vender comida saudavel";
   const cleanType = productType || productTypes[0];
   const cleanTone = tone || toneOptions[0];
-  const title = `${cleanType}: ${capitalize(cleanNiche)}`;
+  const title = withoutReadingWords(`${cleanType}: ${capitalize(cleanNiche)}`);
 
   return {
     title,
@@ -173,8 +175,8 @@ export function buildProduct(niche: string, productType: string, audience: strin
 
 export function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResult): ProductResult {
   const normalized = {
-    title: data.title || fallback.title,
-    subtitle: data.subtitle || fallback.subtitle,
+    title: withoutReadingWords(data.title || fallback.title),
+    subtitle: withoutReadingWords(data.subtitle || fallback.subtitle),
     promise: data.promise || fallback.promise,
     modules: Array.isArray(data.modules) && data.modules.length ? data.modules.slice(0, 7) : fallback.modules,
     productBlueprint:
@@ -200,6 +202,7 @@ export function normalizeAiProduct(data: Partial<ProductResult>, fallback: Produ
       cta: data.copyBlocks?.cta || fallback.copyBlocks.cta,
     },
     salesPage: {
+      ...normalizeSalesExtras(data.salesPage),
       headline: data.salesPage?.headline || fallback.salesPage.headline,
       subheadline: data.salesPage?.subheadline || fallback.salesPage.subheadline,
       sections:
@@ -303,6 +306,7 @@ function sanitizeProductLanguage(product: ProductResult): ProductResult {
       cta: professionalizeText(product.copyBlocks.cta),
     },
     salesPage: {
+      ...product.salesPage,
       headline: professionalizeText(product.salesPage.headline),
       subheadline: professionalizeText(product.salesPage.subheadline),
       sections: product.salesPage.sections.map((section) => ({
