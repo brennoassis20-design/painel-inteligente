@@ -1,9 +1,14 @@
 "use client";
 
-import { CSSProperties, FormEvent, ReactNode, useEffect, useId, useMemo, useState } from "react";
+import { CSSProperties, FormEvent, useEffect, useId, useMemo, useState } from "react";
+import { Icon, IconName } from "./icons";
+import { LaunchChecklist } from "./tools/LaunchChecklist";
+import { MentorChat } from "./tools/MentorChat";
+import { ProductMockup } from "./tools/ProductMockup";
+import { ProfitCalculator } from "./tools/ProfitCalculator";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
-type ActiveView = "inicio" | "radar" | "gerador" | "produto" | "copy" | "arquivos";
+type ActiveView = "inicio" | "radar" | "gerador" | "produto" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor";
 
 type ProductContentBlock = {
   title: string;
@@ -90,8 +95,6 @@ const toneOptions = [
   "Autoridade",
 ];
 
-type IconName = "home" | "spark" | "trend" | "chat" | "doc" | "folder" | "play" | "external" | "arrow" | "plus" | "mail" | "lock" | "shield" | "logout" | "menu" | "download" | "check" | "star" | "search" | "target" | "close" | "calendar" | "map" | "steps" | "list" | "page" | "code" | "copy";
-
 const menuGroups: { title?: string; items: { id: ActiveView; label: string; icon: IconName }[] }[] = [
   { items: [{ id: "inicio", label: "Início", icon: "home" }] },
   {
@@ -109,6 +112,14 @@ const menuGroups: { title?: string; items: { id: ActiveView; label: string; icon
       { id: "arquivos", label: "Meus arquivos", icon: "folder" },
     ],
   },
+  {
+    title: "Vender",
+    items: [
+      { id: "mockup", label: "Mockup 3D", icon: "cube" },
+      { id: "calculadora", label: "Calculadora de lucro", icon: "calc" },
+      { id: "lancamento", label: "Checklist de lançamento", icon: "rocket" },
+    ],
+  },
 ];
 
 const viewLabels: Record<ActiveView, string> = {
@@ -118,113 +129,23 @@ const viewLabels: Record<ActiveView, string> = {
   copy: "Copy de vendas",
   produto: "Produto criado",
   arquivos: "Meus arquivos",
+  mockup: "Mockup 3D",
+  calculadora: "Calculadora de lucro",
+  lancamento: "Checklist de lançamento",
+  mentor: "Mentor",
 };
+
+const homeTools: { id: ActiveView; label: string; text: string; icon: IconName; color: string }[] = [
+  { id: "mockup", label: "Mockup 3D", text: "Capa em livro, tablet e celular", icon: "cube", color: "var(--pi-violet)" },
+  { id: "calculadora", label: "Calculadora de lucro", text: "Preço, custo por venda e meta", icon: "calc", color: "var(--pi-green)" },
+  { id: "lancamento", label: "Checklist de lançamento", text: "Do produto ao primeiro anúncio", icon: "rocket", color: "var(--pi-pink)" },
+  { id: "mentor", label: "Mentor", text: "Tire dúvidas na hora", icon: "bot", color: "var(--pi-cyan)" },
+];
 
 // Link da area de membros (Cakto Members V3) aberto pelo botao "Ir para as aulas".
 const lessonsUrl = process.env.NEXT_PUBLIC_LESSONS_URL || "https://aluno.cakto.com.br/app/courses";
 
 const trailKey = "painel-inteligente-trilha";
-
-const iconPaths: Record<IconName, ReactNode> = {
-  home: <path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />,
-  spark: (
-    <>
-      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2" />
-      <circle cx="12" cy="12" r="3" />
-    </>
-  ),
-  trend: (
-    <>
-      <path d="M3 17l6-6 4 4 8-8" />
-      <path d="M15 7h6v6" />
-    </>
-  ),
-  chat: (
-    <>
-      <path d="M4 5h16v11H8l-4 4z" />
-      <path d="M8 9h8M8 12h5" />
-    </>
-  ),
-  doc: (
-    <>
-      <rect x="5" y="3" width="14" height="18" rx="2" />
-      <path d="M9 7h6M9 11h6M9 15h3" />
-    </>
-  ),
-  folder: (
-    <>
-      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <path d="M12 10v5M9.5 12.5 12 15l2.5-2.5" />
-    </>
-  ),
-  play: (
-    <>
-      <rect x="3" y="5" width="18" height="14" rx="3" />
-      <path d="m10 9 5 3-5 3z" />
-    </>
-  ),
-  external: <path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5" />,
-  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
-  plus: <path d="M12 5v14M5 12h14" />,
-  mail: (
-    <>
-      <rect x="3" y="5" width="18" height="14" rx="3" />
-      <path d="m4 7 8 6 8-6" />
-    </>
-  ),
-  lock: (
-    <>
-      <rect x="4" y="10" width="16" height="11" rx="3" />
-      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-    </>
-  ),
-  shield: <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3z" />,
-  logout: <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" />,
-  menu: <path d="M4 7h16M4 12h16M4 17h10" />,
-  download: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
-  check: <path d="m5 12 5 5 9-10" />,
-  star: <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z" fill="currentColor" stroke="none" />,
-  search: (
-    <>
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m20 20-4.2-4.2" />
-    </>
-  ),
-  target: (
-    <>
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="3.5" />
-    </>
-  ),
-  close: <path d="M6 6l12 12M18 6 6 18" />,
-  calendar: (
-    <>
-      <rect x="4" y="5" width="16" height="15" rx="2.5" />
-      <path d="M8 3v4M16 3v4M4 10h16" />
-    </>
-  ),
-  map: <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" />,
-  steps: <path d="M4 19h5v-5h5V9h5V4" />,
-  list: (
-    <>
-      <path d="m4 7 1.5 1.5L8 6M4 13l1.5 1.5L8 12M4 19l1.5 1.5L8 18" />
-      <path d="M11 7h9M11 13h9M11 19h9" />
-    </>
-  ),
-  page: (
-    <>
-      <rect x="3" y="4" width="18" height="16" rx="2.5" />
-      <path d="M3 9h18M7 13h6M7 16h10" />
-    </>
-  ),
-  code: <path d="m9 8-4 4 4 4M15 8l4 4-4 4" />,
-  copy: (
-    <>
-      <rect x="8" y="8" width="12" height="12" rx="2.5" />
-      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
-    </>
-  ),
-};
 
 // Acentuacao apenas na exibicao: os valores enviados para a API continuam iguais.
 const displayWords: Record<string, string> = {
@@ -341,14 +262,6 @@ function GenerationOverlay({ kind }: { kind: "product" | "copy" }) {
         </p>
       </div>
     </div>
-  );
-}
-
-function Icon({ name }: { name: IconName }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {iconPaths[name]}
-    </svg>
   );
 }
 
@@ -3081,6 +2994,10 @@ export default function Home() {
           ))}
           <div>
             <p className="pi-sec">Aprender</p>
+            <button className={activeView === "mentor" ? "on" : ""} onClick={() => goTo("mentor")} type="button">
+              <Icon name="bot" />
+              Mentor
+            </button>
             <a href={lessonsUrl} target="_blank" rel="noreferrer">
               <Icon name="play" />
               Ir para as aulas
@@ -3234,6 +3151,20 @@ export default function Home() {
                     <span className="pi-go">Abrir arquivos <Icon name="arrow" /></span>
                   </button>
                 </div>
+
+                <h2 className="pi-h2 pi-h2-gap">Ferramentas para vender</h2>
+                <div className="pi-tools">
+                  {homeTools.map((tool) => (
+                    <button type="button" key={tool.id} style={{ "--c": tool.color } as CSSProperties} onClick={() => goTo(tool.id)}>
+                      <span className="pi-ico"><Icon name={tool.icon} /></span>
+                      <span>
+                        <strong>{tool.label}</strong>
+                        <small>{tool.text}</small>
+                      </span>
+                      <Icon name="arrow" />
+                    </button>
+                  ))}
+                </div>
               </section>
 
               <section>
@@ -3295,6 +3226,67 @@ export default function Home() {
               </section>
             </div>
           </div>
+        )}
+
+        {canAccess && activeView === "mockup" && (
+          <section className="pi-view">
+            <header className="pi-view-head" style={{ "--c": "var(--pi-violet)" } as CSSProperties}>
+              <span className="pi-ico"><Icon name="cube" /></span>
+              <div>
+                <p className="pi-kicker">Vender</p>
+                <h2>Mockup 3D do produto</h2>
+                <p>A capa do seu produto em livro, tablet e celular, pronta para a página de vendas e para os anúncios. Ajuste o texto e baixe a imagem.</p>
+              </div>
+            </header>
+            <ProductMockup title={result?.title || ""} subtitle={result?.subtitle || ""} label={displayText(productType)} />
+          </section>
+        )}
+
+        {canAccess && activeView === "calculadora" && (
+          <section className="pi-view">
+            <header className="pi-view-head" style={{ "--c": "var(--pi-green)" } as CSSProperties}>
+              <span className="pi-ico"><Icon name="calc" /></span>
+              <div>
+                <p className="pi-kicker">Vender</p>
+                <h2>Calculadora de lucro</h2>
+                <p>Descubra quanto sobra por venda, o custo por venda máximo nos anúncios e quantas vendas por dia você precisa para bater a meta.</p>
+              </div>
+            </header>
+            <ProfitCalculator onOpenLaunch={() => goTo("lancamento")} />
+          </section>
+        )}
+
+        {canAccess && activeView === "lancamento" && (
+          <section className="pi-view">
+            <header className="pi-view-head" style={{ "--c": "var(--pi-pink)" } as CSSProperties}>
+              <span className="pi-ico"><Icon name="rocket" /></span>
+              <div>
+                <p className="pi-kicker">Vender</p>
+                <h2>Checklist de lançamento</h2>
+                <p>Do produto pronto ao primeiro anúncio no ar, na ordem certa. Marque cada etapa: o progresso fica salvo neste aparelho.</p>
+              </div>
+            </header>
+            <LaunchChecklist userKey={email} onNavigate={goTo} />
+          </section>
+        )}
+
+        {canAccess && (
+          <section className={`pi-view view-panel ${activeView === "mentor" ? "" : "is-hidden"}`}>
+            <header className="pi-view-head" style={{ "--c": "var(--pi-cyan)" } as CSSProperties}>
+              <span className="pi-ico"><Icon name="bot" /></span>
+              <div>
+                <p className="pi-kicker">Aprender</p>
+                <h2>Mentor</h2>
+                <p>Tire dúvidas sobre o seu produto, preço, página, anúncios e vendas. Respostas curtas e práticas, na hora.</p>
+              </div>
+            </header>
+            <MentorChat
+              userKey={email}
+              request={authenticatedJson}
+              active={activeView === "mentor"}
+              context={currentProjectId && result ? { title: result.title, promise: result.promise, niche, audience } : {}}
+            />
+          </section>
         )}
 
         <div className={canAccess ? "content-grid single-view" : "content-grid single-view locked"}>

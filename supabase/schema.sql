@@ -92,12 +92,24 @@ create index if not exists copy_edits_project_month_idx on public.copy_edits (pr
 create index if not exists trend_opportunities_active_score_idx on public.trend_opportunities (is_active, score desc);
 create index if not exists trend_opportunities_category_idx on public.trend_opportunities (category);
 
+-- Mentor: uma linha por pergunta respondida (limite diário por aluno).
+create table if not exists public.mentor_messages (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  day_key text not null,
+  tokens integer,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists mentor_messages_user_day_idx on public.mentor_messages (user_id, day_key);
+
 alter table public.profiles enable row level security;
 alter table public.entitlements enable row level security;
 alter table public.projects enable row level security;
 alter table public.copy_edits enable row level security;
 alter table public.webhook_events enable row level security;
 alter table public.trend_opportunities enable row level security;
+alter table public.mentor_messages enable row level security;
 
 revoke all on table public.profiles from anon, authenticated;
 revoke all on table public.entitlements from anon, authenticated;

@@ -3163,3 +3163,868 @@ a.pi-pill:hover {
     padding: 0;
   }
 }
+
+/* ---------- Ferramentas para vender (atalhos da tela inicial) ---------- */
+.pi-h2-gap {
+  margin-top: 26px;
+}
+
+.pi-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pi-tools button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--pi-line2);
+  border-radius: 16px;
+  background: var(--pi-glass);
+  color: var(--pi-text);
+  text-align: left;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.pi-tools button:hover {
+  border-color: color-mix(in srgb, var(--c) 45%, transparent);
+  transform: translateY(-1px);
+}
+
+.pi-tools .pi-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.pi-tools .pi-ico svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pi-tools button > span:not(.pi-ico) {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pi-tools strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.pi-tools small {
+  color: var(--pi-muted);
+  font-size: 12px;
+}
+
+.pi-tools button > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--pi-dim);
+}
+
+/* ---------- Calculadora de lucro ---------- */
+.pi-calc {
+  display: grid;
+  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.pi-calc-form {
+  display: grid;
+  gap: 14px;
+}
+
+.pi-calc-form .pi-step-title {
+  margin: 4px 0 0;
+}
+
+.pi-calc-field small {
+  color: var(--pi-dim);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.pi-calc-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--pi-line);
+  border-radius: 14px;
+  background: rgba(7, 6, 26, 0.6);
+}
+
+.pi-calc-input:focus-within {
+  border-color: rgba(159, 233, 255, 0.6);
+  box-shadow: 0 0 0 4px rgba(159, 233, 255, 0.08);
+}
+
+.pi-calc-input i {
+  padding: 0 0 0 14px;
+  color: var(--pi-dim);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.pi-calc-input i:last-child {
+  padding: 0 14px 0 0;
+}
+
+.pi-shell .pi-calc-input input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pi-calc-out {
+  display: grid;
+  gap: 14px;
+}
+
+.pi-calc-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid;
+  border-radius: 16px;
+  font-size: 13.5px;
+}
+
+.pi-calc-status p {
+  margin: 0;
+}
+
+.pi-calc-status.good {
+  border-color: rgba(78, 240, 166, 0.35);
+  background: rgba(78, 240, 166, 0.07);
+  --dot: var(--pi-green);
+}
+
+.pi-calc-status.warn {
+  border-color: rgba(255, 200, 121, 0.35);
+  background: rgba(255, 200, 121, 0.07);
+  --dot: var(--pi-amber);
+}
+
+.pi-calc-status.bad {
+  border-color: rgba(255, 122, 160, 0.4);
+  background: rgba(255, 122, 160, 0.08);
+  --dot: #ff7aa0;
+}
+
+.pi-calc-status .pi-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 12px var(--dot);
+}
+
+.pi-calc-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pi-calc-kpis .pi-card {
+  padding: 16px;
+}
+
+.pi-calc-kpis span {
+  color: var(--pi-muted);
+  font-size: 12px;
+}
+
+.pi-calc-kpis b {
+  display: block;
+  margin: 6px 0 4px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pi-calc-kpis p {
+  margin: 0;
+  color: var(--pi-dim);
+  font-size: 11.5px;
+}
+
+.pi-calc .pos {
+  color: var(--pi-green);
+}
+
+.pi-calc .neg {
+  color: #ff7aa0;
+}
+
+.pi-calc-goal-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pi-calc-goal-grid div {
+  padding: 14px;
+  border: 1px solid var(--pi-line2);
+  border-radius: 14px;
+  background: rgba(7, 6, 26, 0.4);
+}
+
+.pi-calc-goal-grid b {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pi-calc-goal-grid div:first-child b {
+  background: var(--pi-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pi-calc-goal-grid span,
+.pi-calc-empty {
+  color: var(--pi-muted);
+  font-size: 12px;
+}
+
+.pi-calc-empty {
+  margin: 0;
+  font-size: 13px;
+}
+
+.pi-calc-table {
+  display: grid;
+  font-size: 13px;
+}
+
+.pi-calc-table > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.pi-calc-table > div.head {
+  color: var(--pi-dim);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pi-calc-table > div:not(.head) + div {
+  border-top: 1px solid var(--pi-line2);
+}
+
+.pi-calc-table > div.on {
+  background: rgba(183, 155, 255, 0.1);
+  font-weight: 600;
+}
+
+.pi-calc-next {
+  justify-self: end;
+}
+
+/* ---------- Checklist de lançamento ---------- */
+.pi-launch {
+  display: grid;
+  gap: 18px;
+}
+
+.pi-launch-progress {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 24px;
+  align-items: center;
+}
+
+.pi-launch-progress span {
+  color: var(--pi-muted);
+  font-size: 12.5px;
+}
+
+.pi-launch-progress b {
+  display: block;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.pi-launch-progress > div > p {
+  margin: 0;
+  color: var(--pi-dim);
+  font-size: 12px;
+}
+
+.pi-launch-next {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  color: var(--pi-text);
+  font-size: 13.5px;
+}
+
+.pi-launch-next em {
+  color: var(--pi-cyan);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.pi-launch-phases {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.pi-launch-phase header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pi-launch-phase header .pi-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.pi-launch-phase header .pi-ico svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pi-launch-phase header div {
+  display: grid;
+  flex: 1;
+}
+
+.pi-launch-phase header small {
+  color: var(--c);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pi-launch-phase header strong {
+  font-size: 16px;
+}
+
+.pi-launch-phase header em {
+  color: var(--pi-muted);
+  font-size: 12.5px;
+  font-style: normal;
+}
+
+.pi-launch-phase ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pi-launch-phase li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 14px;
+  transition: background 0.2s;
+}
+
+.pi-launch-phase li:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pi-launch-check {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px;
+  border: 0;
+  background: none;
+  color: var(--pi-text);
+  text-align: left;
+}
+
+.pi-launch-check > span {
+  display: grid;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  place-items: center;
+  border: 1.5px solid var(--pi-line);
+  border-radius: 7px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.pi-launch-check > span svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pi-launch-phase li.done .pi-launch-check > span {
+  border-color: transparent;
+  background: var(--pi-grad);
+  color: var(--pi-ink);
+}
+
+.pi-launch-check div {
+  display: grid;
+  gap: 3px;
+}
+
+.pi-launch-check strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.pi-launch-check small {
+  color: var(--pi-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pi-launch-phase li.done .pi-launch-check strong {
+  color: var(--pi-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--pi-dim);
+}
+
+.pi-launch-go {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--pi-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--pi-text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.pi-launch-go svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ---------- Mockup 3D ---------- */
+.pi-mock {
+  display: grid;
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.pi-mock-form {
+  display: grid;
+  gap: 12px;
+}
+
+.pi-mock-form .pi-step-title {
+  margin: 4px 0 0;
+}
+
+.pi-mock-cap {
+  margin-top: 4px;
+  color: var(--pi-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.pi-mock-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pi-mock-opts button {
+  padding: 8px 13px;
+  border: 1px solid var(--pi-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--pi-muted);
+  font-size: 12.5px;
+}
+
+.pi-mock-opts button.on {
+  border-color: transparent;
+  background: var(--pi-grad);
+  color: var(--pi-ink);
+  font-weight: 600;
+}
+
+.pi-mock-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pi-mock-colors button {
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+}
+
+.pi-mock-colors button.on {
+  border-color: var(--pi-text);
+  box-shadow: 0 0 0 3px rgba(159, 233, 255, 0.35);
+}
+
+.pi-mock-stage {
+  position: sticky;
+  top: 20px;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.pi-mock-canvas {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--pi-line2);
+  border-radius: 20px;
+  background: rgba(7, 6, 26, 0.5);
+  line-height: 0;
+}
+
+.pi-mock-canvas.checker {
+  background: repeating-conic-gradient(#2a2840 0% 25%, #1c1a30 0% 50%) 50% / 24px 24px;
+}
+
+.pi-mock-canvas canvas {
+  width: 100%;
+  height: auto;
+}
+
+.pi-mock-tip {
+  max-width: 520px;
+  margin: 0;
+  color: var(--pi-dim);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ---------- Mentor ---------- */
+.pi-mentor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 18px;
+  align-items: start;
+}
+
+.pi-mentor-chat {
+  display: flex;
+  flex-direction: column;
+  height: min(68vh, 680px);
+  min-height: 420px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pi-mentor-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.pi-mentor-empty {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  margin: auto 0;
+  text-align: center;
+}
+
+.pi-mentor-empty h4 {
+  margin: 6px 0 0;
+  font-size: 18px;
+}
+
+.pi-mentor-empty p {
+  max-width: 440px;
+  margin: 0;
+  color: var(--pi-muted);
+  font-size: 13.5px;
+}
+
+.pi-mentor-sugs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: 620px;
+  margin-top: 10px;
+}
+
+.pi-mentor-sugs button {
+  padding: 12px 14px;
+  border: 1px solid var(--pi-line);
+  border-radius: 14px;
+  background: var(--pi-glass);
+  color: var(--pi-text);
+  font-size: 12.5px;
+  text-align: left;
+  transition: border-color 0.2s;
+}
+
+.pi-mentor-sugs button:hover {
+  border-color: rgba(159, 233, 255, 0.5);
+}
+
+.pi-msg {
+  display: flex;
+  gap: 10px;
+  max-width: 86%;
+}
+
+.pi-msg.user {
+  align-self: flex-end;
+}
+
+.pi-msg-av {
+  display: grid;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(159, 233, 255, 0.12);
+  color: var(--pi-cyan);
+}
+
+.pi-msg-av svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pi-msg-body {
+  padding: 12px 15px;
+  border: 1px solid var(--pi-line2);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.pi-msg.user .pi-msg-body {
+  border-color: transparent;
+  background: linear-gradient(120deg, rgba(159, 233, 255, 0.18), rgba(183, 155, 255, 0.22) 50%, rgba(255, 122, 217, 0.2));
+  white-space: pre-wrap;
+}
+
+.pi-msg-body p,
+.pi-msg-body ul,
+.pi-msg-body ol {
+  margin: 0;
+}
+
+.pi-msg-body > * + * {
+  margin-top: 8px;
+}
+
+.pi-msg-body ul,
+.pi-msg-body ol {
+  padding-left: 20px;
+}
+
+.pi-msg-body strong {
+  color: #fff;
+}
+
+.pi-typing {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.pi-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pi-muted);
+  animation: pi-typing 1s infinite ease-in-out;
+}
+
+.pi-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.pi-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes pi-typing {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.pi-mentor-error {
+  margin: 0;
+  padding: 10px 22px;
+  color: #ff9ab8;
+  font-size: 12.5px;
+}
+
+.pi-mentor-form {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  border-top: 1px solid var(--pi-line2);
+}
+
+.pi-mentor-form textarea {
+  flex: 1;
+  min-height: 46px;
+  max-height: 140px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 14px;
+  resize: none;
+}
+
+.pi-mentor-form .pi-btn-grad {
+  width: 46px;
+  min-height: 46px;
+  padding: 0;
+}
+
+.pi-mentor-form .pi-btn-grad:disabled {
+  opacity: 0.45;
+  transform: none;
+}
+
+.pi-mentor-side {
+  display: grid;
+  gap: 12px;
+}
+
+.pi-mentor-side .pi-card > span {
+  color: var(--pi-muted);
+  font-size: 12.5px;
+}
+
+.pi-mentor-side b {
+  display: block;
+  margin: 6px 0 12px;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.pi-mentor-side b small {
+  color: var(--pi-dim);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.pi-mentor-side p {
+  margin: 10px 0 0;
+  color: var(--pi-dim);
+  font-size: 12px;
+}
+
+.pi-mentor-proj {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+/* ---------- Ferramentas novas: telas menores ---------- */
+@media (max-width: 1080px) {
+  .pi-calc,
+  .pi-mock,
+  .pi-mentor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pi-mock-stage {
+    position: static;
+    order: -1;
+  }
+
+  .pi-mentor-side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    order: -1;
+  }
+
+  .pi-mentor-side > .pi-btn-soft {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .pi-calc-kpis,
+  .pi-calc-goal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pi-launch-phases {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .pi-tools,
+  .pi-mentor-sugs,
+  .pi-mentor-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pi-launch-progress {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pi-launch-phase li {
+    flex-wrap: wrap;
+  }
+
+  .pi-launch-go {
+    margin: -4px 0 8px 44px;
+  }
+
+  .pi-msg {
+    max-width: 100%;
+  }
+
+  .pi-mentor-chat {
+    height: 72vh;
+  }
+
+  .pi-calc-table > div {
+    font-size: 12px;
+  }
+}
