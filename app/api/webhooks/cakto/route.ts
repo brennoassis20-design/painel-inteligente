@@ -54,17 +54,6 @@ export async function POST(request: Request) {
       request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
     if (providedSecret !== secret) {
-      // Diagnostico temporario: nunca registra o valor da chave.
-      console.warn("cakto-401", JSON.stringify({
-        bodyKeys: Object.keys(payload),
-        dataKeys: Object.keys(payload.data || {}),
-        bodySecretType: typeof payload.secret,
-        bodySecretLen: typeof payload.secret === "string" ? payload.secret.length : null,
-        querySecret: url.searchParams.has("secret"),
-        headers: [...request.headers.keys()].filter((key) => /secret|auth|signature|token|cakto/i.test(key)),
-        providedLen: providedSecret ? String(providedSecret).length : 0,
-        expectedLen: secret.length,
-      }));
       return jsonError("Webhook nao autorizado.", 401);
     }
 
@@ -135,7 +124,11 @@ export async function POST(request: Request) {
 
     if (accessStatus === "active") {
       const name = payload.customer?.name || payload.buyer?.name || payload.client?.name || stringFrom(dataCustomer, "name");
-      account = await inviteBuyer(email, name || undefined, getPublicAppUrl(request));
+      // O acesso ja foi gravado; se o email falhar, o comprador recupera por "Esqueci minha senha".
+      account = await inviteBuyer(email, name || undefined, getPublicAppUrl(request)).catch((error) => {
+        console.error("cakto-invite-failed", email, error instanceof Error ? error.message : error);
+        return "invite_failed";
+      });
     }
 
     return Response.json({ ok: true, email, accessStatus, account });
