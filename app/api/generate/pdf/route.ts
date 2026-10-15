@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     const pdf = await renderProductPdf(product);
     return new Response(Buffer.from(pdf), {
-      headers: { "Content-Type": "application/pdf", "Cache-Control": "no-store" },
+      headers: { "Content-Type": "application/pdf", "Content-Length": String(pdf.byteLength), "Cache-Control": "no-store" },
     });
   } catch (error) {
     if (error instanceof AccessError) {

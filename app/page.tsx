@@ -1166,7 +1166,11 @@ async function fetchPremiumPdf(product: ProductResult, token: string) {
       body: JSON.stringify({ product }),
     });
     if (!response.ok || response.headers.get("content-type") !== "application/pdf") return null;
-    return new Uint8Array(await response.arrayBuffer());
+    const pdf = new Uint8Array(await response.arrayBuffer());
+    // Só usa o PDF se ele chegou inteiro (começa com %PDF e termina com %%EOF).
+    const head = new TextDecoder().decode(pdf.subarray(0, 5));
+    const tail = new TextDecoder().decode(pdf.subarray(Math.max(0, pdf.length - 1024)));
+    return head === "%PDF-" && tail.includes("%%EOF") ? pdf : null;
   } catch {
     return null;
   }
