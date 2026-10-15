@@ -6,15 +6,13 @@ import { LaunchChecklist } from "./tools/LaunchChecklist";
 import { MentorChat } from "./tools/MentorChat";
 import { ProductMockup } from "./tools/ProductMockup";
 import { ProfitCalculator } from "./tools/ProfitCalculator";
+import { googleFontCss, renderProductDocument, resolveDocumentStyle, type DocumentBlock } from "@/lib/product-document";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
 type ActiveView = "inicio" | "radar" | "gerador" | "produto" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor";
 
-type ProductContentBlock = {
-  title: string;
-  body: string;
-  task: string;
-};
+// Os campos opcionais (pontos, dica, tabela, fichas...) alimentam o PDF premium.
+type ProductContentBlock = DocumentBlock;
 
 type SalesPageContent = {
   headline: string;
@@ -33,6 +31,9 @@ type ProductResult = {
   modules: string[];
   productBlueprint: string[];
   productContent: ProductContentBlock[];
+  format?: string;
+  intro?: string;
+  closing?: string;
   copyBlocks: {
     hook: string;
     headline: string;
@@ -1151,178 +1152,24 @@ function buildVisualDirectionText(product: ProductResult) {
   ].join("\n");
 }
 
+// 02-produto-editavel.html: mesmo template do PDF premium, editável no navegador.
 function buildProductHtml(product: ProductResult) {
-  const theme = resolveProjectTheme(product);
-  const format = resolveProductFormat(product);
-  const visual = resolveVisualDirection(product, format);
-  const modules = product.modules.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
-  const blueprint = product.productBlueprint.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
-  const directoryItems = [...product.productBlueprint, ...product.productContent.map((block) => block.title)]
-    .slice(0, 12)
-    .map(
-      (item, index) => `
-        <article>
-          <small>ITEM ${String(index + 1).padStart(2, "0")}</small>
-          <h3>${escapeHtml(item)}</h3>
-          <p>Validar critério, aplicação e próximo passo antes de avançar.</p>
-        </article>`,
-    )
-    .join("");
-  const blocks = product.productContent
-    .map(
-      (block, index) => `
-        <section class="block">
-          <span>${String(index + 1).padStart(2, "0")}</span>
-          <div>
-            <h2>${escapeHtml(block.title)}</h2>
-            <p>${escapeHtml(block.body)}</p>
-            <strong>${escapeHtml(block.task)}</strong>
-          </div>
-        </section>`,
-    )
-    .join("");
+  return renderProductDocument(product, { fontCss: googleFontCss(resolveDocumentStyle(product)), target: "html" });
+}
 
-  if (format.name === "checklist") {
-    return `<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(product.title)}</title>
-  <style>
-    :root { --dark: #201b35; --gold: ${theme.accent}; --ink: #fffaf0; --paper: #f7f2e7; --red: #b91c1c; }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--paper); color: #251c13; font-family: Arial, sans-serif; line-height: 1.55; }
-    main { width: min(1040px, calc(100% - 32px)); margin: 0 auto; padding-bottom: 72px; }
-    .cover { min-height: 760px; display: grid; grid-template-columns: .9fr 1.1fr; align-items: center; gap: 28px; margin: 0 calc(50% - 50vw) 48px; padding: 54px max(46px, calc((100vw - 1040px) / 2)); background: radial-gradient(circle at 70% 30%, rgba(255,255,255,.24), transparent 18rem), linear-gradient(135deg, #171326, #3d315f); color: var(--ink); overflow: hidden; }
-    .mockup { position: relative; min-height: 420px; transform: rotate(-7deg); border: 5px solid rgba(255,255,255,.72); background: linear-gradient(160deg, var(--gold), #7c4b00); box-shadow: 0 34px 80px rgba(0,0,0,.38); padding: 34px; }
-    .mockup::after { content: ""; position: absolute; inset: 42% -18% auto 20%; height: 120px; background: rgba(255,255,255,.28); transform: rotate(-14deg); }
-    .badge { display: inline-block; border-radius: 999px; padding: 10px 16px; background: var(--gold); color: #171006; font-weight: 900; text-transform: uppercase; }
-    h1 { margin: 24px 0; font-size: clamp(46px, 8vw, 86px); line-height: .9; text-transform: uppercase; }
-    .cover p { max-width: 580px; color: rgba(255,255,255,.84); font-size: 22px; }
-    h2 { margin: 0 0 18px; font-size: clamp(32px, 4vw, 52px); line-height: 1; }
-    section { margin: 42px 0; }
-    .notice { border-left: 10px solid var(--gold); padding: 26px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.08); }
-    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
-    article { min-height: 160px; position: relative; padding: 24px; background: #fff; border: 2px solid #b58b32; box-shadow: 10px 10px 0 rgba(99,62,8,.22); }
-    article small { display: inline-block; margin-bottom: 18px; color: var(--red); font-weight: 900; }
-    article h3 { margin: 0 0 12px; color: var(--red); font-size: 23px; }
-    article p, li { color: #5f4a35; }
-    .category { margin: 54px 0 24px; padding: 28px; background: var(--dark); color: #fff; text-align: center; }
-    .category h2 { margin: 0; color: #fff; text-transform: uppercase; }
-    @media (max-width: 820px) { .cover, .grid { grid-template-columns: 1fr; } .cover { min-height: auto; } }
-  </style>
-</head>
-<body>
-  <main>
-    <section class="cover">
-      <div class="mockup"><span class="badge">${escapeHtml(visual.label)}</span><h2>${escapeHtml(product.title)}</h2></div>
-      <div><span class="badge">Campeão de aplicação</span><h1>${escapeHtml(product.title)}</h1><p>${escapeHtml(product.promise)}</p></div>
-    </section>
-    <section class="notice"><h2>Leia antes de aplicar</h2><p>${escapeHtml(product.subtitle)}</p><ul>${modules}</ul></section>
-    <section class="category"><h2>Catálogo principal</h2></section>
-    <section class="grid">${directoryItems}</section>
-    <section class="notice"><h2>Critérios de validação</h2><ul>${blueprint}</ul></section>
-  </main>
-</body>
-</html>`;
+// 01-produto-pronto.pdf vem do servidor (template premium). Se a rota falhar, o ZIP usa o PDF simples.
+async function fetchPremiumPdf(product: ProductResult, token: string) {
+  try {
+    const response = await fetch("/api/generate/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ product }),
+    });
+    if (!response.ok || response.headers.get("content-type") !== "application/pdf") return null;
+    return new Uint8Array(await response.arrayBuffer());
+  } catch {
+    return null;
   }
-
-  if (format.name === "playbook") {
-    return `<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(product.title)}</title>
-  <style>
-    :root { --paper: #f5eee4; --ink: #5e5043; --soft: #fffaf4; --accent: ${theme.accent}; --dark: ${theme.coverA}; }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--paper); color: var(--ink); font-family: Georgia, 'Times New Roman', serif; line-height: 1.65; }
-    main { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding-bottom: 80px; }
-    .cover { min-height: 820px; margin: 0 calc(50% - 50vw) 58px; padding: 80px max(42px, calc((100vw - 980px) / 2)); background: linear-gradient(rgba(245,238,228,.2), rgba(245,238,228,.84)), radial-gradient(circle at 50% 46%, ${theme.soft}, transparent 22rem), linear-gradient(135deg, #ead5bf, #fff7ef); text-align: center; }
-    .photo { width: min(560px, 100%); height: 420px; margin: 24px auto 34px; border-radius: 999px 999px 22px 22px; background: radial-gradient(circle at 50% 34%, #fff, ${theme.soft} 28%, ${theme.coverB}); box-shadow: 0 30px 80px rgba(80,56,32,.2); }
-    .script { font-size: clamp(68px, 12vw, 132px); line-height: .86; font-style: italic; color: #5b3b35; }
-    .subtitle { max-width: 700px; margin: 18px auto; font-size: 28px; color: #6d5f50; }
-    h2 { margin: 0 0 18px; font-size: clamp(34px, 5vw, 62px); line-height: 1.02; color: #665848; }
-    h3 { font-size: 28px; color: #665848; }
-    p, li { font-size: 20px; }
-    section { margin: 64px 0; }
-    .chapter { padding: 44px; background: var(--soft); border-radius: 4px; box-shadow: 0 18px 50px rgba(80,56,32,.08); }
-    .hero-image { height: 260px; margin: -44px -44px 42px; background: linear-gradient(135deg, ${theme.soft}, ${theme.coverB}); }
-    table { width: 100%; border-collapse: collapse; margin-top: 28px; background: #fff; font-family: Arial, sans-serif; }
-    th, td { border: 1px solid #e0d8ce; padding: 22px; text-align: left; font-size: 18px; }
-    th { background: #fffaf5; color: #584a3d; }
-    .quote { border-left: 8px solid var(--accent); padding: 22px 28px; background: #fff; font-size: 24px; }
-  </style>
-</head>
-<body>
-  <main>
-    <section class="cover"><div class="script">${escapeHtml(product.title)}</div><p class="subtitle">${escapeHtml(product.promise)}</p><div class="photo"></div></section>
-    <section class="chapter"><div class="hero-image"></div><h2>Introdução</h2><p>${escapeHtml(product.subtitle)}</p><p class="quote">${escapeHtml(product.promise)}</p></section>
-    <section class="chapter"><h2>Capítulos principais</h2><ol>${modules}</ol></section>
-    <section class="chapter"><h2>Quadro de decisão</h2><table><thead><tr><th>Etapa</th><th>Prioridade</th></tr></thead><tbody>${product.productContent
-      .slice(0, 5)
-      .map((block) => `<tr><td>${escapeHtml(block.title)}</td><td>${escapeHtml(block.task)}</td></tr>`)
-      .join("")}</tbody></table></section>
-    <section class="chapter"><h2>Checklist final</h2><ul>${blueprint}</ul></section>
-  </main>
-</body>
-</html>`;
-  }
-
-  return `<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(product.title)}</title>
-  <style>
-    :root { color-scheme: light; --ink: ${theme.ink}; --accent: ${theme.accent}; --accent-ink: ${theme.accentInk}; --muted: ${theme.muted}; --bg: ${theme.bg}; --surface: ${theme.surface}; --soft: ${theme.soft}; --border: ${theme.border}; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.6; }
-    main { width: min(940px, calc(100% - 32px)); margin: 0 auto; padding: 36px 0 64px; }
-    .cover { position: relative; min-height: 560px; display: grid; align-content: end; gap: 18px; overflow: hidden; border-radius: 24px; padding: 48px; background: linear-gradient(135deg, ${theme.coverA}, ${theme.coverB}); color: #fffdf5; page-break-after: always; }
-    .cover::before { content: ""; position: absolute; inset: auto -12% -22% 18%; height: 280px; border-radius: 999px; background: rgba(255,255,255,.12); transform: rotate(-8deg); }
-    .cover > * { position: relative; z-index: 1; }
-    .pill { width: fit-content; border-radius: 999px; padding: 10px 16px; background: var(--accent); color: var(--accent-ink); font-weight: 900; text-transform: uppercase; }
-    h1 { margin: 0; font-size: clamp(42px, 8vw, 78px); line-height: .95; }
-    h2 { margin: 0 0 10px; font-size: 26px; line-height: 1.15; }
-    p { margin: 0 0 14px; }
-    .lead { max-width: 760px; color: #f1f4ea; font-size: 22px; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 32px 0; }
-    .card, .block { border: 1px solid var(--border); border-radius: 16px; padding: 24px; background: var(--surface); box-shadow: 0 14px 38px rgba(0,0,0,.05); }
-    li { margin: 0 0 10px; }
-    .block { display: grid; grid-template-columns: 54px 1fr; gap: 18px; margin: 18px 0; }
-    .block span { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 900; }
-    .checklist .block { grid-template-columns: 32px 1fr; }
-    .checklist .block span { width: 24px; height: 24px; border-radius: 6px; font-size: 0; }
-    .checklist .block span::after { content: ""; width: 10px; height: 10px; border: 2px solid var(--accent-ink); border-top: 0; border-left: 0; transform: rotate(45deg) translateY(-1px); }
-    .playbook .cover { align-content: center; }
-    .playbook .grid { grid-template-columns: .85fr 1.15fr; }
-    strong { color: var(--coverB); }
-    @media print { body { background: #fff; } main { width: 100%; padding: 0; } .card, .block, .cover { break-inside: avoid; border-radius: 0; } }
-  </style>
-</head>
-<body class="${format.name}">
-  <main>
-    <section class="cover">
-      <span class="pill">${escapeHtml(format.label)}</span>
-      <h1>${escapeHtml(product.title)}</h1>
-      <p class="lead">${escapeHtml(product.promise)}</p>
-    </section>
-    <section>
-      <h2>Promessa da entrega</h2>
-      <p>${escapeHtml(product.subtitle)}</p>
-      <div class="grid">
-        <div class="card"><h2>Módulos sugeridos</h2><ol>${modules}</ol></div>
-        <div class="card"><h2>Estrutura da entrega</h2><ul>${blueprint}</ul></div>
-      </div>
-      ${blocks}
-    </section>
-  </main>
-</body>
-</html>`;
 }
 
 function buildSalesPageHtml(product: ProductResult) {
@@ -2301,12 +2148,13 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function buildProjectBundle(product: ProductResult) {
+async function buildProjectBundle(product: ProductResult, token: string) {
   const baseName = slugify(product.title);
+  const pdf = (await fetchPremiumPdf(product, token)) || buildProductPdf(product);
   return {
     filename: `${baseName}-pacote.zip`,
     blob: buildZip([
-      { name: "01-produto-pronto.pdf", data: buildProductPdf(product) },
+      { name: "01-produto-pronto.pdf", data: pdf },
       { name: "02-produto-editavel.html", data: buildProductHtml(product) },
       { name: "03-pagina-de-vendas.html", data: buildSalesPageHtml(product) },
       { name: "04-copy-da-pagina.txt", data: buildCopyText(product) },
@@ -2331,6 +2179,7 @@ function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResul
     productContent:
       Array.isArray(data.productContent) && data.productContent.length
         ? data.productContent.slice(0, 12).map((block, index) => ({
+            ...block,
             title: block?.title || fallback.productContent[index]?.title || `Parte ${index + 1}`,
             body: block?.body || fallback.productContent[index]?.body || fallback.promise,
             task: block?.task || fallback.productContent[index]?.task || "Aplicar este passo antes de avançar.",
@@ -2362,6 +2211,9 @@ function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResul
         ? data.landingSections.slice(0, 9)
         : fallback.landingSections,
     prompts: Array.isArray(data.prompts) && data.prompts.length ? data.prompts.slice(0, 6) : fallback.prompts,
+    ...(data.format ? { format: data.format } : {}),
+    ...(data.intro ? { intro: data.intro } : {}),
+    ...(data.closing ? { closing: data.closing } : {}),
   };
 
   return sanitizeProductLanguage(normalized);
@@ -2389,6 +2241,7 @@ function sanitizeProductLanguage(product: ProductResult): ProductResult {
     modules: product.modules.map(professionalizeText),
     productBlueprint: product.productBlueprint.map(professionalizeText),
     productContent: product.productContent.map((block) => ({
+      ...block,
       title: professionalizeText(block.title),
       body: professionalizeText(block.body),
       task: professionalizeText(block.task),
@@ -2756,7 +2609,7 @@ export default function Home() {
       setUsage(data.usage);
       setSavedProjects((projects) => [data.project, ...projects.filter((project) => project.id !== data.project.id)].slice(0, 12));
       setGenerationSource(data.source === "internal" ? "Criação concluída" : "Criação automática concluída");
-      const bundle = buildProjectBundle(product);
+      const bundle = await buildProjectBundle(product, sessionToken);
       downloadBlob(bundle.blob, bundle.filename);
       setLastPackageName(bundle.filename);
       setCopiedLabel("Produto completo criado e pacote baixado");
@@ -2829,10 +2682,11 @@ export default function Home() {
     setCopiedLabel(label);
   }
 
-  function downloadProject() {
+  async function downloadProject() {
     if (!result) return;
 
-    const bundle = buildProjectBundle(result);
+    setCopiedLabel("Preparando o pacote...");
+    const bundle = await buildProjectBundle(result, sessionToken);
     downloadBlob(bundle.blob, bundle.filename);
     setLastPackageName(bundle.filename);
     setCopiedLabel("Pacote do projeto baixado");
@@ -2856,8 +2710,9 @@ export default function Home() {
     goTo("gerador");
   }
 
-  function downloadSavedProject(project: SavedProject) {
-    const bundle = buildProjectBundle(sanitizeProductLanguage(project.payload));
+  async function downloadSavedProject(project: SavedProject) {
+    setCopiedLabel("Preparando o pacote...");
+    const bundle = await buildProjectBundle(sanitizeProductLanguage(project.payload), sessionToken);
     downloadBlob(bundle.blob, bundle.filename);
     setLastPackageName(bundle.filename);
     setCopiedLabel("Pacote do projeto baixado");

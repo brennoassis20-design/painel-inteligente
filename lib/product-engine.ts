@@ -2,7 +2,23 @@ export type ProductContentBlock = {
   title: string;
   body: string;
   task: string;
+  // Campos opcionais usados pelo PDF premium; projetos antigos não têm.
+  points?: string[];
+  tip?: string;
+  example?: string;
+  table?: { columns: string[]; rows: string[][] };
+  entries?: { name: string; detail: string; tag?: string }[];
 };
+
+export type ProductFormat = "editorial" | "manual" | "catalogo";
+
+// O formato do PDF segue o tipo de produto escolhido no painel.
+export function productFormatFor(productType: string): ProductFormat {
+  const value = productType.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/protocolo|plano|dias|rotina|desafio|passo a passo|cronograma/.test(value)) return "manual";
+  if (/checklist|catalogo|lista|curadoria|selecao|diretorio/.test(value)) return "catalogo";
+  return "editorial";
+}
 
 export type SalesPageContent = {
   headline: string;
@@ -21,6 +37,9 @@ export type ProductResult = {
   modules: string[];
   productBlueprint: string[];
   productContent: ProductContentBlock[];
+  format?: ProductFormat;
+  intro?: string;
+  closing?: string;
   copyBlocks: {
     hook: string;
     headline: string;
@@ -168,6 +187,7 @@ export function normalizeAiProduct(data: Partial<ProductResult>, fallback: Produ
             title: block?.title || fallback.productContent[index]?.title || `Parte ${index + 1}`,
             body: block?.body || fallback.productContent[index]?.body || fallback.promise,
             task: block?.task || fallback.productContent[index]?.task || "Aplicar este passo antes de avancar.",
+            ...normalizeBlockExtras(block),
           }))
         : fallback.productContent,
     copyBlocks: {
@@ -196,9 +216,52 @@ export function normalizeAiProduct(data: Partial<ProductResult>, fallback: Produ
         ? data.landingSections.slice(0, 9)
         : fallback.landingSections,
     prompts: Array.isArray(data.prompts) && data.prompts.length ? data.prompts.slice(0, 6) : fallback.prompts,
+    ...(isFormat(data.format) ? { format: data.format } : {}),
+    ...(text(data.intro) ? { intro: text(data.intro) } : {}),
+    ...(text(data.closing) ? { closing: text(data.closing) } : {}),
   };
 
   return sanitizeProductLanguage(normalized);
+}
+
+function isFormat(value: unknown): value is ProductFormat {
+  return value === "editorial" || value === "manual" || value === "catalogo";
+}
+
+function text(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function textList(value: unknown, max: number) {
+  return Array.isArray(value) ? value.map(text).filter(Boolean).slice(0, max) : [];
+}
+
+// Mantém só os extras bem formados; o template ignora o que vier ausente.
+function normalizeBlockExtras(block: Partial<ProductContentBlock> | undefined) {
+  const extras: Partial<ProductContentBlock> = {};
+  if (!block) return extras;
+  const points = textList(block.points, 5);
+  if (points.length) extras.points = points;
+  if (text(block.tip)) extras.tip = text(block.tip);
+  if (text(block.example)) extras.example = text(block.example);
+  const columns = textList(block.table?.columns, 4);
+  const rows = Array.isArray(block.table?.rows)
+    ? block.table.rows
+        .filter(Array.isArray)
+        .map((row) => columns.map((_, index) => text(row[index])))
+        .filter((row) => row.some(Boolean))
+        .slice(0, 8)
+    : [];
+  if (columns.length >= 2 && rows.length) extras.table = { columns, rows };
+  const entries = Array.isArray(block.entries)
+    ? block.entries
+        .map((entry) => ({ name: text(entry?.name), detail: text(entry?.detail), tag: text(entry?.tag) }))
+        .filter((entry) => entry.name && entry.detail)
+        .map((entry) => (entry.tag ? entry : { name: entry.name, detail: entry.detail }))
+        .slice(0, 6)
+    : [];
+  if (entries.length) extras.entries = entries;
+  return extras;
 }
 
 function professionalizeText(value: string) {
@@ -223,10 +286,16 @@ function sanitizeProductLanguage(product: ProductResult): ProductResult {
     modules: product.modules.map(professionalizeText),
     productBlueprint: product.productBlueprint.map(professionalizeText),
     productContent: product.productContent.map((block) => ({
+      ...block,
       title: professionalizeText(block.title),
       body: professionalizeText(block.body),
       task: professionalizeText(block.task),
+      ...(block.tip ? { tip: professionalizeText(block.tip) } : {}),
+      ...(block.example ? { example: professionalizeText(block.example) } : {}),
+      ...(block.points ? { points: block.points.map(professionalizeText) } : {}),
     })),
+    ...(product.intro ? { intro: professionalizeText(product.intro) } : {}),
+    ...(product.closing ? { closing: professionalizeText(product.closing) } : {}),
     copyBlocks: {
       hook: professionalizeText(product.copyBlocks.hook),
       headline: professionalizeText(product.copyBlocks.headline),
@@ -272,6 +341,9 @@ async function postAiRequest(apiKey: string, system: string, prompt: string, max
       model: getAiModel(),
       temperature: 0.74,
       max_tokens: maxTokens,
+      stream: true,
+      // Sem raciocínio interno: ele consome o limite de saída e a resposta volta vazia.
+      reasoning: { enabled: false },
       ...(forceJson ? { response_format: { type: "json_object" } } : {}),
       messages: [
         {
@@ -304,14 +376,42 @@ export async function requestAiJson(apiKey: string, system: string, prompt: stri
     throw new Error(errorBody || "A chamada de IA falhou.");
   }
 
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
+  const content = await readStreamedContent(response);
 
-  if (typeof content !== "string") {
+  if (!content.trim()) {
     throw new Error("A IA nao retornou texto.");
   }
 
   return extractJsonObject(content);
+}
+
+// A resposta vem em fluxo (SSE): mantém a conexão ativa em gerações longas, que sem fluxo
+// eram cortadas por volta de 60 s.
+async function readStreamedContent(response: Response) {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let content = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      const chunk = JSON.parse(payload);
+      if (chunk.error) throw new Error(chunk.error.message || "A chamada de IA falhou.");
+      content += chunk.choices?.[0]?.delta?.content || "";
+    }
+  }
+
+  return content;
 }
 
 function capitalize(value: string) {

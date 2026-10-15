@@ -1,4 +1,4 @@
-import { buildProduct, normalizeAiProduct, ProductResult, requestAiJson } from "@/lib/product-engine";
+import { buildProduct, normalizeAiProduct, productFormatFor, ProductResult, requestAiJson } from "@/lib/product-engine";
 
 export type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
 
@@ -497,6 +497,7 @@ export async function generateProductPayload(input: {
   productBrief?: string;
 }) {
   const fallback = buildProduct(input.niche, input.productType, input.audience, input.tone);
+  const format = productFormatFor(input.productType);
   const apiKey = getServerAiKey();
 
   if (!apiKey) {
@@ -526,16 +527,24 @@ Regras para a entrega:
 - salesPage deve ser uma pagina longa de vendas, com argumentos para varias dobras: problema, consequencia, mecanismo, solucao, o que recebe, para quem e, como aplicar, seguranca/garantia, FAQ ou fechamento. Nao gere uma pagina curta de uma ou duas dobras.
 - Escolha a arquitetura mais natural para o produto. Nao force todo projeto para o mesmo formato: checklist/curadoria deve parecer uma ferramenta de validacao; protocolo/plano deve parecer uma sequencia guiada; guia/mapa deve parecer um playbook de decisao e aplicacao.
 - Pense tambem na direcao visual do produto: lista/fornecedores deve gerar conteudo com cara de catalogo ou diretorio premium; guia consultivo deve gerar conteudo editorial com capitulos, tabelas e exemplos; protocolo deve gerar conteudo de manual pratico com rotina, fichas e acompanhamento. Varie estrutura, tipo de pagina e conteudo conforme o nicho.
+- format: use "${format}" (editorial = guia de consulta em capitulos; manual = sequencia de etapas, dias ou rotina para executar; catalogo = selecao organizada em categorias com itens e criterios).
+- Escreva com acentuacao correta do portugues em todos os textos (ex.: "você", "não", "orçamento").
+- intro: 2 paragrafos curtos de abertura para o comprador (o documento ja tem uma pagina "como usar"; nao crie bloco de introducao ou de como usar em productContent, comece direto no conteudo). Nao numere os titulos dos blocos. closing: 1 paragrafo de fechamento.
+- Cada bloco de productContent: body com 2 paragrafos especificos do nicho (separados por \\n\\n, 90 a 140 palavras no total), task com uma acao concreta e 3 points curtos. Use tip ou example (caso realista curto) em pelo menos metade dos blocos.
+- Estrutura conforme o format escolhido:
+  * editorial: table (2 a 3 colunas, 4 a 6 linhas, dados especificos) em 3 ou 4 blocos; entries vazio.
+  * manual: blocos sao etapas em sequencia; table como ficha de registro ou cronograma em 3 a 5 blocos; entries vazio.
+  * catalogo: no maximo 2 blocos de orientacao (ex.: como escolher); TODOS os outros blocos sao categorias e cada categoria OBRIGATORIAMENTE tem entries com 4 a 6 itens (name, detail de 1 a 2 frases com criterio pratico, tag de 1 a 2 palavras); table em no maximo 1 bloco. Nao invente nomes de marcas, lojas ou pessoas reais: descreva tipos, modelos ou perfis.
 
-Use no maximo 6 modulos, 6 itens de estrutura, 12 blocos de conteudo, 8 secoes de pagina, 10 secoes de landing page e 5 prompts. Escreva textos objetivos, prontos para usar, sem alongar demais. Nao mencione aluno, aula, curso ou bastidores da ferramenta.
+Use no maximo 6 modulos, 6 itens de estrutura, 10 a 12 blocos de conteudo, 8 secoes de pagina, 10 secoes de landing page e 5 prompts. Escreva textos objetivos, prontos para usar, sem alongar demais. Nao mencione aluno, aula, curso ou bastidores da ferramenta.
 
 Retorne exatamente este formato JSON:
-{"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"productContent":[{"title":"string","body":"string","task":"string"}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string","sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]}`,
-      3600,
+{"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"format":"editorial|manual|catalogo","intro":"string","closing":"string","productContent":[{"title":"string","body":"string","task":"string","points":["string"],"tip":"string opcional","example":"string opcional","table":{"columns":["string"],"rows":[["string"]]},"entries":[{"name":"string","detail":"string","tag":"string"}]}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string","sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]}`,
+      12000,
     );
 
     return {
-      product: normalizeAiProduct(data, fallback),
+      product: { ...normalizeAiProduct(data, fallback), format },
       source: "automatic" as const,
     };
   } catch (error) {
