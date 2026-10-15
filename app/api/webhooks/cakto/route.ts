@@ -91,12 +91,7 @@ export async function POST(request: Request) {
     const dataCustomer = objectFromData(payload.data, "customer");
     const purchaseId = String(payload.purchase?.id || payload.transaction?.id || payload.data?.id || payload.data?.purchase_id || "");
     const customerId = String(payload.customer?.id || dataCustomer?.id || payload.data?.customer_id || "");
-    const expiresAt =
-      payload.access_expires_at ||
-      payload.expires_at ||
-      stringFromData(payload.data, "access_expires_at") ||
-      stringFromData(payload.data, "expires_at") ||
-      null;
+    const expiresAt = accessStatus === "active" ? await annualExpiry(email) : null;
 
     await supabaseRest("/entitlements?on_conflict=email", {
       method: "POST",
@@ -149,7 +144,12 @@ function mapEventToAccessStatus(eventType: string) {
     return "active";
   }
 
-  if (matches(eventType, ["refund", "refunded", "chargeback", "estorno", "canceled", "cancelled", "subscription_canceled"])) {
+  // Cancelar a assinatura so impede a renovacao: o acesso segue ate access_expires_at.
+  if (matches(eventType, ["subscription_canceled", "subscription_cancelled"])) {
+    return null;
+  }
+
+  if (matches(eventType, ["refund", "refunded", "chargeback", "estorno"])) {
     return "refunded";
   }
 
@@ -190,4 +190,18 @@ function objectFromData(data: Record<string, unknown> | undefined, key: string) 
 function stringFrom(data: Record<string, unknown> | undefined, key: string) {
   const value = data?.[key];
   return typeof value === "string" ? value : "";
+}
+
+const ACCESS_DAYS = 365;
+const GRACE_DAYS = 7;
+
+// Assinatura anual: compra e renovacao garantem 1 ano (+ folga para a cobranca da renovacao).
+// Usa o maior prazo entre o atual e o novo, para eventos repetidos nao somarem anos extras.
+async function annualExpiry(email: string) {
+  const rows = await supabaseRest<{ access_expires_at: string | null }[]>(
+    `/entitlements?email=eq.${encodeURIComponent(email)}&select=access_expires_at`,
+  );
+  const current = rows[0]?.access_expires_at ? new Date(rows[0].access_expires_at).getTime() : 0;
+  const next = Date.now() + (ACCESS_DAYS + GRACE_DAYS) * 24 * 60 * 60 * 1000;
+  return new Date(Math.max(current, next)).toISOString();
 }
