@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { CSSProperties, FormEvent, ReactNode, useEffect, useId, useMemo, useState } from "react";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
-type ActiveView = "radar" | "gerador" | "produto" | "copy" | "arquivos";
+type ActiveView = "inicio" | "radar" | "gerador" | "produto" | "copy" | "arquivos";
 
 type ProductContentBlock = {
   title: string;
@@ -90,13 +90,316 @@ const toneOptions = [
   "Autoridade",
 ];
 
-const menuItems: { id: ActiveView; label: string }[] = [
-  { id: "radar", label: "Nichos em alta" },
-  { id: "gerador", label: "Gerador" },
-  { id: "produto", label: "Produto criado" },
-  { id: "copy", label: "Copy" },
-  { id: "arquivos", label: "Meus arquivos" },
+type IconName = "home" | "spark" | "trend" | "chat" | "doc" | "folder" | "play" | "external" | "arrow" | "plus" | "mail" | "lock" | "shield" | "logout" | "menu" | "download" | "check" | "star" | "search" | "target" | "close" | "calendar" | "map" | "steps" | "list" | "page" | "code" | "copy";
+
+const menuGroups: { title?: string; items: { id: ActiveView; label: string; icon: IconName }[] }[] = [
+  { items: [{ id: "inicio", label: "Início", icon: "home" }] },
+  {
+    title: "Criar",
+    items: [
+      { id: "gerador", label: "Fazer o pedido", icon: "spark" },
+      { id: "radar", label: "Nichos em alta", icon: "trend" },
+      { id: "copy", label: "Copy de vendas", icon: "chat" },
+    ],
+  },
+  {
+    title: "Meus projetos",
+    items: [
+      { id: "produto", label: "Produto criado", icon: "doc" },
+      { id: "arquivos", label: "Meus arquivos", icon: "folder" },
+    ],
+  },
 ];
+
+const viewLabels: Record<ActiveView, string> = {
+  inicio: "Início",
+  gerador: "Fazer o pedido",
+  radar: "Nichos em alta",
+  copy: "Copy de vendas",
+  produto: "Produto criado",
+  arquivos: "Meus arquivos",
+};
+
+// Link da area de membros (Cakto Members V3) aberto pelo botao "Ir para as aulas".
+const lessonsUrl = process.env.NEXT_PUBLIC_LESSONS_URL || "https://aluno.cakto.com.br/app/courses";
+
+const trailKey = "painel-inteligente-trilha";
+
+const iconPaths: Record<IconName, ReactNode> = {
+  home: <path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />,
+  spark: (
+    <>
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  trend: (
+    <>
+      <path d="M3 17l6-6 4 4 8-8" />
+      <path d="M15 7h6v6" />
+    </>
+  ),
+  chat: (
+    <>
+      <path d="M4 5h16v11H8l-4 4z" />
+      <path d="M8 9h8M8 12h5" />
+    </>
+  ),
+  doc: (
+    <>
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M9 7h6M9 11h6M9 15h3" />
+    </>
+  ),
+  folder: (
+    <>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M12 10v5M9.5 12.5 12 15l2.5-2.5" />
+    </>
+  ),
+  play: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="3" />
+      <path d="m10 9 5 3-5 3z" />
+    </>
+  ),
+  external: <path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5" />,
+  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="3" />
+      <path d="m4 7 8 6 8-6" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="4" y="10" width="16" height="11" rx="3" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  shield: <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3z" />,
+  logout: <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" />,
+  menu: <path d="M4 7h16M4 12h16M4 17h10" />,
+  download: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
+  check: <path d="m5 12 5 5 9-10" />,
+  star: <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z" fill="currentColor" stroke="none" />,
+  search: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" />
+    </>
+  ),
+  target: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="3.5" />
+    </>
+  ),
+  close: <path d="M6 6l12 12M18 6 6 18" />,
+  calendar: (
+    <>
+      <rect x="4" y="5" width="16" height="15" rx="2.5" />
+      <path d="M8 3v4M16 3v4M4 10h16" />
+    </>
+  ),
+  map: <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" />,
+  steps: <path d="M4 19h5v-5h5V9h5V4" />,
+  list: (
+    <>
+      <path d="m4 7 1.5 1.5L8 6M4 13l1.5 1.5L8 12M4 19l1.5 1.5L8 18" />
+      <path d="M11 7h9M11 13h9M11 19h9" />
+    </>
+  ),
+  page: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2.5" />
+      <path d="M3 9h18M7 13h6M7 16h10" />
+    </>
+  ),
+  code: <path d="m9 8-4 4 4 4M15 8l4 4-4 4" />,
+  copy: (
+    <>
+      <rect x="8" y="8" width="12" height="12" rx="2.5" />
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+    </>
+  ),
+};
+
+// Acentuacao apenas na exibicao: os valores enviados para a API continuam iguais.
+const displayWords: Record<string, string> = {
+  pratico: "prático",
+  Pratico: "Prático",
+  acao: "ação",
+  Acao: "Ação",
+  Tendencia: "Tendência",
+  tendencia: "tendência",
+  Organico: "Orgânico",
+  organico: "orgânico",
+  trafego: "tráfego",
+  Alimentacao: "Alimentação",
+  alimentacao: "alimentação",
+  Educacao: "Educação",
+  Organizacao: "Organização",
+  organizacao: "organização",
+  Saude: "Saúde",
+  saude: "saúde",
+  Servicos: "Serviços",
+  Decoracao: "Decoração",
+  Familia: "Família",
+  publico: "público",
+};
+
+function displayText(value: string) {
+  return value.replace(/[A-Za-z]+/g, (word) => displayWords[word] || word);
+}
+
+const productTypeIcons: Record<string, IconName> = {
+  "Guia pratico": "doc",
+  "Protocolo passo a passo": "steps",
+  "Plano de 7 dias": "calendar",
+  "Mapa de acao": "map",
+  "Checklist premium": "list",
+};
+
+const productTypeHints: Record<string, string> = {
+  "Guia pratico": "Capítulos, exemplos e dicas",
+  "Protocolo passo a passo": "Etapas em sequência",
+  "Plano de 7 dias": "Um roteiro por dia",
+  "Mapa de acao": "Visão geral e prioridades",
+  "Checklist premium": "Listas para marcar",
+};
+
+const packageItems: { label: string; icon: IconName }[] = [
+  { label: "Produto pronto em PDF (10+ páginas)", icon: "doc" },
+  { label: "Versão editável do produto", icon: "code" },
+  { label: "Página de vendas em HTML", icon: "page" },
+  { label: "Copy da página e prompts", icon: "chat" },
+  { label: "Revisão e direção visual", icon: "check" },
+];
+
+const generationSteps: Record<"product" | "copy", string[]> = {
+  product: [
+    "Analisando o nicho e o público",
+    "Estruturando os capítulos",
+    "Escrevendo o conteúdo do produto",
+    "Diagramando o PDF",
+    "Montando a página de vendas",
+    "Criando a copy e os prompts",
+    "Revisando e empacotando o ZIP",
+  ],
+  copy: [
+    "Lendo o produto selecionado",
+    "Definindo ângulos de venda",
+    "Escrevendo ganchos e roteiros",
+    "Ajustando os anúncios",
+  ],
+};
+
+function GenerationOverlay({ kind }: { kind: "product" | "copy" }) {
+  const [elapsed, setElapsed] = useState(0);
+  const steps = generationSteps[kind];
+  // Tempo de referencia para a barra; o fim real chega quando a API responde.
+  const expected = kind === "product" ? 75 : 25;
+
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => setElapsed((Date.now() - startedAt) / 1000), 250);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const progress = Math.min(96, Math.round(100 * (1 - Math.exp(-elapsed / (expected / 2.2)))));
+  const current = Math.min(steps.length - 1, Math.floor((progress / 100) * steps.length));
+
+  return (
+    <div className="pi-gen" role="status" aria-live="polite">
+      <div className="pi-gen-card">
+        <div className="pi-gen-lamp">
+          <span className="pi-gen-ring" />
+          <span className="pi-gen-ring r2" />
+          <LampMark />
+          <i className="pi-spark s1" />
+          <i className="pi-spark s2" />
+          <i className="pi-spark s3" />
+        </div>
+        <p className="pi-kicker">{kind === "product" ? "Pedido em andamento" : "Copy em andamento"}</p>
+        <h2>{kind === "product" ? "Seu produto está sendo criado" : "Sua copy está sendo escrita"}</h2>
+        <div className="pi-gen-bar">
+          <i style={{ width: `${progress}%` }} />
+        </div>
+        <p className="pi-gen-pct">{progress}%</p>
+        <ul className="pi-gen-steps">
+          {steps.map((step, index) => (
+            <li key={step} className={index < current ? "done" : index === current ? "now" : ""}>
+              <span>{index < current ? <Icon name="check" /> : null}</span>
+              {step}
+            </li>
+          ))}
+        </ul>
+        <p className="pi-gen-note">
+          {kind === "product" ? "Mantenha esta aba aberta. O pacote ZIP baixa sozinho ao final." : "Mantenha esta aba aberta. A copy aparece aqui ao final."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Icon({ name }: { name: IconName }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {iconPaths[name]}
+    </svg>
+  );
+}
+
+function LampMark() {
+  const gradientId = useId();
+
+  return (
+    <svg viewBox="0 0 120 80" aria-hidden="true" className="pi-lamp">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#9fe9ff" />
+          <stop offset=".55" stopColor="#b79bff" />
+          <stop offset="1" stopColor="#ff7ad9" />
+        </linearGradient>
+      </defs>
+      <g fill="none" stroke={`url(#${gradientId})`} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M24 38c0-6 14-10 34-10s30 3 36 8l18-2-14 10c-4 8-14 14-36 14S24 52 24 38z" />
+        <path d="M24 40c-12-2-16 4-14 9 2 5 8 6 14 4" />
+        <path d="M48 28c0-6 5-11 10-11s10 5 10 11" />
+        <circle cx="58" cy="13" r="3" />
+        <path d="M48 58l-4 12h30l-4-12" />
+      </g>
+    </svg>
+  );
+}
+
+function readTrail(): Record<string, boolean> {
+  try {
+    return JSON.parse(window.localStorage.getItem(trailKey) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveTrail(trail: Record<string, boolean>) {
+  try {
+    window.localStorage.setItem(trailKey, JSON.stringify(trail));
+  } catch {
+    // Sem armazenamento local: a trilha segue pelos dados da conta.
+  }
+}
+
+function formatRelativeDate(value?: string) {
+  if (!value) return "";
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return "";
+  const days = Math.floor((Date.now() - time) / 86400000);
+  if (days <= 0) return "hoje";
+  if (days === 1) return "ontem";
+  return `há ${days} dias`;
+}
 
 const sessionKey = "painel-inteligente-session";
 
@@ -104,26 +407,26 @@ const trendProducts: TrendProduct[] = [
   {
     title: "Marmita fit para vender na semana",
     niche: "marmita fit",
-    audience: "pessoas que querem vender comida saudavel",
+    audience: "pessoas que querem vender comida saudável",
     productType: "Plano de 7 dias",
-    category: "Alimentacao",
+    category: "Alimentação",
     price: "R$47 a R$97",
     score: 94,
     status: "Validado",
-    promise: "Montar cardapio, precificar e vender as primeiras marmitas em uma semana.",
-    salesAngle: "Comida saudavel virou renda extra: comece com uma rotina simples e sem cozinha profissional.",
-    channel: "Organico + trafego pago",
-    creativeFormats: ["Tutorial curto", "Rotina da semana", "Antes e depois da organizacao"],
-    pageType: "Landing curta com prova de cardapio e calculadora de lucro",
-    strategicInsight: "Produto visual, facil de demonstrar e com dor recorrente de renda extra + saude.",
-    tags: ["facil producao", "visual", "baixo ticket"],
-    adSignal: "Muitos criativos com antes/depois, rotina e preparo rapido",
-    searchSignal: "Buscas fortes por cardapio, congelamento e precificacao",
-    trendSignal: "Alta demanda por renda extra e comida saudavel",
-    angle: "Ensinar uma rotina simples para montar cardapio, calcular lucro e vender as primeiras marmitas.",
+    promise: "Montar cardápio, precificar e vender as primeiras marmitas em uma semana.",
+    salesAngle: "Comida saudável virou renda extra: comece com uma rotina simples e sem cozinha profissional.",
+    channel: "Orgânico + tráfego pago",
+    creativeFormats: ["Tutorial curto", "Rotina da semana", "Antes e depois da organização"],
+    pageType: "Landing curta com prova de cardápio e calculadora de lucro",
+    strategicInsight: "Produto visual, fácil de demonstrar e com dor recorrente de renda extra + saúde.",
+    tags: ["fácil produção", "visual", "baixo ticket"],
+    adSignal: "Muitos criativos com antes/depois, rotina e preparo rápido",
+    searchSignal: "Buscas fortes por cardápio, congelamento e precificação",
+    trendSignal: "Alta demanda por renda extra e comida saudável",
+    angle: "Ensinar uma rotina simples para montar cardápio, calcular lucro e vender as primeiras marmitas.",
   },
   {
-    title: "Lista de fornecedores para comecar uma loja",
+    title: "Lista de fornecedores para começar uma loja",
     niche: "lista de fornecedores",
     audience: "pessoas que querem revender produtos com baixo investimento",
     productType: "Checklist premium",
@@ -131,101 +434,101 @@ const trendProducts: TrendProduct[] = [
     price: "R$27 a R$97",
     score: 91,
     status: "Validado",
-    promise: "Encontrar fornecedores confiaveis e iniciar uma revenda com baixo investimento.",
+    promise: "Encontrar fornecedores confiáveis e iniciar uma revenda com baixo investimento.",
     salesAngle: "Pare de comprar caro: use uma lista organizada para achar margem antes do primeiro pedido.",
-    channel: "Trafego pago + organico",
-    creativeFormats: ["Dor -> solucao", "Prova de catalogo", "Lista por segmento"],
-    pageType: "Landing direta com promessa, bonus e checkout",
+    channel: "Tráfego pago + orgânico",
+    creativeFormats: ["Dor → solução", "Prova de catálogo", "Lista por segmento"],
+    pageType: "Landing direta com promessa, bônus e checkout",
     strategicInsight: "A promessa de curadoria economiza tempo e reduz medo de comprar de fornecedor errado.",
-    tags: ["renda extra", "facil producao", "alta demanda"],
-    adSignal: "Anuncios com promessa direta, prova de catalogo e bonus",
-    searchSignal: "Buscas constantes por fornecedores confiaveis e atacado",
+    tags: ["renda extra", "fácil produção", "alta demanda"],
+    adSignal: "Anúncios com promessa direta, prova de catálogo e bônus",
+    searchSignal: "Buscas constantes por fornecedores confiáveis e atacado",
     trendSignal: "Procura alta por renda extra com estoque pequeno",
     angle: "Entregar uma curadoria organizada por segmento, margem e primeiro pedido recomendado.",
   },
   {
     title: "Bolo de pote lucrativo",
     niche: "bolo de pote",
-    audience: "maes e iniciantes que querem renda extra na cozinha",
+    audience: "mães e iniciantes que querem renda extra na cozinha",
     productType: "Guia pratico",
-    category: "Alimentacao",
+    category: "Alimentação",
     price: "R$37 a R$97",
     score: 88,
     status: "Validado",
-    promise: "Criar receitas, ficha tecnica e roteiro de venda para lucrar com bolo de pote.",
-    salesAngle: "Transforme uma receita simples em produto de bairro com preco, embalagem e abordagem certa.",
-    channel: "Organico + trafego pago",
-    creativeFormats: ["Receita rapida", "Lucro por unidade", "Bastidores da producao"],
-    pageType: "Pagina visual com fotos, margem e passo a passo",
-    strategicInsight: "Produto muito demonstravel em video curto, bom para criativos simples e prova local.",
-    tags: ["culinaria", "visual", "renda extra"],
+    promise: "Criar receitas, ficha técnica e roteiro de venda para lucrar com bolo de pote.",
+    salesAngle: "Transforme uma receita simples em produto de bairro com preço, embalagem e abordagem certa.",
+    channel: "Orgânico + tráfego pago",
+    creativeFormats: ["Receita rápida", "Lucro por unidade", "Bastidores da produção"],
+    pageType: "Página visual com fotos, margem e passo a passo",
+    strategicInsight: "Produto muito demonstrável em vídeo curto, bom para criativos simples e prova local.",
+    tags: ["culinária", "visual", "renda extra"],
     adSignal: "Criativos com receita, lucro por unidade e venda no bairro",
-    searchSignal: "Buscas por recheios, validade, embalagem e preco",
-    trendSignal: "Produto visual, simples e facil de demonstrar em video curto",
-    angle: "Mostrar receitas campeas, ficha tecnica, embalagem e roteiro para vender os primeiros potes.",
+    searchSignal: "Buscas por recheios, validade, embalagem e preço",
+    trendSignal: "Produto visual, simples e fácil de demonstrar em vídeo curto",
+    angle: "Mostrar receitas campeãs, ficha técnica, embalagem e roteiro para vender os primeiros potes.",
   },
   {
     title: "Alongamento em casa para destravar o corpo",
     niche: "alongamento em casa",
-    audience: "pessoas com dores leves e rotina sedentaria",
+    audience: "pessoas com dores leves e rotina sedentária",
     productType: "Protocolo passo a passo",
-    category: "Saude",
+    category: "Saúde",
     price: "R$47 a R$97",
     score: 84,
     status: "Promissor",
     promise: "Seguir uma rotina curta de alongamento para reduzir travas e melhorar mobilidade.",
-    salesAngle: "Seu corpo nao precisa de academia para destravar: precisa de 10 minutos bem guiados.",
-    channel: "Organico + trafego pago",
-    creativeFormats: ["Demonstracao curta", "Dor especifica", "Rotina diaria"],
+    salesAngle: "Seu corpo não precisa de academia para destravar: precisa de 10 minutos bem guiados.",
+    channel: "Orgânico + tráfego pago",
+    creativeFormats: ["Demonstração curta", "Dor específica", "Rotina diária"],
     pageType: "Landing educativa com protocolo e checklist",
-    strategicInsight: "Funciona melhor com avisos de seguranca e foco em bem-estar, sem promessa medica.",
-    tags: ["bem estar", "rotina", "demonstravel"],
-    adSignal: "Anuncios com demonstracao rapida, dor especifica e rotina curta",
-    searchSignal: "Buscas por lombar, postura, pescoco e flexibilidade",
-    trendSignal: "Conteudo recorrente em videos curtos de bem-estar",
-    angle: "Criar um protocolo diario com sequencias curtas e acompanhamento de evolucao.",
+    strategicInsight: "Funciona melhor com avisos de segurança e foco em bem-estar, sem promessa médica.",
+    tags: ["bem estar", "rotina", "demonstrável"],
+    adSignal: "Anúncios com demonstração rápida, dor específica e rotina curta",
+    searchSignal: "Buscas por lombar, postura, pescoço e flexibilidade",
+    trendSignal: "Conteúdo recorrente em vídeos curtos de bem-estar",
+    angle: "Criar um protocolo diário com sequências curtas e acompanhamento de evolução.",
   },
   {
-    title: "Organizacao financeira em 30 minutos",
-    niche: "organizacao financeira pessoal",
+    title: "Organização financeira em 30 minutos",
+    niche: "organização financeira pessoal",
     audience: "pessoas endividadas que precisam de um plano simples",
     productType: "Mapa de acao",
-    category: "Financas",
+    category: "Finanças",
     price: "R$29 a R$97",
     score: 82,
     status: "Validado",
     promise: "Entender para onde o dinheiro vai e montar um plano simples em 30 minutos.",
-    salesAngle: "Voce ganha dinheiro, mas o mes nunca fecha? Organize tudo em um mapa simples.",
-    channel: "Organico + trafego pago",
-    creativeFormats: ["Tutorial curto", "Dor -> solucao", "Planilha na tela"],
+    salesAngle: "Você ganha dinheiro, mas o mês nunca fecha? Organize tudo em um mapa simples.",
+    channel: "Orgânico + tráfego pago",
+    creativeFormats: ["Tutorial curto", "Dor → solução", "Planilha na tela"],
     pageType: "Landing curta com prova social e exemplo visual",
-    strategicInsight: "Dor permanente com picos em janeiro, inicio de mes e periodos de divida alta.",
-    tags: ["facil producao", "dor forte", "planilha"],
-    adSignal: "Criativos com planilha, dividas e alivio financeiro",
-    searchSignal: "Buscas por controle de gastos, dividas e planejamento",
-    trendSignal: "Dor permanente com boa aceitacao para produto simples",
+    strategicInsight: "Dor permanente com picos em janeiro, início de mês e períodos de dívida alta.",
+    tags: ["fácil produção", "dor forte", "planilha"],
+    adSignal: "Criativos com planilha, dívidas e alívio financeiro",
+    searchSignal: "Buscas por controle de gastos, dívidas e planejamento",
+    trendSignal: "Dor permanente com boa aceitação para produto simples",
     angle: "Entregar um passo a passo para mapear gastos, cortar excessos e montar o primeiro plano.",
   },
   {
     title: "Skincare simples para pele oleosa",
     niche: "skincare pele oleosa",
-    audience: "mulheres que querem rotina barata e facil",
+    audience: "mulheres que querem rotina barata e fácil",
     productType: "Checklist premium",
     category: "Beleza",
     price: "R$27 a R$67",
     score: 79,
     status: "Promissor",
-    promise: "Montar uma rotina simples para pele oleosa usando poucos produtos acessiveis.",
+    promise: "Montar uma rotina simples para pele oleosa usando poucos produtos acessíveis.",
     salesAngle: "Pare de comprar 20 produtos: use uma rotina enxuta para controlar oleosidade.",
-    channel: "Organico + trafego pago",
-    creativeFormats: ["Erros comuns", "Rotina manha/noite", "Produtos acessiveis"],
-    pageType: "Pagina visual com rotina, checklist e lista de compra",
-    strategicInsight: "Precisa evitar promessa dermatologica pesada; vender como rotina educativa e pratica.",
+    channel: "Orgânico + tráfego pago",
+    creativeFormats: ["Erros comuns", "Rotina manhã/noite", "Produtos acessíveis"],
+    pageType: "Página visual com rotina, checklist e lista de compra",
+    strategicInsight: "Precisa evitar promessa dermatológica pesada; vender como rotina educativa e prática.",
     tags: ["beleza", "review", "checklist"],
-    adSignal: "Anuncios com rotina, erros comuns e produtos acessiveis",
+    adSignal: "Anúncios com rotina, erros comuns e produtos acessíveis",
     searchSignal: "Buscas por oleosidade, acne, manchas e protetor",
     trendSignal: "Assunto forte em criativos de beleza e reviews",
-    angle: "Organizar uma rotina simples por manha/noite, com erros para evitar e lista de compra.",
+    angle: "Organizar uma rotina simples por manhã/noite, com erros para evitar e lista de compra.",
   },
 ];
 
@@ -245,106 +548,106 @@ function getOpportunityBrief(product: TrendProduct) {
     `Angulo de venda: ${product.salesAngle || product.angle}`,
     `Canal recomendado: ${product.channel || "Organico + trafego pago"}`,
     `Formatos de criativo: ${(product.creativeFormats || [product.adSignal, product.trendSignal]).join(", ")}`,
-    `Tipo de pagina sugerida: ${product.pageType || "Landing curta com promessa clara, prova e checkout"}`,
-    `Insight estrategico: ${product.strategicInsight || product.trendSignal}`,
+    `Tipo de página sugerida: ${product.pageType || "Landing curta com promessa clara, prova e checkout"}`,
+    `Insight estratégico: ${product.strategicInsight || product.trendSignal}`,
   ].join("\n");
 }
 
 function buildProduct(niche: string, productType: string, audience: string, tone: string): ProductResult {
   const cleanNiche = niche.trim() || "marmita fit";
-  const cleanAudience = audience.trim() || "pessoas que querem vender comida saudavel";
+  const cleanAudience = audience.trim() || "pessoas que querem vender comida saudável";
   const cleanType = productType || productTypes[0];
   const cleanTone = tone || toneOptions[0];
-  const title = `${cleanType}: ${capitalize(cleanNiche)}`;
+  const title = `${displayText(cleanType)}: ${capitalize(cleanNiche)}`;
 
   return {
     title,
     subtitle: `Um produto digital completo para ajudar ${cleanAudience} a sair do zero em ${cleanNiche}.`,
-    promise: `Criar uma transformacao clara em ${cleanNiche}, com uma entrega simples de consumir, facil de vender e pronta para virar oferta.`,
+    promise: `Criar uma transformação clara em ${cleanNiche}, com uma entrega simples de consumir, fácil de vender e pronta para virar oferta.`,
     modules: [
-      `Diagnostico rapido: onde ${cleanAudience} estao travados hoje`,
+      `Diagnóstico rápido: onde ${cleanAudience} estão travados hoje`,
       `O plano principal aplicado em ${cleanNiche}`,
-      "Plano de execucao sem equipe, sem aparecer e sem conhecimento tecnico",
-      "Rotina de ativacao: produto, pagina, anuncio e primeira venda",
+      "Plano de execução sem equipe, sem aparecer e sem conhecimento técnico",
+      "Rotina de ativação: produto, página, anúncio e primeira venda",
       "Erros que fazem o iniciante desistir antes de vender",
     ],
     productBlueprint: [
-      "Capa com promessa direta e nome da transformacao",
-      "Pagina de boas-vindas com historia curta e promessa do produto",
+      "Capa com promessa direta e nome da transformação",
+      "Página de boas-vindas com história curta e promessa do produto",
       "Mapa visual dos passos: escolher nicho, montar produto, publicar oferta",
-      "Conteudo principal dividido em aulas curtas ou capitulos objetivos",
-      "Checklist final para confirmar que a entrega esta pronta para vender",
+      "Conteúdo principal dividido em aulas curtas ou capítulos objetivos",
+      "Checklist final para confirmar que a entrega está pronta para vender",
     ],
     productContent: [
       {
         title: "Boas-vindas e promessa",
-        body: `Este produto mostra para ${cleanAudience} como aplicar ${cleanNiche} de forma simples, com passos curtos, sem excesso de teoria e com foco no primeiro resultado pratico.`,
-        task: "Defina o objetivo principal da entrega e marque o primeiro passo que sera executado hoje.",
+        body: `Este produto mostra para ${cleanAudience} como aplicar ${cleanNiche} de forma simples, com passos curtos, sem excesso de teoria e com foco no primeiro resultado prático.`,
+        task: "Defina o objetivo principal da entrega e marque o primeiro passo que será executado hoje.",
       },
       {
-        title: "Diagnostico rapido",
-        body: "Antes de executar, identifique onde esta o principal bloqueio: falta de clareza, falta de rotina, oferta confusa ou dificuldade para transformar conhecimento em acao.",
-        task: "Preencha o diagnostico com 3 problemas atuais, 3 recursos disponiveis e 1 meta para os proximos 7 dias.",
+        title: "Diagnóstico rápido",
+        body: "Antes de executar, identifique onde esta o principal bloqueio: falta de clareza, falta de rotina, oferta confusa ou dificuldade para transformar conhecimento em ação.",
+        task: "Preencha o diagnóstico com 3 problemas atuais, 3 recursos disponíveis e 1 meta para os próximos 7 dias.",
       },
       {
         title: "Plano principal",
-        body: `A entrega central deve conduzir uma sequencia objetiva: preparar, organizar, executar, revisar e vender a transformacao criada com ${cleanNiche}.`,
-        task: "Siga o checklist do modulo e conclua uma versao simples do produto antes de tentar melhorar os detalhes.",
+        body: `A entrega central deve conduzir uma sequência objetiva: preparar, organizar, executar, revisar e vender a transformação criada com ${cleanNiche}.`,
+        task: "Siga o checklist do módulo e conclua uma versão simples do produto antes de tentar melhorar os detalhes.",
       },
       {
-        title: "Ativacao da oferta",
-        body: "Com a entrega pronta, o proximo passo e montar uma promessa clara, uma pagina simples e uma chamada direta para levar o comprador ate a decisao.",
-        task: "Use a copy criada no painel para publicar a primeira versao da pagina de venda.",
+        title: "Ativação da oferta",
+        body: "Com a entrega pronta, o próximo passo é montar uma promessa clara, uma página simples e uma chamada direta para levar o comprador até a decisão.",
+        task: "Use a copy criada no painel para publicar a primeira versão da página de venda.",
       },
     ],
     copyBlocks: {
-      hook: `Para tudo que voce esta fazendo: nos proximos minutos eu vou te mostrar como transformar ${cleanNiche} em um produto digital vendavel, mesmo que voce esteja comecando agora.`,
+      hook: `Para tudo que você esta fazendo: nos próximos minutos eu vou te mostrar como transformar ${cleanNiche} em um produto digital vendável, mesmo que você esteja comecando agora.`,
       headline: `Crie seu primeiro produto sobre ${cleanNiche} sem escrever tudo do zero`,
       bullets: [
-        `Ideal para ${cleanAudience} que querem uma entrega simples e rapida`,
-        "Estrutura pronta para produto, texto de vendas e pagina",
-        "Nao precisa aparecer, falar ingles ou contratar equipe",
-        "Pensado para vender no automatico depois da configuracao inicial",
+        `Ideal para ${cleanAudience} que querem uma entrega simples e rápida`,
+        "Estrutura pronta para produto, texto de vendas e página",
+        "Não precisa aparecer, falar ingles ou contratar equipe",
+        "Pensado para vender no automático depois da configuração inicial",
       ],
       cta: "Quero criar meu produto agora",
     },
     salesPage: {
       headline: `Transforme ${cleanNiche} em uma oferta simples, clara e pronta para vender`,
-      subheadline: `Um caminho guiado para ${cleanAudience} criarem uma entrega objetiva, uma mensagem persuasiva e uma pagina de venda sem complicar.`,
+      subheadline: `Um caminho guiado para ${cleanAudience} criarem uma entrega objetiva, uma mensagem persuasiva e uma página de venda sem complicar.`,
       sections: [
         {
           title: "Para quem e",
-          body: `Criado para ${cleanAudience} que querem sair da ideia solta e montar uma entrega vendavel em ${cleanNiche}.`,
+          body: `Criado para ${cleanAudience} que querem sair da ideia solta e montar uma entrega vendável em ${cleanNiche}.`,
         },
         {
           title: "O problema",
-          body: "A maioria das pessoas demora porque tenta criar algo grande demais, sem promessa clara e sem uma sequencia simples de execucao.",
+          body: "A maioria das pessoas demora porque tenta criar algo grande demais, sem promessa clara e sem uma sequência simples de execução.",
         },
         {
-          title: "A solucao",
-          body: `O ${cleanType.toLowerCase()} organiza a transformacao em passos curtos, com estrutura, exemplos e acoes praticas para aplicar imediatamente.`,
+          title: "A solução",
+          body: `O ${cleanType.toLowerCase()} organiza a transformação em passos curtos, com estrutura, exemplos e ações práticas para aplicar imediatamente.`,
         },
         {
           title: "O que recebe",
-          body: "Estrutura da entrega, roteiro de aplicacao, checklist final, copy de vendas e direcao para montar a pagina.",
+          body: "Estrutura da entrega, roteiro de aplicação, checklist final, copy de vendas e direção para montar a página.",
         },
       ],
       cta: "Quero acessar agora",
     },
     landingSections: [
       `Hero: ${title} + promessa de resultado sem complexidade`,
-      "Prova: mostrar print, numero ou exemplo de transformacao possivel",
-      "Dor: explicar por que afiliado, dropshipping e tentativa aleatoria travam o iniciante",
-      "Mecanismo: apresentar a solucao como a forma mais simples de chegar no resultado",
-      "Oferta: produto, suporte, agente de copy e prompts de alta conversao",
-      "Garantia: 90 dias com condicao clara de aplicacao",
+      "Prova: mostrar print, número ou exemplo de transformação possível",
+      "Dor: explicar por que afiliado, dropshipping e tentativa aleatória travam o iniciante",
+      "Mecanismo: apresentar a solução como a forma mais simples de chegar no resultado",
+      "Oferta: produto, suporte, agente de copy e prompts de alta conversão",
+      "Garantia: 90 dias com condição clara de aplicação",
       "CTA final: vagas limitadas e chamada para agir hoje",
     ],
     prompts: [
-      `Crie a estrutura de um produto digital chamado "${title}" para ${cleanAudience}, com tom ${cleanTone} e sem usar nomes genericos para a entrega.`,
-      `Escreva uma pagina de vendas para "${title}" usando gancho, prova, historia, mecanismo, oferta, garantia e CTA.`,
-      `Transforme este produto em uma apresentacao visual com capa, promessa, capitulos e checklist final.`,
-      `Crie uma pagina de vendas para "${title}" com secao hero, prova, beneficios, garantia e botao de compra.`,
+      `Crie a estrutura de um produto digital chamado "${title}" para ${cleanAudience}, com tom ${cleanTone} e sem usar nomes genéricos para a entrega.`,
+      `Escreva uma página de vendas para "${title}" usando gancho, prova, história, mecanismo, oferta, garantia e CTA.`,
+      `Transforme este produto em uma apresentação visual com capa, promessa, capítulos e checklist final.`,
+      `Crie uma página de vendas para "${title}" com seção hero, prova, benefícios, garantia e botão de compra.`,
     ],
   };
 }
@@ -416,9 +719,9 @@ function buildCopyText(product: ProductResult) {
   const adCopies = buildAdCopies(product);
 
   return [
-    `COPY DA PAGINA DE VENDAS - ${product.title}`,
+    `COPY DA PÁGINA DE VENDAS - ${product.title}`,
     "",
-    "ROTEIROS PARA CRIATIVOS EM VIDEO",
+    "ROTEIROS PARA CRIATIVOS EM VÍDEO",
     "",
     ...videoCreatives.flatMap((creative, index) => [
       `CRIATIVO ${index + 1} - ${creative.angle.toUpperCase()}`,
@@ -434,19 +737,19 @@ function buildCopyText(product: ProductResult) {
       creative.screenText,
       "",
     ]),
-    "COPY PARA ANUNCIOS",
+    "COPY PARA ANÚNCIOS",
     "",
     ...adCopies.flatMap((ad, index) => [
-      `ANUNCIO ${index + 1} - ${ad.angle.toUpperCase()}`,
+      `ANÚNCIO ${index + 1} - ${ad.angle.toUpperCase()}`,
       "TEXTO PRINCIPAL",
       ad.primaryText,
-      "TITULO",
+      "TÍTULO",
       ad.headline,
-      "DESCRICAO",
+      "DESCRIÇÃO",
       ad.description,
       "",
     ]),
-    "COPY DA PAGINA",
+    "COPY DA PÁGINA",
     "",
     "GANCHO",
     product.copyBlocks.hook,
@@ -460,7 +763,7 @@ function buildCopyText(product: ProductResult) {
     "CHAMADA",
     product.copyBlocks.cta,
     "",
-    "ESTRUTURA DA PAGINA",
+    "ESTRUTURA DA PÁGINA",
     `Headline: ${product.salesPage.headline}`,
     `Subheadline: ${product.salesPage.subheadline}`,
     ...product.salesPage.sections.flatMap((section, index) => [
@@ -495,26 +798,26 @@ function inferBuyerPain(product: ProductResult) {
   const text = `${product.title} ${product.subtitle} ${product.promise}`.toLowerCase();
 
   if (text.includes("fornecedor") || text.includes("revender")) {
-    return "Quer vender, mas ainda nao sabe onde comprar com preco bom e margem para lucrar?";
+    return "Quer vender, mas ainda não sabe onde comprar com preço bom e margem para lucrar?";
   }
 
   if (text.includes("financeir") || text.includes("dinheiro") || text.includes("orcamento")) {
-    return "Voce ganha dinheiro, mas sente que o mes nunca fecha e nao sabe exatamente para onde ele vai?";
+    return "Você ganha dinheiro, mas sente que o mês nunca fecha e não sabe exatamente para onde ele vai?";
   }
 
   if (text.includes("alongamento") || text.includes("corpo") || text.includes("dor")) {
-    return "Seu corpo vive travado e voce sente que precisa de uma rotina simples para voltar a se movimentar melhor?";
+    return "Seu corpo vive travado e você sente que precisa de uma rotina simples para voltar a se movimentar melhor?";
   }
 
   if (text.includes("marmita") || text.includes("bolo") || text.includes("comida")) {
-    return "Voce quer vender comida, mas ainda fica em duvida sobre cardapio, preco e primeiros pedidos?";
+    return "Você quer vender comida, mas ainda fica em dúvida sobre cardápio, preço e primeiros pedidos?";
   }
 
   if (text.includes("noiva") || text.includes("casamento")) {
-    return "Voce quer organizar tudo com mais seguranca, sem se perder em gastos, prazos e decisoes de ultima hora?";
+    return "Você quer organizar tudo com mais segurança, sem se perder em gastos, prazos e decisões de última hora?";
   }
 
-  return "Voce sabe que precisa resolver isso, mas ainda nao encontrou um caminho simples, organizado e facil de aplicar?";
+  return "Você sabe que precisa resolver isso, mas ainda não encontrou um caminho simples, organizado e fácil de aplicar?";
 }
 
 function inferBuyerOutcome(product: ProductResult) {
@@ -524,7 +827,7 @@ function inferBuyerOutcome(product: ProductResult) {
   const path = [firstModule, secondModule].filter(Boolean).join(", ");
 
   if (path) {
-    return `seguir um passo a passo com ${path} e transformar ${title} em um plano pratico`;
+    return `seguir um passo a passo com ${path} e transformar ${title} em um plano prático`;
   }
 
   return `aplicar ${title} com mais clareza e menos tentativa e erro`;
@@ -532,7 +835,7 @@ function inferBuyerOutcome(product: ProductResult) {
 
 function withBrief(value: string, brief = "") {
   const cleanBrief = brief.trim();
-  return cleanBrief ? `${value} Direcao pedida: ${cleanBrief}` : value;
+  return cleanBrief ? `${value} Direção pedida: ${cleanBrief}` : value;
 }
 
 function buildVideoCreatives(product: ProductResult, brief = ""): VideoCreative[] {
@@ -546,20 +849,20 @@ function buildVideoCreatives(product: ProductResult, brief = ""): VideoCreative[
     {
       angle: "Dor direta",
       hook: pain,
-      context: `Muita gente tenta resolver no improviso, pula etapas importantes e acaba desistindo porque nao tem um caminho claro para seguir.`,
+      context: `Muita gente tenta resolver no improviso, pula etapas importantes e acaba desistindo porque não tem um caminho claro para seguir.`,
       development: withBrief(
-        `${title} mostra como ${outcome}. A ideia e sair da confusao e aplicar uma sequencia objetiva, sem depender de teoria pesada ou informacoes espalhadas.`,
+        `${title} mostra como ${outcome}. A ideia é sair da confusão e aplicar uma sequência objetiva, sem depender de teoria pesada ou informações espalhadas.`,
         brief,
       ),
-      cta: `Clique em saiba mais e veja como comecar com ${title.toLowerCase()} ainda hoje.`,
+      cta: `Clique em saiba mais e veja como começar com ${title.toLowerCase()} ainda hoje.`,
       screenText: `Comece com ${title}`,
     },
     {
       angle: "Resultado desejado",
-      hook: `Imagine ter um plano simples para resolver ${title.toLowerCase()} sem ficar perdido no comeco.`,
-      context: `O que costuma travar nao e falta de vontade. E nao saber o que fazer primeiro, o que evitar e como transformar informacao em acao pratica.`,
+      hook: `Imagine ter um plano simples para resolver ${title.toLowerCase()} sem ficar perdido no começo.`,
+      context: `O que costuma travar não é falta de vontade. É não saber o que fazer primeiro, o que evitar e como transformar informação em ação prática.`,
       development: withBrief(
-        `${firstBenefit}. Alem disso, ${secondBenefit.toLowerCase()}. Tudo foi estruturado para facilitar a execucao e ajudar a pessoa a avancar com seguranca.`,
+        `${firstBenefit}. Além disso, ${secondBenefit.toLowerCase()}. Tudo foi estruturado para facilitar a execução e ajudar a pessoa a avançar com segurança.`,
         brief,
       ),
       cta: `Clique em saiba mais para conhecer ${title} e aplicar o passo a passo.`,
@@ -567,10 +870,10 @@ function buildVideoCreatives(product: ProductResult, brief = ""): VideoCreative[
     },
     {
       angle: "Erro comum",
-      hook: `O erro que faz muita gente continuar travada em ${title.toLowerCase()} e tentar resolver tudo sem metodo.`,
+      hook: `O erro que faz muita gente continuar travada em ${title.toLowerCase()} e tentar resolver tudo sem método.`,
       context: `Quando a pessoa tenta juntar dicas soltas, ela perde tempo, fica insegura e quase sempre abandona antes de ver resultado.`,
       development: withBrief(
-        `${title} organiza o processo em etapas claras, com orientacao pratica e foco no que precisa ser feito agora para sair da estagnacao.`,
+        `${title} organiza o processo em etapas claras, com orientação prática e foco no que precisa ser feito agora para sair da estagnação.`,
         brief,
       ),
       cta: `Clique em saiba mais e veja como aplicar ${title.toLowerCase()} com mais clareza.`,
@@ -592,34 +895,34 @@ function buildAdCopies(product: ProductResult, brief = ""): AdCopy[] {
       angle: "Dor direta",
       primaryText: [
         pain,
-        `${cleanTitle} foi criado para te guiar com uma sequencia simples, direta e facil de acompanhar.`,
-        `Voce vai entender como ${outcome}, sem depender de informacoes soltas ou tentativa e erro.`,
-        `Clique em saiba mais e veja como comecar hoje.${briefLine}`,
+        `${cleanTitle} foi criado para te guiar com uma sequência simples, direta e fácil de acompanhar.`,
+        `Você vai entender como ${outcome}, sem depender de informações soltas ou tentativa e erro.`,
+        `Clique em saiba mais e veja como começar hoje.${briefLine}`,
       ].join("\n"),
       headline: `${cleanTitle} passo a passo`,
-      description: "Um caminho simples para comecar com mais clareza.",
+      description: "Um caminho simples para começar com mais clareza.",
     },
     {
-      angle: "Beneficio pratico",
+      angle: "Benefício prático",
       primaryText: [
-        `Se voce quer uma forma mais simples de aplicar ${cleanTitle.toLowerCase()}, este material foi feito para isso.`,
+        `Se você quer uma forma mais simples de aplicar ${cleanTitle.toLowerCase()}, este material foi feito para isso.`,
         `${firstBenefit}.`,
         `${secondBenefit}.`,
-        `Acesse agora e veja como transformar uma situacao confusa em um plano claro de execucao.${briefLine}`,
+        `Acesse agora e veja como transformar uma situação confusa em um plano claro de execução.${briefLine}`,
       ].join("\n"),
       headline: "Saia do improviso",
-      description: "Metodo pratico para aplicar no seu ritmo.",
+      description: "Método prático para aplicar no seu ritmo.",
     },
     {
       angle: "Antes e depois",
       primaryText: [
-        `Antes: duvidas, excesso de informacao e dificuldade para saber por onde comecar.`,
-        `Depois: um passo a passo claro para aplicar ${cleanTitle.toLowerCase()} com mais seguranca.`,
+        `Antes: dúvidas, excesso de informação e dificuldade para saber por onde começar.`,
+        `Depois: um passo a passo claro para aplicar ${cleanTitle.toLowerCase()} com mais segurança.`,
         `${product.promise}`,
         `Clique em saiba mais e veja se este material faz sentido para o seu momento.${briefLine}`,
       ].join("\n"),
-      headline: "Organize o proximo passo",
-      description: "Conteudo direto para aplicar sem complicar.",
+      headline: "Organize o próximo passo",
+      description: "Conteúdo direto para aplicar sem complicar.",
     },
   ];
 }
@@ -637,7 +940,7 @@ function formatAdCopies(ads: AdCopy[]) {
   return ads
     .map(
       (ad, index) =>
-        `Anuncio ${index + 1} - ${ad.angle}\n\nTexto principal:\n${ad.primaryText}\n\nTitulo:\n${ad.headline}\n\nDescricao:\n${ad.description}`,
+        `Anúncio ${index + 1} - ${ad.angle}\n\nTexto principal:\n${ad.primaryText}\n\nTitulo:\n${ad.headline}\n\nDescricao:\n${ad.description}`,
     )
     .join("\n\n---\n\n");
 }
@@ -707,7 +1010,7 @@ const projectThemes: ProjectTheme[] = [
   },
   {
     name: "beleza",
-    label: "Beleza pratica",
+    label: "Beleza prática",
     accent: "#ec4899",
     accentInk: "#37051f",
     bg: "#fff5fa",
@@ -721,7 +1024,7 @@ const projectThemes: ProjectTheme[] = [
   },
   {
     name: "saude",
-    label: "Rotina saudavel",
+    label: "Rotina saudável",
     accent: "#22c55e",
     accentInk: "#06230f",
     bg: "#f2fbf5",
@@ -782,16 +1085,16 @@ function resolveProductFormat(product: ProductResult): ProductFormat {
       name: "checklist",
       label: "Checklist operacional",
       pdfMapTitle: "CHECKLIST MESTRE",
-      pdfPromiseTitle: "PROMESSA E CRITERIOS",
+      pdfPromiseTitle: "PROMESSA E CRITÉRIOS",
       pdfIntroTitle: "Como validar a entrega",
       pdfIntroKicker: "validacao",
-      pdfExecutionTitle: "Blocos de verificacao",
+      pdfExecutionTitle: "Blocos de verificação",
       pdfExecutionKicker: "checklist",
-      pdfPracticeTitle: "Checklist de aplicacao",
+      pdfPracticeTitle: "Checklist de aplicação",
       pdfPracticeKicker: "execucao",
-      pdfTrackerTitle: "Controle rapido",
+      pdfTrackerTitle: "Controle rápido",
       pdfTrackerKicker: "progresso",
-      pdfTrackerIntro: "Marque cada item concluido e registre o que ainda precisa ser ajustado antes da proxima aplicacao.",
+      pdfTrackerIntro: "Marque cada item concluido e registre o que ainda precisa ser ajustado antes da próxima aplicação.",
       landing: "direct",
     };
   }
@@ -799,18 +1102,18 @@ function resolveProductFormat(product: ProductResult): ProductFormat {
   if (/mapa|guia|financeir|organizacao|orcamento|dinheiro|plano de acao|gestao/i.test(value)) {
     return {
       name: "playbook",
-      label: "Playbook pratico",
-      pdfMapTitle: "MAPA DE DECISAO",
-      pdfPromiseTitle: "DIRECAO DA ENTREGA",
+      label: "Playbook prático",
+      pdfMapTitle: "MAPA DE DECISÃO",
+      pdfPromiseTitle: "DIREÇÃO DA ENTREGA",
       pdfIntroTitle: "Ponto de partida",
       pdfIntroKicker: "diagnostico",
-      pdfExecutionTitle: "Plano de acao",
+      pdfExecutionTitle: "Plano de ação",
       pdfExecutionKicker: "prioridades",
-      pdfPracticeTitle: "Quadro de decisao",
+      pdfPracticeTitle: "Quadro de decisão",
       pdfPracticeKicker: "aplicacao",
       pdfTrackerTitle: "Plano de acompanhamento",
       pdfTrackerKicker: "revisao",
-      pdfTrackerIntro: "Use o quadro para acompanhar decisoes, ajustes e proximas acoes. A cada ciclo, revise o que gerou mais clareza.",
+      pdfTrackerIntro: "Use o quadro para acompanhar decisões, ajustes e próximas ações. A cada ciclo, revise o que gerou mais clareza.",
       landing: "editorial",
     };
   }
@@ -820,15 +1123,15 @@ function resolveProductFormat(product: ProductResult): ProductFormat {
     label: "Protocolo guiado",
     pdfMapTitle: "MAPA DA ENTREGA",
     pdfPromiseTitle: "PROMESSA",
-    pdfIntroTitle: "Antes de comecar",
+    pdfIntroTitle: "Antes de começar",
     pdfIntroKicker: "preparacao",
-    pdfExecutionTitle: "Plano de execucao",
+    pdfExecutionTitle: "Plano de execução",
     pdfExecutionKicker: "passo a passo",
-    pdfPracticeTitle: "Fichas praticas",
+    pdfPracticeTitle: "Fichas práticas",
     pdfPracticeKicker: "aplicacao",
     pdfTrackerTitle: "Plano de acompanhamento",
     pdfTrackerKicker: "acompanhamento",
-    pdfTrackerIntro: "Use esta pagina para acompanhar consistencia. Marque cada dia concluido e anote rapidamente o que mudou.",
+    pdfTrackerIntro: "Use esta página para acompanhar consistência. Marque cada dia concluido e anote rapidamente o que mudou.",
     landing: "guided",
   };
 }
@@ -838,11 +1141,11 @@ function resolveVisualDirection(product: ProductResult, format = resolveProductF
 
   if (format.name === "checklist") {
     return {
-      label: "Catalogo premium de oportunidades",
-      coverStyle: "Capa comercial forte, com sensacao de anuncio, mockup do produto, chamada grande e contraste alto.",
-      internalStyle: "Paginas em grade, divisorias por categoria, fichas curtas, campos de verificacao e visual de diretorio.",
-      contentArchitecture: "Aviso inicial, recomendacoes de seguranca, categorias, catalogo principal, criterios de escolha e controle de aplicacao.",
-      imagePrompt: `Capa premium para produto digital sobre ${product.title}, estilo catalogo comercial, pessoa feliz segurando caixa ou produto, fundo de deposito ou loja, contraste alto, textos grandes, cores fortes, visual de venda.`,
+      label: "Catálogo premium de oportunidades",
+      coverStyle: "Capa comercial forte, com sensação de anúncio, mockup do produto, chamada grande e contraste alto.",
+      internalStyle: "Páginas em grade, divisórias por categoria, fichas curtas, campos de verificação e visual de diretório.",
+      contentArchitecture: "Aviso inicial, recomendações de segurança, categorias, catálogo principal, critérios de escolha e controle de aplicação.",
+      imagePrompt: `Capa premium para produto digital sobre ${product.title}, estilo catálogo comercial, pessoa feliz segurando caixa ou produto, fundo de deposito ou loja, contraste alto, textos grandes, cores fortes, visual de venda.`,
     };
   }
 
@@ -850,18 +1153,18 @@ function resolveVisualDirection(product: ProductResult, format = resolveProductF
     return {
       label: "Guia editorial ilustrado",
       coverStyle: "Capa elegante com imagem central do nicho, tipografia editorial grande, respiro e atmosfera aspiracional.",
-      internalStyle: "Capitulos longos, paginas com imagem de abertura, tabelas, comparativos, cronogramas e blocos de dica.",
-      contentArchitecture: "Introducao narrativa, capitulos, exemplos praticos, tabelas de decisao, cronogramas e checklist final.",
-      imagePrompt: `Capa editorial elegante para guia chamado ${product.title}, imagem realista ligada ao nicho, luz natural, composicao premium, tipografia sofisticada, fundo limpo, visual de revista.`,
+      internalStyle: "Capítulos longos, páginas com imagem de abertura, tabelas, comparativos, cronogramas e blocos de dica.",
+      contentArchitecture: "Introdução narrativa, capítulos, exemplos práticos, tabelas de decisão, cronogramas e checklist final.",
+      imagePrompt: `Capa editorial elegante para guia chamado ${product.title}, imagem realista ligada ao nicho, luz natural, composição premium, tipografia sofisticada, fundo limpo, visual de revista.`,
     };
   }
 
   return {
-    label: "Manual pratico guiado",
-    coverStyle: "Capa objetiva de manual, promessa clara, blocos visuais fortes e sensacao de acompanhamento passo a passo.",
-    internalStyle: "Sequencia de etapas, fichas praticas, plano de dias, paginas de registro e checklist de progresso.",
-    contentArchitecture: "Preparacao, passo a passo, fichas de aplicacao, acompanhamento e revisao final.",
-    imagePrompt: `Capa de manual pratico para ${product.title}, visual limpo e moderno, pessoa aplicando a rotina, elementos de checklist e progresso, cores do nicho, composicao profissional.`,
+    label: "Manual prático guiado",
+    coverStyle: "Capa objetiva de manual, promessa clara, blocos visuais fortes e sensação de acompanhamento passo a passo.",
+    internalStyle: "Sequência de etapas, fichas práticas, plano de dias, páginas de registro e checklist de progresso.",
+    contentArchitecture: "Preparação, passo a passo, fichas de aplicação, acompanhamento e revisão final.",
+    imagePrompt: `Capa de manual prático para ${product.title}, visual limpo e moderno, pessoa aplicando a rotina, elementos de checklist e progresso, cores do nicho, composição profissional.`,
   };
 }
 
@@ -886,25 +1189,25 @@ function buildReviewText(product: ProductResult) {
   const visual = resolveVisualDirection(product, format);
 
   return [
-    `REVISAO DA ENTREGA - ${product.title}`,
+    `REVISÃO DA ENTREGA - ${product.title}`,
     "",
-    "Status: pacote gerado com produto, copy, pagina de vendas, prompts e dados do projeto.",
+    "Status: pacote gerado com produto, copy, página de vendas, prompts e dados do projeto.",
     "",
-    "Direcao visual aplicada",
+    "Direção visual aplicada",
     `- Tema: ${theme.label}`,
     `- Formato do pacote: ${format.label}`,
-    `- Direcao criativa: ${visual.label}`,
+    `- Direção criativa: ${visual.label}`,
     `- Cor principal: ${theme.accent}`,
     `- Fundo do produto: ${theme.bg}`,
     `- Capa: ${visual.coverStyle}`,
     `- Interno: ${visual.internalStyle}`,
     "",
-    "Checklist de coerencia",
+    "Checklist de coerência",
     `- Promessa principal: ${product.promise}`,
-    `- Headline da pagina: ${product.salesPage.headline}`,
+    `- Headline da página: ${product.salesPage.headline}`,
     `- CTA principal: ${product.copyBlocks.cta}`,
-    "- Conferir se o exemplo, a promessa e a pagina falam com o mesmo publico.",
-    "- Antes de publicar, inserir link de checkout real nos botoes da pagina HTML.",
+    "- Conferir se o exemplo, a promessa e a página falam com o mesmo público.",
+    "- Antes de publicar, inserir link de checkout real nos botões da página HTML.",
   ].join("\n");
 }
 
@@ -914,20 +1217,20 @@ function buildVisualDirectionText(product: ProductResult) {
   const visual = resolveVisualDirection(product, format);
 
   return [
-    `DIRECAO VISUAL - ${product.title}`,
+    `DIREÇÃO VISUAL - ${product.title}`,
     "",
     `Formato: ${format.label}`,
-    `Direcao criativa: ${visual.label}`,
+    `Direção criativa: ${visual.label}`,
     `Tema de cor: ${theme.label}`,
     `Cor principal: ${theme.accent}`,
     "",
     "Capa",
     visual.coverStyle,
     "",
-    "Paginas internas",
+    "Páginas internas",
     visual.internalStyle,
     "",
-    "Arquitetura do conteudo",
+    "Arquitetura do conteúdo",
     visual.contentArchitecture,
     "",
     "Prompt sugerido para imagem de capa",
@@ -948,7 +1251,7 @@ function buildProductHtml(product: ProductResult) {
         <article>
           <small>ITEM ${String(index + 1).padStart(2, "0")}</small>
           <h3>${escapeHtml(item)}</h3>
-          <p>Validar criterio, aplicacao e proximo passo antes de avancar.</p>
+          <p>Validar critério, aplicação e próximo passo antes de avançar.</p>
         </article>`,
     )
     .join("");
@@ -1001,12 +1304,12 @@ function buildProductHtml(product: ProductResult) {
   <main>
     <section class="cover">
       <div class="mockup"><span class="badge">${escapeHtml(visual.label)}</span><h2>${escapeHtml(product.title)}</h2></div>
-      <div><span class="badge">Campeao de aplicacao</span><h1>${escapeHtml(product.title)}</h1><p>${escapeHtml(product.promise)}</p></div>
+      <div><span class="badge">Campeão de aplicação</span><h1>${escapeHtml(product.title)}</h1><p>${escapeHtml(product.promise)}</p></div>
     </section>
     <section class="notice"><h2>Leia antes de aplicar</h2><p>${escapeHtml(product.subtitle)}</p><ul>${modules}</ul></section>
-    <section class="category"><h2>Catalogo principal</h2></section>
+    <section class="category"><h2>Catálogo principal</h2></section>
     <section class="grid">${directoryItems}</section>
-    <section class="notice"><h2>Criterios de validacao</h2><ul>${blueprint}</ul></section>
+    <section class="notice"><h2>Critérios de validação</h2><ul>${blueprint}</ul></section>
   </main>
 </body>
 </html>`;
@@ -1043,9 +1346,9 @@ function buildProductHtml(product: ProductResult) {
 <body>
   <main>
     <section class="cover"><div class="script">${escapeHtml(product.title)}</div><p class="subtitle">${escapeHtml(product.promise)}</p><div class="photo"></div></section>
-    <section class="chapter"><div class="hero-image"></div><h2>Introducao</h2><p>${escapeHtml(product.subtitle)}</p><p class="quote">${escapeHtml(product.promise)}</p></section>
-    <section class="chapter"><h2>Capitulos principais</h2><ol>${modules}</ol></section>
-    <section class="chapter"><h2>Quadro de decisao</h2><table><thead><tr><th>Etapa</th><th>Prioridade</th></tr></thead><tbody>${product.productContent
+    <section class="chapter"><div class="hero-image"></div><h2>Introdução</h2><p>${escapeHtml(product.subtitle)}</p><p class="quote">${escapeHtml(product.promise)}</p></section>
+    <section class="chapter"><h2>Capítulos principais</h2><ol>${modules}</ol></section>
+    <section class="chapter"><h2>Quadro de decisão</h2><table><thead><tr><th>Etapa</th><th>Prioridade</th></tr></thead><tbody>${product.productContent
       .slice(0, 5)
       .map((block) => `<tr><td>${escapeHtml(block.title)}</td><td>${escapeHtml(block.task)}</td></tr>`)
       .join("")}</tbody></table></section>
@@ -1099,7 +1402,7 @@ function buildProductHtml(product: ProductResult) {
       <h2>Promessa da entrega</h2>
       <p>${escapeHtml(product.subtitle)}</p>
       <div class="grid">
-        <div class="card"><h2>Modulos sugeridos</h2><ol>${modules}</ol></div>
+        <div class="card"><h2>Módulos sugeridos</h2><ol>${modules}</ol></div>
         <div class="card"><h2>Estrutura da entrega</h2><ul>${blueprint}</ul></div>
       </div>
       ${blocks}
@@ -1113,14 +1416,14 @@ function buildSalesPageHtml(product: ProductResult) {
   const theme = resolveProjectTheme(product);
   const format = resolveProductFormat(product);
   const configComment =
-    '<!-- CONFIGURACAO: antes de publicar, troque todos os links href="#checkout" pelo link real do seu checkout. -->';
+    '<!-- CONFIGURAÇÃO: antes de publicar, troque todos os links href="#checkout" pelo link real do seu checkout. -->';
   const sections = product.salesPage.sections.slice(0, 6);
   const bullets = product.copyBlocks.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join("");
   const trustItems = [
     "Acesso imediato",
     "Produto digital",
-    "Aplicacao passo a passo",
-    "Material editavel",
+    "Aplicação passo a passo",
+    "Material editável",
   ].map((item) => `<span>${escapeHtml(item)}</span>`).join("");
   const modules = product.modules
     .slice(0, 6)
@@ -1163,19 +1466,19 @@ function buildSalesPageHtml(product: ProductResult) {
   const faqItems = [
     {
       question: "Como vou receber o acesso?",
-      answer: "Depois da compra, voce recebe o material principal e pode iniciar pela primeira etapa indicada na entrega.",
+      answer: "Depois da compra, você recebe o material principal e pode iniciar pela primeira etapa indicada na entrega.",
     },
     {
-      question: "Preciso ter experiencia?",
-      answer: "Nao. A estrutura foi criada para comecar pelo basico, seguir uma ordem clara e aplicar uma etapa por vez.",
+      question: "Preciso ter experiência?",
+      answer: "Não. A estrutura foi criada para começar pelo básico, seguir uma ordem clara e aplicar uma etapa por vez.",
     },
     {
       question: "Em quanto tempo consigo aplicar?",
-      answer: "A proposta e usar uma rotina simples e objetiva. O tempo exato depende do tema, mas a entrega foi pensada para execucao rapida.",
+      answer: "A proposta e usar uma rotina simples e objetiva. O tempo exato depende do tema, mas a entrega foi pensada para execução rápida.",
     },
     {
-      question: "E se eu nao souber por onde comecar?",
-      answer: "Comece pelo diagnostico ou preparacao inicial, siga o passo a passo e marque o progresso no checklist.",
+      question: "E se eu não souber por onde começar?",
+      answer: "Comece pelo diagnóstico ou preparação inicial, siga o passo a passo e marque o progresso no checklist.",
     },
   ]
     .map(
@@ -1245,8 +1548,8 @@ function buildSalesPageHtml(product: ProductResult) {
       <aside class="product"><span>${escapeHtml(theme.label)}</span><strong>${escapeHtml(product.title)}</strong><p>${escapeHtml(product.promise)}</p></aside>
     </div>
   </header>
-  <section class="light"><div class="wrap split"><div><p class="eyebrow">Diagnostico</p><h2>Veja exatamente o que precisa sair do papel.</h2></div><div class="cards">${salesSections}</div></div></section>
-  <section class="band"><div class="wrap split"><div><p class="eyebrow">Aplicacao</p><h2>Uma sequencia de verificacao para executar com clareza.</h2><p>${escapeHtml(product.subtitle)}</p></div><div class="modules">${modules}</div></div></section>
+  <section class="light"><div class="wrap split"><div><p class="eyebrow">Diagnóstico</p><h2>Veja exatamente o que precisa sair do papel.</h2></div><div class="cards">${salesSections}</div></div></section>
+  <section class="band"><div class="wrap split"><div><p class="eyebrow">Aplicação</p><h2>Uma sequência de verificação para executar com clareza.</h2><p>${escapeHtml(product.subtitle)}</p></div><div class="modules">${modules}</div></div></section>
   <section class="light check" id="conteudo"><div class="wrap split"><div><p class="eyebrow">O que recebe</p><h2>Itens objetivos para usar, marcar e revisar.</h2></div><ul>${deliverables}</ul></div></section>
   <section class="band"><div class="wrap"><div class="faq">${faqItems}</div></div></section>
   <section id="checkout"><div class="wrap"><div class="offer"><p class="eyebrow">Acesso imediato</p><h2>${escapeHtml(product.copyBlocks.headline)}</h2><p>${escapeHtml(product.copyBlocks.hook)}</p><a class="button" href="#checkout">${escapeHtml(product.copyBlocks.cta)}</a></div></div></section>
@@ -1298,8 +1601,8 @@ function buildSalesPageHtml(product: ProductResult) {
 <body>
   <header><div class="wrap hero"><div><p class="eyebrow">${escapeHtml(format.label)}</p><h1>${escapeHtml(product.salesPage.headline)}</h1><p>${escapeHtml(product.salesPage.subheadline)}</p><a class="button" href="#checkout">${escapeHtml(product.salesPage.cta)}</a></div><aside class="note"><strong>${escapeHtml(product.title)}</strong><p>${escapeHtml(product.promise)}</p></aside></div></header>
   <div class="strip">${trustItems}</div>
-  <section><div class="wrap split"><div><p class="eyebrow">Contexto</p><h2>O problema nao e falta de informacao. E falta de ordem.</h2></div><div class="timeline">${salesSections}</div></div></section>
-  <section class="dark"><div class="wrap split"><div><p class="eyebrow">Metodo de aplicacao</p><h2>Um caminho com decisoes claras e proximas acoes.</h2><p>${escapeHtml(product.subtitle)}</p></div><div class="timeline">${modules}</div></div></section>
+  <section><div class="wrap split"><div><p class="eyebrow">Contexto</p><h2>O problema não é falta de informação. É falta de ordem.</h2></div><div class="timeline">${salesSections}</div></div></section>
+  <section class="dark"><div class="wrap split"><div><p class="eyebrow">Método de aplicação</p><h2>Um caminho com decisões claras e próximas ações.</h2><p>${escapeHtml(product.subtitle)}</p></div><div class="timeline">${modules}</div></div></section>
   <section id="conteudo"><div class="wrap"><p class="eyebrow">O que recebe</p><h2>Material organizado para consultar e aplicar.</h2><ul class="deliver">${deliverables}</ul></div></section>
   <section><div class="wrap split"><div><p class="eyebrow">Perguntas comuns</p><h2>Antes de decidir</h2></div><div class="timeline">${faqItems}</div></div></section>
   <section id="checkout"><div class="wrap"><div class="offer"><p class="eyebrow">Acesso imediato</p><h2>${escapeHtml(product.copyBlocks.headline)}</h2><p>${escapeHtml(product.copyBlocks.hook)}</p><a class="button" href="#checkout">${escapeHtml(product.copyBlocks.cta)}</a></div></div></section>
@@ -1420,7 +1723,7 @@ function buildSalesPageHtml(product: ProductResult) {
   <section class="dark-band">
     <div class="wrap split">
       <div class="section-head">
-        <p class="eyebrow">A solucao</p>
+        <p class="eyebrow">A solução</p>
         <h2>Uma entrega simples, direta e organizada para aplicar passo a passo.</h2>
         <p>${escapeHtml(product.promise)}</p>
         <a class="button" href="#checkout">${escapeHtml(product.copyBlocks.cta)}</a>
@@ -1435,7 +1738,7 @@ function buildSalesPageHtml(product: ProductResult) {
     <div class="wrap">
       <div class="section-head">
         <p class="eyebrow">O que recebe</p>
-        <h2>Conteudo pronto para sair da teoria e entrar na execucao.</h2>
+        <h2>Conteúdo pronto para sair da teoria e entrar na execução.</h2>
         <p>${escapeHtml(product.subtitle)}</p>
       </div>
       <ul class="deliver-grid">${deliverables}</ul>
@@ -1446,7 +1749,7 @@ function buildSalesPageHtml(product: ProductResult) {
     <div class="wrap">
       <div class="section-head">
         <p class="eyebrow">Por dentro da entrega</p>
-        <h2>Veja como o material conduz a aplicacao.</h2>
+        <h2>Veja como o material conduz a aplicação.</h2>
       </div>
       <div class="content-stack">
         ${contentBlocks}
@@ -1458,14 +1761,14 @@ function buildSalesPageHtml(product: ProductResult) {
     <div class="wrap split">
       <div class="section-head">
         <p class="eyebrow">Por que funciona</p>
-        <h2>Menos excesso, mais clareza de acao.</h2>
-        <p>A entrega foi estruturada para reduzir confusao, mostrar a sequencia correta e transformar a decisao em proximos passos simples.</p>
+        <h2>Menos excesso, mais clareza de ação.</h2>
+        <p>A entrega foi estruturada para reduzir confusão, mostrar a sequência correta e transformar a decisão em próximos passos simples.</p>
       </div>
       <div class="highlight-box">
         <ul class="check-list">
-          <li>Promessa clara para saber o objetivo da aplicacao.</li>
-          <li>Etapas organizadas para evitar tentativa aleatoria.</li>
-          <li>Acoes praticas para marcar progresso.</li>
+          <li>Promessa clara para saber o objetivo da aplicação.</li>
+          <li>Etapas organizadas para evitar tentativa aleatória.</li>
+          <li>Ações práticas para marcar progresso.</li>
           <li>Checklist para revisar e continuar evoluindo.</li>
         </ul>
       </div>
@@ -1475,8 +1778,8 @@ function buildSalesPageHtml(product: ProductResult) {
   <section class="paper">
     <div class="wrap">
       <div class="section-head">
-        <p class="eyebrow">Duvidas comuns</p>
-        <h2>Antes de comecar</h2>
+        <p class="eyebrow">Dúvidas comuns</p>
+        <h2>Antes de começar</h2>
       </div>
       <div class="faq-grid">
         ${faqItems}
@@ -1497,7 +1800,7 @@ function buildSalesPageHtml(product: ProductResult) {
     </div>
   </section>
 
-  <div class="footer-note">Esta pagina e uma estrutura editavel. Antes de publicar, configure o link de checkout e revise informacoes especificas da oferta.</div>
+  <div class="footer-note">Esta página e uma estrutura editável. Antes de publicar, configure o link de checkout e revise informações específicas da oferta.</div>
 </body>
 </html>`;
 }
@@ -1545,7 +1848,7 @@ function buildProductPdf(product: ProductResult) {
     {
       title: "Primeiro passo",
       body: product.promise,
-      task: "Execute a primeira acao e registre o resultado.",
+      task: "Execute a primeira ação e registre o resultado.",
     },
   ];
   const trackedDays = /21/.test(
@@ -1575,20 +1878,20 @@ function buildProductPdf(product: ProductResult) {
         rect(52, 500, 176, 230, accent),
         strokeRect(52, 500, 176, 230, "1 1 1"),
         rect(72, 674, 136, 24, "0.040 0.035 0.055"),
-        text("CATALOGO PREMIUM", 82, 682, 8, "1 1 1", "F2"),
+        text("CATÁLOGO PREMIUM", 82, 682, 8, "1 1 1", "F2"),
         ...wrapPdfText(product.title.toUpperCase(), 13)
           .slice(0, 5)
           .map((line, index) => text(line, 72, 636 - index * 24, 20, accentInk, "F2")),
         rect(306, 626, 214, 40, accent),
-        text("CAMPEAO", 326, 641, 18, accentInk, "F2"),
+        text("CAMPEÃO", 326, 641, 18, accentInk, "F2"),
         ...wrapPdfText(product.title.toUpperCase(), 15)
           .slice(0, 5)
           .map((line, index) => text(line, 258, 548 - index * 32, 27, "1 1 1", "F2")),
         rect(82, 248, 332, 34, accent),
-        text("NAO PERCA TEMPO PESQUISANDO", 102, 260, 13, accentInk, "F2"),
+        text("NÃO PERCA TEMPO PESQUISANDO", 102, 260, 13, accentInk, "F2"),
         wrappedText(product.promise, margin, 202, 13, 56, 18, "1 1 1", "F1"),
         rect(margin, 132, 16, 16, accent),
-        text("Categorias, criterios e controle de aplicacao", margin + 28, 135, 11, "1 1 1", "F2"),
+        text("Categorias, critérios e controle de aplicação", margin + 28, 135, 11, "1 1 1", "F2"),
       ],
       true,
     );
@@ -1605,7 +1908,7 @@ function buildProductPdf(product: ProductResult) {
           .slice(0, 4)
           .map((line, index) => text(line, 86, 632 - index * 34, 29, "0.330 0.270 0.220", "F2")),
         wrappedText(product.promise, 88, 152, 15, 54, 21, "0.330 0.270 0.220", "F1"),
-        text("DIRECAO EDITORIAL", 88, 104, 10, "0.330 0.270 0.220", "F2"),
+        text("DIREÇÃO EDITORIAL", 88, 104, 10, "0.330 0.270 0.220", "F2"),
       ],
       false,
     );
@@ -1623,7 +1926,7 @@ function buildProductPdf(product: ProductResult) {
         rect(margin, 204, 16, 16, accent),
         text("Produto final pronto para aplicar", margin + 28, 207, 11, "1 1 1", "F2"),
         rect(margin, 170, 16, 16, accent),
-        text("Plano pratico com acompanhamento", margin + 28, 173, 11, "1 1 1", "F2"),
+        text("Plano prático com acompanhamento", margin + 28, 173, 11, "1 1 1", "F2"),
         rect(margin, 136, 16, 16, accent),
         text("Checklist de progresso", margin + 28, 139, 11, "1 1 1", "F2"),
       ],
@@ -1647,7 +1950,7 @@ function buildProductPdf(product: ProductResult) {
       }),
       rect(margin, 82, width - margin * 2, 78, soft),
       text("Como usar", margin + 20, 126, 14, dark, "F2"),
-      wrappedText(format.name === "checklist" ? "Use a entrega como uma sequencia de marcacao: validar, executar, revisar e ajustar antes de avancar." : "Siga as etapas na ordem, marque o progresso e revise a execucao no fim do periodo recomendado.", margin + 20, 104, 11, 66, 15, ink, "F1"),
+      wrappedText(format.name === "checklist" ? "Use a entrega como uma sequência de marcação: validar, executar, revisar e ajustar antes de avançar." : "Siga as etapas na ordem, marque o progresso e revise a execução no fim do período recomendado.", margin + 20, 104, 11, 66, 15, ink, "F1"),
     ],
     false,
   );
@@ -1661,7 +1964,7 @@ function buildProductPdf(product: ProductResult) {
         .map((line, index) => text(line, margin, 684 - index * 34, 28, "1 1 1", "F2")),
       wrappedText(product.promise, margin, 486, 13, 68, 19, "1 1 1", "F1"),
       rect(margin, 218, width - margin * 2, 172, cream),
-      text(format.name === "playbook" ? "O que orienta a decisao" : "O que voce vai encontrar", margin + 24, 352, 15, dark, "F2"),
+      text(format.name === "playbook" ? "O que orienta a decisão" : "O que você vai encontrar", margin + 24, 352, 15, dark, "F2"),
       ...overviewItems.slice(0, 5).map((item, index) =>
         [
           rect(margin + 24, 314 - index * 35, 14, 14, accent),
@@ -1730,7 +2033,7 @@ function buildProductPdf(product: ProductResult) {
     bodyLines.forEach((line, index) => currentBody.push(text(line, margin + 112, innerY - index * 14, 10, ink, "F1")));
     innerY -= bodyLines.length * 14 + 18;
     currentBody.push(rect(margin + 112, innerY - taskLines.length * 14 - 12, 344, taskLines.length * 14 + 24, soft));
-    currentBody.push(text("ACAO", margin + 128, innerY - 2, 9, dark, "F2"));
+    currentBody.push(text("AÇÃO", margin + 128, innerY - 2, 9, dark, "F2"));
     taskLines.forEach((line, index) => currentBody.push(text(line, margin + 128, innerY - 18 - index * 14, 10, ink, "F2")));
     currentY -= boxHeight + 18;
   };
@@ -1764,8 +2067,8 @@ function buildProductPdf(product: ProductResult) {
     const leftW = 160;
     const rowH = 82;
     currentBody.push(rect(margin, currentY - 32, tableW, 32, dark));
-    currentBody.push(text("DECISAO", margin + 14, currentY - 20, 9, "1 1 1", "F2"));
-    currentBody.push(text("PROXIMA ACAO", margin + leftW + 24, currentY - 20, 9, "1 1 1", "F2"));
+    currentBody.push(text("DECISÃO", margin + 14, currentY - 20, 9, "1 1 1", "F2"));
+    currentBody.push(text("PRÓXIMA AÇÃO", margin + leftW + 24, currentY - 20, 9, "1 1 1", "F2"));
     currentY -= 32;
 
     rows.forEach((row, index) => {
@@ -1784,16 +2087,16 @@ function buildProductPdf(product: ProductResult) {
   startFlowPage(format.pdfIntroTitle, format.pdfIntroKicker);
   addParagraph(
     format.name === "checklist"
-      ? "Leia os criterios, marque o que ja esta pronto e use os itens pendentes como ordem de execucao."
-      : "Prepare o ambiente, leia a promessa principal e execute a primeira versao sem tentar aperfeicoar tudo antes de aplicar.",
+      ? "Leia os critérios, marque o que já está pronto e use os itens pendentes como ordem de execução."
+      : "Prepare o ambiente, leia a promessa principal e execute a primeira versão sem tentar aperfeiçoar tudo antes de aplicar.",
     12,
     70,
   );
   addBulletList(overviewItems);
   addParagraph(
     format.name === "playbook"
-      ? "Regra simples: uma boa decisao precisa deixar claro o que fazer agora, o que ignorar e quando revisar."
-      : "Regra simples: se uma etapa nao gerar uma acao clara, transforme-a em um passo menor antes de continuar.",
+      ? "Regra simples: uma boa decisão precisa deixar claro o que fazer agora, o que ignorar e quando revisar."
+      : "Regra simples: se uma etapa não gerar uma ação clara, transforme-a em um passo menor antes de continuar.",
     12,
     70,
     16,
@@ -1802,18 +2105,18 @@ function buildProductPdf(product: ProductResult) {
   );
 
   if (format.name === "checklist") {
-    startFlowPage("Catalogo por categorias", "diretorio");
-    addParagraph("Este modelo funciona como um diretorio consultivo: organize as melhores oportunidades por categoria, criterio de compra, margem e primeiro teste recomendado.", 12, 70);
+    startFlowPage("Catálogo por categorias", "diretorio");
+    addParagraph("Este modelo funciona como um diretório consultivo: organize as melhores oportunidades por categoria, critério de compra, margem e primeiro teste recomendado.", 12, 70);
     addDirectoryGrid([...overviewItems, ...contentItems.map((block) => block.title), ...contentItems.map((block) => block.task)]);
   }
 
   if (format.name === "playbook") {
-    startFlowPage("Capitulo de contexto", "guia editorial");
+    startFlowPage("Capítulo de contexto", "guia editorial");
     currentBody.push(rect(margin, currentY - 130, width - margin * 2, 130, mid));
     currentBody.push(rect(margin + 22, currentY - 104, 160, 58, cream));
-    currentBody.push(text("CENARIO", margin + 44, currentY - 70, 16, dark, "F2"));
+    currentBody.push(text("CENÁRIO", margin + 44, currentY - 70, 16, dark, "F2"));
     currentY -= 162;
-    addParagraph("Antes de aplicar qualquer plano, e preciso entender o cenario. Este formato combina explicacao, exemplos, tabelas e decisoes praticas para conduzir a aplicacao com mais profundidade.", 12, 70);
+    addParagraph("Antes de aplicar qualquer plano, e preciso entender o cenário. Este formato combina explicação, exemplos, tabelas e decisões práticas para conduzir a aplicação com mais profundidade.", 12, 70);
     addEditorialTable(
       contentItems.slice(0, 5).map((block) => ({
         left: block.title,
@@ -1824,7 +2127,7 @@ function buildProductPdf(product: ProductResult) {
 
   startFlowPage(format.pdfExecutionTitle, format.pdfExecutionKicker);
   contentItems.forEach((block, index) => {
-    const label = format.name === "checklist" ? `item ${index + 1}` : format.name === "playbook" ? `acao ${index + 1}` : `passo ${index + 1}`;
+    const label = format.name === "checklist" ? `item ${index + 1}` : format.name === "playbook" ? `ação ${index + 1}` : `passo ${index + 1}`;
     addSectionCard(label, block.title, block.body, block.task);
   });
 
@@ -1845,9 +2148,9 @@ function buildProductPdf(product: ProductResult) {
       const y = currentY;
       currentBody.push(rect(margin, y - 72, 226, 82, index % 2 ? "0.925 0.920 0.860" : surface));
       currentBody.push(rect(margin + 246, y - 72, 226, 82, soft));
-      currentBody.push(text(`DECISAO ${index + 1}`, margin + 18, y - 14, 9, accent, "F2"));
+      currentBody.push(text(`DECISÃO ${index + 1}`, margin + 18, y - 14, 9, accent, "F2"));
       currentBody.push(wrappedText(block.title, margin + 18, y - 34, 10, 28, 13, ink, "F2"));
-      currentBody.push(text("PROXIMA ACAO", margin + 264, y - 14, 9, dark, "F2"));
+      currentBody.push(text("PRÓXIMA AÇÃO", margin + 264, y - 14, 9, dark, "F2"));
       currentBody.push(wrappedText(block.task, margin + 264, y - 34, 10, 28, 13, ink, "F1"));
       currentY -= 100;
     });
@@ -1867,7 +2170,7 @@ function buildProductPdf(product: ProductResult) {
       innerY -= 16;
       bodyLines.forEach((line, lineIndex) => currentBody.push(text(line, margin + 74, innerY - lineIndex * 13, 10, ink, "F1")));
       innerY -= bodyLines.length * 13 + 16;
-      currentBody.push(text("Acao pratica", margin + 74, innerY, 9, accent, "F2"));
+      currentBody.push(text("Ação prática", margin + 74, innerY, 9, accent, "F2"));
       innerY -= 16;
       taskLines.forEach((line, lineIndex) => currentBody.push(text(line, margin + 74, innerY - lineIndex * 14, 10, ink, "F2")));
       currentY -= boxHeight + 16;
@@ -1881,7 +2184,7 @@ function buildProductPdf(product: ProductResult) {
   currentBody.push(rect(margin, tableTop - 30, width - margin * 2, 30, dark));
   currentBody.push(text("DIA", margin + 16, tableTop - 19, 10, "1 1 1", "F2"));
   currentBody.push(text("FEITO", margin + 90, tableTop - 19, 10, "1 1 1", "F2"));
-  currentBody.push(text("OBSERVACAO RAPIDA", margin + 170, tableTop - 19, 10, "1 1 1", "F2"));
+  currentBody.push(text("OBSERVAÇÃO RÁPIDA", margin + 170, tableTop - 19, 10, "1 1 1", "F2"));
   for (let day = 1; day <= trackedDays; day += 1) {
     const y = tableTop - 30 - day * rowHeight;
     currentBody.push(rect(margin, y, width - margin * 2, rowHeight, day % 2 ? surface : "0.925 0.920 0.860"));
@@ -1893,10 +2196,10 @@ function buildProductPdf(product: ProductResult) {
   startFlowPage("Checklist final", "revisao");
   [
     "Entendi a promessa principal da entrega.",
-    "Conclui o diagnostico ou preparacao inicial.",
+    "Conclui o diagnóstico ou preparação inicial.",
     "Executei cada etapa em ordem.",
     "Marquei meu progresso no plano de acompanhamento.",
-    "Revisei o resultado e defini o proximo ciclo de aplicacao.",
+    "Revisei o resultado e defini o próximo ciclo de aplicação.",
   ].forEach((item, index) => {
     const y = currentY - index * 54;
     currentBody.push(rect(margin, y - 36, width - margin * 2, 44, index % 2 ? "0.925 0.920 0.860" : surface));
@@ -1905,32 +2208,32 @@ function buildProductPdf(product: ProductResult) {
   });
   currentY -= 320;
   currentBody.push(rect(margin, currentY - 92, 318, 92, soft));
-  currentBody.push(wrappedText("A evolucao vem da execucao simples, repetida e revisada. Comece pela primeira etapa e mantenha o registro do progresso.", margin + 20, currentY - 32, 12, 42, 16, dark, "F2"));
+  currentBody.push(wrappedText("A evolução vem da execução simples, repetida e revisada. Comece pela primeira etapa e mantenha o registro do progresso.", margin + 20, currentY - 32, 12, 42, 16, dark, "F2"));
 
   const minimumPagePlans = [
     {
-      title: "Plano de aplicacao",
+      title: "Plano de aplicação",
       kicker: "complemento",
-      intro: "Use esta pagina para transformar a entrega em uma rotina simples de aplicacao e revisao.",
-      items: ["Defina o primeiro passo.", "Execute antes de aperfeicoar.", "Registre o resultado.", "Revise o que precisa melhorar."],
+      intro: "Use esta página para transformar a entrega em uma rotina simples de aplicação e revisão.",
+      items: ["Defina o primeiro passo.", "Execute antes de aperfeiçoar.", "Registre o resultado.", "Revise o que precisa melhorar."],
     },
     {
       title: "Erros para evitar",
       kicker: "seguranca",
-      intro: "Evite complicar a entrega. O material precisa conduzir uma acao clara, simples e verificavel.",
-      items: ["Pular a preparacao.", "Tentar fazer tudo no mesmo dia.", "Ignorar os criterios de qualidade.", "Nao registrar progresso."],
+      intro: "Evite complicar a entrega. O material precisa conduzir uma ação clara, simples e verificável.",
+      items: ["Pular a preparação.", "Tentar fazer tudo no mesmo dia.", "Ignorar os critérios de qualidade.", "Não registrar progresso."],
     },
     {
-      title: "Proximo ciclo",
+      title: "Próximo ciclo",
       kicker: "continuidade",
-      intro: "Depois da primeira aplicacao, use este quadro para repetir o processo com mais clareza.",
-      items: ["O que funcionou.", "O que ficou confuso.", "O que sera simplificado.", "Qual sera a proxima meta."],
+      intro: "Depois da primeira aplicação, use este quadro para repetir o processo com mais clareza.",
+      items: ["O que funcionou.", "O que ficou confuso.", "O que será simplificado.", "Qual será a próxima meta."],
     },
     {
       title: "Notas finais",
       kicker: "registro",
-      intro: "Anote percepcoes, ajustes e pequenas melhorias para manter a evolucao organizada.",
-      items: ["Principal aprendizado.", "Melhor ajuste.", "Proxima revisao.", "Resultado esperado."],
+      intro: "Anote percepções, ajustes e pequenas melhorias para manter a evolução organizada.",
+      items: ["Principal aprendizado.", "Melhor ajuste.", "Próxima revisão.", "Resultado esperado."],
     },
   ];
 
@@ -1941,7 +2244,7 @@ function buildProductPdf(product: ProductResult) {
     addParagraph(plan.intro, 12, 70);
     addBulletList(plan.items);
     currentBody.push(rect(margin, Math.max(currentY - 120, 112), width - margin * 2, 96, soft));
-    currentBody.push(wrappedText("Espaco para anotacoes: registre aqui os pontos que precisam de ajuste antes de repetir o processo.", margin + 20, Math.max(currentY - 54, 176), 11, 62, 15, dark, "F2"));
+    currentBody.push(wrappedText("Espaco para anotações: registre aqui os pontos que precisam de ajuste antes de repetir o processo.", margin + 20, Math.max(currentY - 54, 176), 11, 62, 15, dark, "F2"));
     minimumPageIndex += 1;
   }
 
@@ -2117,7 +2420,7 @@ function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResul
         ? data.productContent.slice(0, 12).map((block, index) => ({
             title: block?.title || fallback.productContent[index]?.title || `Parte ${index + 1}`,
             body: block?.body || fallback.productContent[index]?.body || fallback.promise,
-            task: block?.task || fallback.productContent[index]?.task || "Aplicar este passo antes de avancar.",
+            task: block?.task || fallback.productContent[index]?.task || "Aplicar este passo antes de avançar.",
           }))
         : fallback.productContent,
     copyBlocks: {
@@ -2135,7 +2438,7 @@ function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResul
       sections:
         Array.isArray(data.salesPage?.sections) && data.salesPage.sections.length
           ? data.salesPage.sections.slice(0, 8).map((section, index) => ({
-              title: section?.title || fallback.salesPage.sections[index]?.title || `Secao ${index + 1}`,
+              title: section?.title || fallback.salesPage.sections[index]?.title || `Seção ${index + 1}`,
               body: section?.body || fallback.salesPage.sections[index]?.body || fallback.promise,
             }))
           : fallback.salesPage.sections,
@@ -2153,10 +2456,10 @@ function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResul
 
 function professionalizeText(value: string) {
   return value
-    .replace(/\bChecklist final para o aluno saber exatamente quando esta pronto para vender\b/gi, "Checklist final para confirmar que a entrega esta pronta para vender")
+    .replace(/\bChecklist final para o aluno saber exatamente quando esta pronto para vender\b/gi, "Checklist final para confirmar que a entrega está pronta para vender")
     .replace(/\bEscreva o objetivo principal do aluno\b/gi, "Defina o objetivo principal da entrega")
     .replace(/\bo aluno precisa entender\b/gi, "e preciso entender")
-    .replace(/\bA entrega central deve guiar o aluno\b/gi, "A entrega central deve conduzir a execucao")
+    .replace(/\bA entrega central deve guiar o aluno\b/gi, "A entrega central deve conduzir a execução")
     .replace(/\bpara o aluno concluir\b/gi, "para aplicar")
     .replace(/\bdo aluno\b/gi, "da entrega")
     .replace(/\bpara o aluno\b/gi, "para aplicar")
@@ -2202,7 +2505,7 @@ export default function Home() {
   const [mode, setMode] = useState<"login" | "forgot" | "set-password">("login");
   const [linkToken, setLinkToken] = useState("");
   const [loginNotice, setLoginNotice] = useState("");
-  const [name, setName] = useState("Usuario");
+  const [name, setName] = useState("Usuário");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -2212,7 +2515,7 @@ export default function Home() {
   );
   const [accessStatus, setAccessStatus] = useState<AccessStatus>("pending");
   const [niche, setNiche] = useState("marmita fit");
-  const [audience, setAudience] = useState("pessoas que querem vender comida saudavel");
+  const [audience, setAudience] = useState("pessoas que querem vender comida saudável");
   const [productType, setProductType] = useState(productTypes[0]);
   const [tone, setTone] = useState(toneOptions[0]);
   const [trendSearch, setTrendSearch] = useState("");
@@ -2221,11 +2524,17 @@ export default function Home() {
   const [selectedTrendProduct, setSelectedTrendProduct] = useState<TrendProduct | null>(null);
   const [productBrief, setProductBrief] = useState("");
   const [studentProductInfo, setStudentProductInfo] = useState("");
-  const [activeView, setActiveView] = useState<ActiveView>("radar");
+  const [activeView, setActiveView] = useState<ActiveView>("inicio");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [quickNiche, setQuickNiche] = useState("");
+  const [accessExpiresAt, setAccessExpiresAt] = useState("");
+  const [trailFlags, setTrailFlags] = useState<Record<string, boolean>>(() =>
+    typeof window === "undefined" ? {} : readTrail(),
+  );
   const [copyMode, setCopyMode] = useState<"video" | "ad">("video");
   const [copyBrief, setCopyBrief] = useState("");
   const [result, setResult] = useState<ProductResult | null>(() =>
-    buildProduct("marmita fit", productTypes[0], "pessoas que querem vender comida saudavel", toneOptions[0]),
+    buildProduct("marmita fit", productTypes[0], "pessoas que querem vender comida saudável", toneOptions[0]),
   );
   const [currentProjectId, setCurrentProjectId] = useState("");
   const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
@@ -2238,7 +2547,7 @@ export default function Home() {
   });
   const [copiedLabel, setCopiedLabel] = useState("");
   const [activeGeneration, setActiveGeneration] = useState<"product" | "copy" | null>(null);
-  const [generationSource, setGenerationSource] = useState("Rascunho rapido");
+  const [, setGenerationSource] = useState("Rascunho rápido");
   const [lastPackageName, setLastPackageName] = useState("");
 
   const canAccess = accessStatus === "active";
@@ -2278,30 +2587,52 @@ export default function Home() {
   const statusCopy = useMemo(() => {
     if (accessStatus === "active") {
       return {
-        label: "Acesso aprovado",
-        text: `Produtos neste mes: ${usage.productsUsed}/${usage.productsLimit}. Alteracoes por produto: ${usage.copyEditsPerProductLimit}.`,
+        label: "Acesso ativo",
+        text: `Produtos neste mês: ${usage.productsUsed}/${usage.productsLimit}. Alterações por produto: ${usage.copyEditsPerProductLimit}.`,
       };
     }
 
     if (accessStatus === "pending") {
       return {
         label: "Pagamento pendente",
-        text: "Seu acesso sera liberado quando a compra for confirmada.",
+        text: "Seu acesso será liberado assim que a compra for confirmada.",
       };
     }
 
     if (accessStatus === "expired") {
       return {
         label: "Acesso expirado",
-        text: "O periodo de acesso terminou.",
+        text: "O período de acesso terminou.",
       };
     }
 
     return {
       label: "Acesso bloqueado",
-      text: "O acesso foi bloqueado por cancelamento, reembolso ou revisao.",
+      text: "O acesso foi bloqueado por cancelamento, reembolso ou revisão.",
     };
   }, [accessStatus, usage.copyEditsPerProductLimit, usage.productsLimit, usage.productsUsed]);
+
+  const trailSteps = useMemo(() => {
+    const hasProject = savedProjects.length > 0 || usage.productsUsed > 0;
+    const hasCopy = Object.values(usage.copyUsage || {}).some((count) => count > 0);
+
+    return [
+      { id: "radar", label: "Escolha um nicho em alta", hint: "Nichos em alta", view: "radar" as ActiveView, done: Boolean(trailFlags.radar) || hasProject },
+      { id: "pedido", label: "Faça o pedido do produto", hint: "Fazer o pedido", view: "gerador" as ActiveView, done: hasProject },
+      { id: "pacote", label: "Baixe e revise o pacote", hint: "Meus arquivos", view: "arquivos" as ActiveView, done: Boolean(trailFlags.pacote) || Boolean(lastPackageName) },
+      { id: "copy", label: "Gere a copy e anuncie", hint: "Copy de vendas", view: "copy" as ActiveView, done: hasCopy },
+    ];
+  }, [lastPackageName, savedProjects.length, trailFlags, usage.copyUsage, usage.productsUsed]);
+
+  const trailDone = trailSteps.filter((step) => step.done).length;
+  const trailCurrent = trailSteps.findIndex((step) => !step.done);
+  const firstName = name.trim().split(/\s+/)[0] || "";
+  const productsLeft = Math.max(usage.productsLimit - usage.productsUsed, 0);
+  const expiresLabel = accessExpiresAt ? new Date(accessExpiresAt).toLocaleDateString("pt-BR") : "";
+
+  useEffect(() => {
+    if (lastPackageName) saveTrail({ ...readTrail(), pacote: true });
+  }, [lastPackageName]);
 
   async function authenticatedJson(path: string, init: RequestInit = {}) {
     const response = await fetch(path, {
@@ -2315,7 +2646,7 @@ export default function Home() {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Acao indisponivel.");
+      throw new Error(data.error || "Ação indisponível.");
     }
 
     return data;
@@ -2330,12 +2661,13 @@ export default function Home() {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Sessao invalida.");
+      throw new Error(data.error || "Sessão invalida.");
     }
 
-    setName(data.user.name || data.profile.name || "Usuario");
+    setName(data.user.name || data.profile.name || "Usuário");
     setEmail(data.user.email);
     setAccessStatus(data.profile.access_status);
+    setAccessExpiresAt(data.profile.access_expires_at || "");
     setUsage(data.usage);
     setSavedProjects(data.projects);
     if (Array.isArray(data.trends) && data.trends.length) {
@@ -2384,7 +2716,7 @@ export default function Home() {
     const timer = window.setTimeout(() => {
       if (linkError) {
         setMode("forgot");
-        setLoginError("Este link expirou ou ja foi usado. Informe seu email para receber um novo.");
+        setLoginError("Este link expirou ou já foi usado. Informe seu email para receber um novo.");
         return;
       }
 
@@ -2425,7 +2757,7 @@ export default function Home() {
         });
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.error || "Nao foi possivel enviar o link.");
+        if (!response.ok) throw new Error(data.error || "Não foi possível enviar o link.");
 
         setLoginNotice(data.message);
         return;
@@ -2433,7 +2765,7 @@ export default function Home() {
 
       if (mode === "set-password") {
         if (password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
-        if (password !== passwordConfirm) throw new Error("As senhas nao conferem.");
+        if (password !== passwordConfirm) throw new Error("As senhas não conferem.");
 
         const response = await fetch("/api/auth/password", {
           method: "POST",
@@ -2442,7 +2774,7 @@ export default function Home() {
         });
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.error || "Nao foi possivel salvar a senha.");
+        if (!response.ok) throw new Error(data.error || "Não foi possível salvar a senha.");
 
         window.localStorage.setItem(sessionKey, linkToken);
         setSessionToken(linkToken);
@@ -2465,12 +2797,12 @@ export default function Home() {
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || "Nao foi possivel acessar.");
+      if (!response.ok) throw new Error(data.error || "Não foi possível acessar.");
 
       const token = data.session.accessToken as string;
       window.localStorage.setItem(sessionKey, token);
       setSessionToken(token);
-      setName(data.user.name || "Usuario");
+      setName(data.user.name || "Usuário");
       setEmail(cleanEmail);
       await loadAccount(token);
     } catch (error) {
@@ -2481,13 +2813,13 @@ export default function Home() {
   function generateProduct() {
     const nextResult = buildProduct(niche, productType, audience, tone);
     setResult(nextResult);
-    setGenerationSource("Rascunho rapido");
+    setGenerationSource("Rascunho rápido");
     setActiveView("produto");
   }
 
   async function generateProductWithAi() {
     if (!sessionToken) {
-      setCopiedLabel("Faca login para criar produtos");
+      setCopiedLabel("Faça login para criar produtos");
       return;
     }
 
@@ -2495,7 +2827,7 @@ export default function Home() {
     setCopiedLabel("Criando produto completo...");
     const fullProductBrief = [
       productBrief,
-      studentProductInfo.trim() ? `Informacoes extras do projeto:\n${studentProductInfo.trim()}` : "",
+      studentProductInfo.trim() ? `Informações extras do projeto:\n${studentProductInfo.trim()}` : "",
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -2510,14 +2842,14 @@ export default function Home() {
       setCurrentProjectId(data.project.id);
       setUsage(data.usage);
       setSavedProjects((projects) => [data.project, ...projects.filter((project) => project.id !== data.project.id)].slice(0, 12));
-      setGenerationSource(data.source === "internal" ? "Criacao concluida" : "Criacao automatica concluida");
+      setGenerationSource(data.source === "internal" ? "Criação concluída" : "Criação automática concluída");
       const bundle = buildProjectBundle(product);
       downloadBlob(bundle.blob, bundle.filename);
       setLastPackageName(bundle.filename);
       setCopiedLabel("Produto completo criado e pacote baixado");
       setActiveView("produto");
     } catch (error) {
-      setGenerationSource("Rascunho rapido");
+      setGenerationSource("Rascunho rápido");
       setCopiedLabel(error instanceof Error ? error.message.slice(0, 120) : "Erro ao gerar com IA");
     } finally {
       setActiveGeneration(null);
@@ -2542,7 +2874,7 @@ export default function Home() {
       setResult(data.project.payload);
       setUsage(data.usage);
       updateSavedProject(data.project);
-      setGenerationSource("Copy criada com automacao");
+      setGenerationSource("Copy criada com automação");
       setCopiedLabel("Copy completa criada");
       setActiveView("copy");
     } catch (error) {
@@ -2554,7 +2886,7 @@ export default function Home() {
 
   function applyTrendProduct(product: TrendProduct) {
     if (!canAccess) {
-      setCopiedLabel("Acesso aguardando confirmacao");
+      setCopiedLabel("Acesso aguardando confirmação");
       return;
     }
 
@@ -2566,12 +2898,8 @@ export default function Home() {
     setResult(buildProduct(product.niche, product.productType, product.audience, "Direto e popular"));
     setGenerationSource("Oportunidade aplicada do radar");
     setSelectedTrendProduct(null);
-    setCopiedLabel("Oportunidade aplicada no gerador");
+    setCopiedLabel("Oportunidade aplicada no pedido");
     setActiveView("gerador");
-  }
-
-  function saveProject() {
-    setCopiedLabel(currentProjectId ? "Projeto salvo no painel" : "Crie o produto completo para salvar no banco");
   }
 
   function selectSavedProject(projectId: string, view: ActiveView = "copy") {
@@ -2597,592 +2925,1011 @@ export default function Home() {
     setCopiedLabel("Pacote do projeto baixado");
   }
 
+  function goTo(view: ActiveView) {
+    setActiveView(view);
+    setMenuOpen(false);
+    if (view === "radar" && !trailFlags.radar) {
+      const nextTrail = { ...trailFlags, radar: true };
+      setTrailFlags(nextTrail);
+      saveTrail(nextTrail);
+    }
+    window.scrollTo({ top: 0 });
+  }
+
+  function startOrder(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const value = quickNiche.trim();
+    if (value) setNiche(value);
+    goTo("gerador");
+  }
+
+  function downloadSavedProject(project: SavedProject) {
+    const bundle = buildProjectBundle(sanitizeProductLanguage(project.payload));
+    downloadBlob(bundle.blob, bundle.filename);
+    setLastPackageName(bundle.filename);
+    setCopiedLabel("Pacote do projeto baixado");
+  }
+
+  function logout() {
+    window.localStorage.removeItem(sessionKey);
+    setSessionToken("");
+    setIsLoggedIn(false);
+  }
+
   if (!isLoggedIn || mode === "set-password") {
     return (
-      <main className="login-shell">
-        <form className="login-card" onSubmit={submitAccess}>
-          <div>
-            <p className="eyebrow">Area de acesso</p>
-            <h2>
-              {mode === "login" && "Entrar no Painel Inteligente"}
-              {mode === "forgot" && "Recuperar acesso"}
-              {mode === "set-password" && "Defina sua senha"}
-            </h2>
+      <main className="pi-login">
+        <div className="pi-bg" aria-hidden="true" />
+        <form className="pi-login-card" onSubmit={submitAccess}>
+          <div className="pi-lamp-glow">
+            <LampMark />
           </div>
+          <p className="pi-eyebrow">Painel Inteligente</p>
+          <h1>
+            {mode === "login" && "Bem-vindo de volta"}
+            {mode === "forgot" && "Recuperar acesso"}
+            {mode === "set-password" && "Defina sua senha"}
+          </h1>
+          <p className="pi-sub">
+            {mode === "login" && "Entre para fazer seu próximo pedido."}
+            {mode === "forgot" && "Informe seu e-mail e enviaremos um link para criar uma nova senha."}
+            {mode === "set-password" && "Crie uma senha para acessar o painel."}
+          </p>
 
           {mode !== "set-password" && (
-            <label>
-              Email
-              <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" />
+            <label className="pi-field">
+              <span>E-mail</span>
+              <div className="pi-input">
+                <Icon name="mail" />
+                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" placeholder="seu@email.com" />
+              </div>
             </label>
           )}
           {mode !== "forgot" && (
-            <label>
-              {mode === "set-password" ? "Nova senha" : "Senha"}
-              <input
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                type="password"
-                autoComplete={mode === "set-password" ? "new-password" : "current-password"}
-              />
+            <label className="pi-field">
+              <span>{mode === "set-password" ? "Nova senha" : "Senha"}</span>
+              <div className="pi-input">
+                <Icon name="lock" />
+                <input
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                  autoComplete={mode === "set-password" ? "new-password" : "current-password"}
+                  placeholder="••••••••"
+                />
+              </div>
             </label>
           )}
           {mode === "set-password" && (
-            <label>
-              Confirme a senha
-              <input
-                value={passwordConfirm}
-                onChange={(event) => setPasswordConfirm(event.target.value)}
-                type="password"
-                autoComplete="new-password"
-              />
+            <label className="pi-field">
+              <span>Confirme a senha</span>
+              <div className="pi-input">
+                <Icon name="lock" />
+                <input
+                  value={passwordConfirm}
+                  onChange={(event) => setPasswordConfirm(event.target.value)}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                />
+              </div>
             </label>
           )}
           {loginError && <p className="form-error">{loginError}</p>}
           {loginNotice && <p className="form-notice">{loginNotice}</p>}
 
-          <button className="primary" type="submit">
-            {mode === "login" && "Acessar painel"}
+          <button className="pi-btn-main" type="submit">
+            {mode === "login" && "Entrar no painel"}
             {mode === "forgot" && "Enviar link"}
             {mode === "set-password" && "Salvar senha e entrar"}
+            <Icon name="arrow" />
           </button>
 
-          {mode === "login" && (
-            <button type="button" className="link-button" onClick={() => { setMode("forgot"); setLoginError(""); setLoginNotice(""); }}>
-              Esqueci minha senha
-            </button>
-          )}
-          {mode === "forgot" && (
-            <button type="button" className="link-button" onClick={() => { setMode("login"); setLoginError(""); setLoginNotice(""); }}>
-              Voltar para o login
-            </button>
-          )}
+          <div className="pi-login-links">
+            {mode === "login" && (
+              <button type="button" className="pi-link" onClick={() => { setMode("forgot"); setLoginError(""); setLoginNotice(""); }}>
+                Esqueci minha senha
+              </button>
+            )}
+            {mode === "forgot" && (
+              <button type="button" className="pi-link" onClick={() => { setMode("login"); setLoginError(""); setLoginNotice(""); }}>
+                Voltar para o login
+              </button>
+            )}
+          </div>
+
+          <p className="pi-secure">
+            <Icon name="shield" />
+            Acesso exclusivo para quem tem o Método Gênio
+          </p>
         </form>
       </main>
     );
   }
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand-row">
-          <div className="mini-mark">PI</div>
+    <main className="pi-shell">
+      <div className="pi-bg" aria-hidden="true" />
+
+      <aside className={`pi-side ${menuOpen ? "open" : ""}`}>
+        <div className="pi-brand">
+          <span className="pi-mark">
+            <LampMark />
+          </span>
           <div>
             <strong>Painel Inteligente</strong>
-            <span>Painel de criacao</span>
+            <small>Faça o pedido</small>
           </div>
         </div>
 
-        <nav aria-label="Navegacao principal">
-          {menuItems.map((item) => (
-            <button
-              className={activeView === item.id ? "active" : ""}
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              type="button"
-            >
-              {item.label}
-            </button>
+        <nav className="pi-nav" aria-label="Navegação principal">
+          {menuGroups.map((group) => (
+            <div key={group.title || "principal"}>
+              {group.title && <p className="pi-sec">{group.title}</p>}
+              {group.items.map((item) => (
+                <button
+                  className={activeView === item.id ? "on" : ""}
+                  key={item.id}
+                  onClick={() => goTo(item.id)}
+                  type="button"
+                >
+                  <Icon name={item.icon} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
           ))}
+          <div>
+            <p className="pi-sec">Aprender</p>
+            <a href={lessonsUrl} target="_blank" rel="noreferrer">
+              <Icon name="play" />
+              Ir para as aulas
+              <span className="pi-ext">
+                <Icon name="external" />
+              </span>
+            </a>
+          </div>
         </nav>
 
-        <div className={`access-box ${accessStatus}`}>
-          <span>{statusCopy.label}</span>
-          <p>{statusCopy.text}</p>
+        <div className="pi-side-spacer" />
+
+        <div className={`pi-status ${accessStatus}`}>
+          <p className="pi-status-row">
+            <span className="pi-dot" />
+            {statusCopy.label}
+          </p>
+          {canAccess ? (
+            <>
+              {expiresLabel && <small>Válido até {expiresLabel}</small>}
+              <div className="pi-meter">
+                <span>Produtos este mês</span>
+                <b>{usage.productsUsed}/{usage.productsLimit}</b>
+              </div>
+              <div className="pi-bar">
+                <i style={{ width: `${Math.min((usage.productsUsed / Math.max(usage.productsLimit, 1)) * 100, 100)}%` }} />
+              </div>
+            </>
+          ) : (
+            <small>{statusCopy.text}</small>
+          )}
         </div>
 
-        <button
-          className="ghost"
-          onClick={() => {
-            window.localStorage.removeItem(sessionKey);
-            setSessionToken("");
-            setIsLoggedIn(false);
-          }}
-        >
-          Sair
-        </button>
+        <div className="pi-user">
+          <span className="pi-avatar">{(firstName || email || "?").charAt(0).toUpperCase()}</span>
+          <div>
+            <strong>{firstName || "Minha conta"}</strong>
+            <small>{email}</small>
+          </div>
+          <button type="button" onClick={logout} aria-label="Sair" title="Sair">
+            <Icon name="logout" />
+          </button>
+        </div>
       </aside>
 
-      <section className="workspace">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Bem-vindo, {name}</p>
-            <h1>Painel Inteligente para criar produto completo em minutos</h1>
+      {menuOpen && <button type="button" className="pi-scrim" aria-label="Fechar menu" onClick={() => setMenuOpen(false)} />}
+
+      <section className="pi-main">
+        <header className="pi-top">
+          <button type="button" className="pi-burger" aria-label="Abrir menu" onClick={() => setMenuOpen(true)}>
+            <Icon name="menu" />
+          </button>
+          <div className="pi-mbrand">
+            <span className="pi-mark">
+              <LampMark />
+            </span>
+            Painel Inteligente
           </div>
-          <div className={`active-badge ${canAccess ? "" : "inactive"}`} aria-label={statusCopy.label}>
-            <span />
-            {statusCopy.label}
-          </div>
+          <p className="pi-crumb">
+            Painel / <b>{viewLabels[activeView]}</b>
+          </p>
+          <div className="pi-grow" />
+          <span className={`pi-pill pi-live ${canAccess ? "" : "inactive"}`}>
+            <span className="pi-dot" />
+            {canAccess ? "Ativo" : statusCopy.label}
+          </span>
+          <a className="pi-pill pi-hide-sm" href={lessonsUrl} target="_blank" rel="noreferrer">
+            <Icon name="play" />
+            Aulas
+          </a>
+          <button type="button" className="pi-pill pi-cta pi-hide-sm" onClick={() => goTo("gerador")}>
+            <Icon name="plus" />
+            Novo produto
+          </button>
         </header>
 
+        <div className="pi-content">
         {!canAccess && (
           <section className="blocked-state" aria-live="polite">
             <h2>{statusCopy.label}</h2>
             <p>{statusCopy.text}</p>
-            <p>Se voce acredita que seu acesso deveria estar ativo, aguarde a confirmacao da compra ou fale com o suporte.</p>
+            <p>Se você acredita que seu acesso deveria estar ativo, aguarde a confirmação da compra ou fale com o suporte.</p>
           </section>
         )}
 
-        <div className={canAccess ? "content-grid single-view" : "content-grid single-view locked"}>
-          <section className={`panel trend-panel view-panel ${activeView === "radar" ? "" : "is-hidden"} ${canAccess ? "" : "is-locked"}`} id="tendencias">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Radar de oportunidades</p>
-                <h2>Nichos em alta para produtos ate R$97</h2>
-                <p className="panel-note">O radar usa sinais salvos da base de oportunidades para sugerir nichos, formatos e angulos de venda.</p>
-              </div>
-              <span className="source-pill">Base de oportunidades</span>
-            </div>
+        {activeView === "inicio" && (
+          <div className="pi-home">
+            <section className="pi-hero">
+              <p className="pi-hello">
+                <Icon name="star" />
+                {firstName ? `Olá, ${firstName}` : "Olá"}
+              </p>
+              <h1>
+                O que vamos <span className="pi-gt">criar hoje?</span>
+              </h1>
+              <p>Faça o pedido e receba o pacote completo: produto em PDF, página de vendas e copy prontos para publicar.</p>
+              <form className="pi-wish" onSubmit={startOrder}>
+                <Icon name="star" />
+                <input
+                  value={quickNiche}
+                  onChange={(event) => setQuickNiche(event.target.value)}
+                  placeholder="Qual é o nicho? Ex.: marmitas fit para quem trabalha fora"
+                  aria-label="Nicho do produto"
+                />
+                <button type="submit">
+                  Fazer o pedido
+                  <Icon name="arrow" />
+                </button>
+              </form>
+              {canAccess && trendOpportunities.length > 0 && (
+                <div className="pi-chips">
+                  <span>Em alta:</span>
+                  {trendOpportunities.slice(0, 3).map((product) => (
+                    <button type="button" key={product.title} onClick={() => applyTrendProduct(product)}>
+                      <i />
+                      {product.niche.charAt(0).toUpperCase() + product.niche.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
 
-            <div className="trend-toolbar" aria-disabled={!canAccess}>
-              <label>
-                Pesquisar oportunidade
+            <div className="pi-home-grid">
+              <section>
+                <h2 className="pi-h2">Módulos</h2>
+                <div className="pi-mods">
+                  <button type="button" className="pi-mod feat" style={{ "--c": "var(--pi-violet)" } as CSSProperties} onClick={() => goTo("gerador")}>
+                    <span className="pi-badge">{canAccess ? `${productsLeft} disponíveis` : "1 clique"}</span>
+                    <span className="pi-ico"><Icon name="spark" /></span>
+                    <strong>Fazer o pedido</strong>
+                    <span className="pi-mod-text">Nicho, público e formato. A IA cria o produto e o pacote completo.</span>
+                    <span className="pi-go">Criar produto <Icon name="arrow" /></span>
+                  </button>
+                  <button type="button" className="pi-mod" style={{ "--c": "var(--pi-cyan)" } as CSSProperties} onClick={() => goTo("radar")}>
+                    <span className="pi-ico"><Icon name="trend" /></span>
+                    <strong>Nichos em alta</strong>
+                    <span className="pi-mod-text">Oportunidades low ticket para aplicar direto no pedido.</span>
+                    <span className="pi-go">Ver oportunidades <Icon name="arrow" /></span>
+                  </button>
+                  <button type="button" className="pi-mod" style={{ "--c": "var(--pi-pink)" } as CSSProperties} onClick={() => goTo("copy")}>
+                    <span className="pi-ico"><Icon name="chat" /></span>
+                    <strong>Copy de vendas</strong>
+                    <span className="pi-mod-text">Roteiros de criativos e anúncios para o produto escolhido.</span>
+                    <span className="pi-go">Gerar copy <Icon name="arrow" /></span>
+                  </button>
+                  <button type="button" className="pi-mod" style={{ "--c": "var(--pi-amber)" } as CSSProperties} onClick={() => goTo("arquivos")}>
+                    {savedProjects.length > 0 && <span className="pi-badge">{savedProjects.length} {savedProjects.length === 1 ? "projeto" : "projetos"}</span>}
+                    <span className="pi-ico"><Icon name="folder" /></span>
+                    <strong>Meus arquivos</strong>
+                    <span className="pi-mod-text">Baixe de novo os pacotes ZIP dos seus projetos.</span>
+                    <span className="pi-go">Abrir arquivos <Icon name="arrow" /></span>
+                  </button>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="pi-h2">Sua trilha</h2>
+                <div className="pi-track">
+                  <span className="pi-track-label">Seu primeiro produto</span>
+                  <p className="pi-track-title">
+                    {trailDone === trailSteps.length ? "Trilha concluída" : `Etapa ${trailCurrent + 1} de ${trailSteps.length}`}
+                    <em>{Math.round((trailDone / trailSteps.length) * 100)}%</em>
+                  </p>
+                  <div className="pi-bar big">
+                    <i style={{ width: `${(trailDone / trailSteps.length) * 100}%` }} />
+                  </div>
+                  {trailSteps.map((step, index) => (
+                    <button
+                      type="button"
+                      key={step.id}
+                      className={`pi-step ${step.done ? "done" : ""} ${index === trailCurrent ? "now" : ""}`}
+                      onClick={() => goTo(step.view)}
+                    >
+                      <span className="pi-step-n">{step.done ? <Icon name="check" /> : index + 1}</span>
+                      <span className="pi-step-text">
+                        {step.label}
+                        {index === trailCurrent && <small>{step.hint}</small>}
+                      </span>
+                    </button>
+                  ))}
+                  <a className="pi-btn-ghost" href={lessonsUrl} target="_blank" rel="noreferrer">
+                    <Icon name="play" />
+                    Ir para as aulas
+                  </a>
+                </div>
+
+                {savedProjects.length > 0 && (
+                  <div className="pi-recent">
+                    <div className="pi-h2-row">
+                      <h2 className="pi-h2">Recentes</h2>
+                      <button type="button" onClick={() => goTo("arquivos")}>Ver todos</button>
+                    </div>
+                    {savedProjects.slice(0, 3).map((project, index) => (
+                      <div className="pi-ritem" key={project.id}>
+                        <button type="button" className="pi-ritem-main" onClick={() => selectSavedProject(project.id, "produto")}>
+                          <span className={`pi-thumb t${index % 3}`} />
+                          <span>
+                            <strong>{project.title}</strong>
+                            <small>
+                              Pacote completo
+                              {project.created_at ? ` · ${formatRelativeDate(project.created_at)}` : ""}
+                            </small>
+                          </span>
+                        </button>
+                        <button type="button" className="pi-dl" aria-label="Baixar pacote" onClick={() => downloadSavedProject(project)}>
+                          <Icon name="download" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          </div>
+        )}
+
+        <div className={canAccess ? "content-grid single-view" : "content-grid single-view locked"}>
+          <section className={`pi-view view-panel ${activeView === "radar" ? "" : "is-hidden"} ${canAccess ? "" : "is-locked"}`} id="tendencias">
+            <header className="pi-view-head" style={{ "--c": "var(--pi-cyan)" } as CSSProperties}>
+              <span className="pi-ico"><Icon name="trend" /></span>
+              <div>
+                <p className="pi-kicker">Radar de oportunidades</p>
+                <h2>Nichos em alta</h2>
+                <p>Oportunidades de produtos até R$ 97 com promessa, público, ângulo e canal definidos. Escolha uma e aplique no pedido.</p>
+              </div>
+            </header>
+
+            <div className="pi-toolbar" aria-disabled={!canAccess}>
+              <div className="pi-search">
+                <Icon name="search" />
                 <input
                   value={trendSearch}
                   onChange={(event) => setTrendSearch(event.target.value)}
-                  placeholder="Ex: beleza, alimentacao, renda extra"
+                  placeholder="Pesquisar: beleza, alimentação, renda extra..."
+                  aria-label="Pesquisar oportunidade"
                   disabled={!canAccess}
                 />
-              </label>
-              <label>
-                Categoria
-                <select value={trendCategory} onChange={(event) => setTrendCategory(event.target.value)} disabled={!canAccess}>
-                  {trendCategories.map((category) => (
-                    <option key={category}>{category}</option>
-                  ))}
-                </select>
-              </label>
+              </div>
+              <div className="pi-filter" role="group" aria-label="Categoria">
+                {trendCategories.map((category) => (
+                  <button
+                    type="button"
+                    key={category}
+                    className={trendCategory === category ? "on" : ""}
+                    onClick={() => setTrendCategory(category)}
+                    disabled={!canAccess}
+                  >
+                    {displayText(category)}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {canAccess ? (
               <>
-                <div className="trend-grid">
+                {filteredTrendProducts.length === 0 && (
+                  <p className="pi-empty">Nenhuma oportunidade encontrada para essa busca.</p>
+                )}
+                <div className="pi-trend-grid">
                   {filteredTrendProducts.map((product) => (
-                    <article className="trend-card" key={product.title}>
-                      <div className="trend-card-top">
-                        <span>{product.productType}</span>
-                        <strong>{product.score}</strong>
-                      </div>
-                      <div className="trend-tags">
-                        <span>{getTrendStatus(product)}</span>
-                        <span>{product.category}</span>
+                    <article className="pi-trend" key={product.title}>
+                      <div className="pi-trend-top">
+                        <div className="pi-tags">
+                          <span className={`pi-tag status-${getTrendStatus(product).toLowerCase()}`}>{displayText(getTrendStatus(product))}</span>
+                          <span className="pi-tag">{displayText(product.category)}</span>
+                        </div>
+                        <span className="pi-score" style={{ "--p": product.score } as CSSProperties} aria-label={`Pontuação ${product.score} de 100`}>
+                          <b>{product.score}</b>
+                        </span>
                       </div>
                       <h3>{product.title}</h3>
-                      <p>{product.promise || product.angle}</p>
-                      <div className="signal-row">
-                        <small>Ticket sugerido</small>
-                        <b>{product.price}</b>
-                      </div>
-                      <div className="signal-row">
-                        <small>Canal</small>
-                        <b>{product.channel || "Organico + trafego pago"}</b>
-                      </div>
-                      <div className="trend-meter" aria-label={`Pontuacao ${product.score} de 100`}>
-                        <span style={{ width: `${product.score}%` }} />
-                      </div>
-                      <ul className="signal-list">
-                        <li>{product.salesAngle || product.angle}</li>
-                        <li>{product.pageType || "Landing curta com promessa clara"}</li>
-                        <li>{product.strategicInsight || product.trendSignal}</li>
-                      </ul>
-                      <div className="button-pair compact">
-                        <button className="secondary" onClick={() => setSelectedTrendProduct(product)}>
+                      <p className="pi-trend-promise">{product.promise || product.angle}</p>
+                      <dl className="pi-trend-meta">
+                        <div>
+                          <dt>Formato</dt>
+                          <dd>{displayText(product.productType)}</dd>
+                        </div>
+                        <div>
+                          <dt>Ticket</dt>
+                          <dd>{product.price}</dd>
+                        </div>
+                        <div className="wide">
+                          <dt>Canal</dt>
+                          <dd>{displayText(product.channel || "Orgânico + trafego pago")}</dd>
+                        </div>
+                      </dl>
+                      <p className="pi-trend-angle">
+                        <Icon name="target" />
+                        {product.salesAngle || product.angle}
+                      </p>
+                      <div className="pi-trend-actions">
+                        <button type="button" className="pi-btn-soft" onClick={() => setSelectedTrendProduct(product)}>
                           Ver plano
                         </button>
-                        <button className="primary" onClick={() => applyTrendProduct(product)}>
-                          Usar no gerador
+                        <button type="button" className="pi-btn-grad" onClick={() => applyTrendProduct(product)}>
+                          Usar no pedido
+                          <Icon name="arrow" />
                         </button>
                       </div>
                     </article>
                   ))}
                 </div>
                 {selectedTrendProduct && (
-	              <div className="opportunity-drawer" role="dialog" aria-modal="true" aria-label="Plano da oportunidade">
-	                <div className="drawer-panel">
-	                  <div className="drawer-heading">
-	                    <div>
-	                      <p className="eyebrow">{getTrendStatus(selectedTrendProduct)} · {selectedTrendProduct.price}</p>
-	                      <h2>{selectedTrendProduct.title}</h2>
-	                    </div>
-	                    <button className="ghost icon-button" onClick={() => setSelectedTrendProduct(null)} aria-label="Fechar">
-	                      ×
-	                    </button>
-	                  </div>
-	                  <div className="brief-grid">
-	                    <div>
-	                      <span>Promessa</span>
-	                      <p>{selectedTrendProduct.promise || selectedTrendProduct.angle}</p>
-	                    </div>
-	                    <div>
-	                      <span>Publico-alvo</span>
-	                      <p>{selectedTrendProduct.audience}</p>
-	                    </div>
-	                    <div>
-	                      <span>Angulo de venda</span>
-	                      <p>{selectedTrendProduct.salesAngle || selectedTrendProduct.angle}</p>
-	                    </div>
-	                    <div>
-	                      <span>Canal recomendado</span>
-	                      <p>{selectedTrendProduct.channel || "Organico + trafego pago"}</p>
-	                    </div>
-	                    <div>
-	                      <span>Formatos de criativo</span>
-	                      <p>{(selectedTrendProduct.creativeFormats || [selectedTrendProduct.adSignal]).join(", ")}</p>
-	                    </div>
-	                    <div>
-	                      <span>Pagina sugerida</span>
-	                      <p>{selectedTrendProduct.pageType || "Landing curta com prova e checkout"}</p>
-	                    </div>
-	                  </div>
-	                  <div className="insight-box">
-	                    <span>Insight estrategico</span>
-	                    <p>{selectedTrendProduct.strategicInsight || selectedTrendProduct.trendSignal}</p>
-	                  </div>
-	                  <div className="tag-row">
-	                    {(selectedTrendProduct.tags || ["oportunidade", selectedTrendProduct.category]).map((tag) => (
-	                      <span key={tag}>{tag}</span>
-	                    ))}
-	                  </div>
-	                  <div className="button-pair">
-	                    <button className="primary" onClick={() => applyTrendProduct(selectedTrendProduct)}>
-	                      Aplicar no gerador
-	                    </button>
-	                    <button className="secondary" onClick={() => setSelectedTrendProduct(null)}>
-	                      Fechar
-	                    </button>
-	                  </div>
-	                </div>
-	              </div>
-	            )}
+                  <div className="pi-modal" role="dialog" aria-modal="true" aria-label="Plano da oportunidade">
+                    <button type="button" className="pi-modal-scrim" aria-label="Fechar" onClick={() => setSelectedTrendProduct(null)} />
+                    <div className="pi-modal-card">
+                      <div className="pi-modal-head">
+                        <div>
+                          <p className="pi-kicker">{displayText(getTrendStatus(selectedTrendProduct))} · {selectedTrendProduct.price}</p>
+                          <h2>{selectedTrendProduct.title}</h2>
+                        </div>
+                        <button type="button" className="pi-icon-btn" onClick={() => setSelectedTrendProduct(null)} aria-label="Fechar">
+                          <Icon name="close" />
+                        </button>
+                      </div>
+                      <div className="pi-brief-grid">
+                        <div>
+                          <span>Promessa</span>
+                          <p>{selectedTrendProduct.promise || selectedTrendProduct.angle}</p>
+                        </div>
+                        <div>
+                          <span>Público-alvo</span>
+                          <p>{selectedTrendProduct.audience}</p>
+                        </div>
+                        <div>
+                          <span>Ângulo de venda</span>
+                          <p>{selectedTrendProduct.salesAngle || selectedTrendProduct.angle}</p>
+                        </div>
+                        <div>
+                          <span>Canal recomendado</span>
+                          <p>{displayText(selectedTrendProduct.channel || "Orgânico + trafego pago")}</p>
+                        </div>
+                        <div>
+                          <span>Formatos de criativo</span>
+                          <p>{(selectedTrendProduct.creativeFormats || [selectedTrendProduct.adSignal]).join(", ")}</p>
+                        </div>
+                        <div>
+                          <span>Página sugerida</span>
+                          <p>{selectedTrendProduct.pageType || "Landing curta com prova e checkout"}</p>
+                        </div>
+                      </div>
+                      <div className="pi-insight">
+                        <span><Icon name="star" />Insight estratégico</span>
+                        <p>{selectedTrendProduct.strategicInsight || selectedTrendProduct.trendSignal}</p>
+                      </div>
+                      <div className="pi-tags">
+                        {(selectedTrendProduct.tags || ["oportunidade", selectedTrendProduct.category]).map((tag) => (
+                          <span className="pi-tag" key={tag}>{displayText(tag)}</span>
+                        ))}
+                      </div>
+                      <div className="pi-modal-actions">
+                        <button type="button" className="pi-btn-soft" onClick={() => setSelectedTrendProduct(null)}>
+                          Fechar
+                        </button>
+                        <button type="button" className="pi-btn-grad" onClick={() => applyTrendProduct(selectedTrendProduct)}>
+                          Aplicar no pedido
+                          <Icon name="arrow" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
-              <div className="trend-locked-state" aria-live="polite">
-                <div className="trend-lock-copy">
-                  <p className="eyebrow">Acesso em analise</p>
-                  <h3>Radar liberado apos confirmacao</h3>
-                  <p>Os nichos em alta e planos de oportunidade ficam disponiveis assim que o pagamento for aprovado.</p>
+              <div className="pi-locked" aria-live="polite">
+                <div className="pi-locked-copy">
+                  <span className="pi-ico" style={{ "--c": "var(--pi-amber)" } as CSSProperties}><Icon name="lock" /></span>
+                  <h3>Radar liberado após a confirmação</h3>
+                  <p>Os nichos em alta e os planos de oportunidade ficam disponíveis assim que o pagamento for aprovado.</p>
                 </div>
-                <div className="trend-lock-grid" aria-hidden="true">
+                <div className="pi-trend-grid" aria-hidden="true">
                   {lockedTrendCards.map((item) => (
-                    <article className="trend-card trend-card-placeholder" key={item}>
-                      <div className="placeholder-row">
-                        <span className="placeholder-pill" />
-                        <span className="placeholder-score" />
-                      </div>
-                      <span className="placeholder-line short" />
-                      <span className="placeholder-line title" />
-                      <span className="placeholder-line" />
-                      <span className="placeholder-line medium" />
-                      <div className="trend-meter placeholder-meter">
-                        <span />
-                      </div>
-                      <span className="placeholder-button" />
+                    <article className="pi-trend pi-trend-ghost" key={item}>
+                      <span className="pi-ph short" />
+                      <span className="pi-ph title" />
+                      <span className="pi-ph" />
+                      <span className="pi-ph medium" />
+                      <span className="pi-ph button" />
                     </article>
                   ))}
                 </div>
               </div>
             )}
-	          </section>
+          </section>
 
-          <section className={`panel generator-panel view-panel ${activeView === "gerador" ? "" : "is-hidden"}`} id="gerador">
-            <div className="panel-heading">
+          <section className={`pi-view view-panel ${activeView === "gerador" ? "" : "is-hidden"}`} id="gerador">
+            <header className="pi-view-head" style={{ "--c": "var(--pi-violet)" } as CSSProperties}>
+              <span className="pi-ico"><Icon name="spark" /></span>
               <div>
-                <p className="eyebrow">Passo 1</p>
-                <h2>Escolha o nicho e gere a entrega</h2>
+                <p className="pi-kicker">Gerador</p>
+                <h2>Faça o seu pedido</h2>
+                <p>Descreva o produto. A IA cria o conteúdo, a página de vendas e a copy, e o pacote ZIP baixa sozinho.</p>
               </div>
-              <div className="button-pair">
-                <button className="primary" onClick={generateProductWithAi} disabled={activeGeneration !== null}>
-                  {activeGeneration === "product" ? "Criando..." : "Criar produto completo"}
-                </button>
-                <button className="secondary" onClick={generateProduct} disabled={activeGeneration !== null}>
-                  Criar rascunho
-                </button>
-              </div>
-            </div>
+              {canAccess && (
+                <span className="pi-quota">
+                  <b>{productsLeft}</b> de {usage.productsLimit} pedidos disponíveis este mês
+                </span>
+              )}
+            </header>
 
-            <div className="form-grid">
-              <label>
-                Nicho
-                <input
-                  value={niche}
-                  onChange={(event) => {
-                    setNiche(event.target.value);
-                    setProductBrief("");
-                  }}
-                  placeholder="Ex: bolo de pote"
-                />
-              </label>
-              <label>
-                Publico
-                <input
-                  value={audience}
-                  onChange={(event) => {
-                    setAudience(event.target.value);
-                    setProductBrief("");
-                  }}
-                  placeholder="Ex: maes que querem renda extra"
-                />
-              </label>
-              <label>
-                Tipo de produto
-                <select value={productType} onChange={(event) => setProductType(event.target.value)}>
-                  {productTypes.map((type) => (
-                    <option key={type}>{type}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Tom da copy
-                <select value={tone} onChange={(event) => setTone(event.target.value)}>
-                  {toneOptions.map((option) => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label className="wide-field">
-              Informacoes para melhorar o produto
-              <textarea
-                value={studentProductInfo}
-                onChange={(event) => setStudentProductInfo(event.target.value)}
-                placeholder="Ex: quero uma entrega simples para iniciantes, incluir exemplos praticos, evitar linguagem tecnica, criar bonus de cardapio semanal..."
-                rows={4}
-              />
-            </label>
-            <p className="generation-note">{generationSource}</p>
             {productBrief && (
-              <div className="brief-applied">
-                <strong>Briefing do radar aplicado</strong>
-                <span>O pacote sera criado usando promessa, publico, angulo, canal e formato de pagina desta oportunidade.</span>
-              </div>
-            )}
-            {currentProjectId && lastPackageName && (
-              <div className="package-ready">
+              <div className="pi-applied">
+                <Icon name="check" />
                 <div>
-                  <strong>Pacote pronto</strong>
-                  <span>{lastPackageName}</span>
+                  <strong>Oportunidade aplicada</strong>
+                  <span>O pacote será criado com a promessa, o público, o ângulo, o canal e o formato de página desta oportunidade.</span>
                 </div>
-                <button className="secondary" onClick={downloadProject}>
-                  Baixar novamente
-                </button>
               </div>
             )}
+
+            <div className="pi-order">
+              <div className="pi-order-form">
+                <div className="pi-card">
+                  <p className="pi-step-title"><span>1</span>Sobre o que é o produto?</p>
+                  <div className="pi-form-grid">
+                    <label className="pi-label">
+                      Nicho
+                      <input
+                        value={niche}
+                        onChange={(event) => {
+                          setNiche(event.target.value);
+                          setProductBrief("");
+                        }}
+                        placeholder="Ex.: bolo de pote"
+                      />
+                    </label>
+                    <label className="pi-label">
+                      Público
+                      <input
+                        value={audience}
+                        onChange={(event) => {
+                          setAudience(event.target.value);
+                          setProductBrief("");
+                        }}
+                        placeholder="Ex.: mães que querem renda extra"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="pi-card">
+                  <p className="pi-step-title"><span>2</span>Escolha o formato</p>
+                  <div className="pi-formats" role="radiogroup" aria-label="Formato do produto">
+                    {productTypes.map((type) => (
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={productType === type}
+                        key={type}
+                        className={productType === type ? "on" : ""}
+                        onClick={() => setProductType(type)}
+                      >
+                        <Icon name={productTypeIcons[type] || "doc"} />
+                        <strong>{displayText(type)}</strong>
+                        <small>{productTypeHints[type]}</small>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="pi-sub-label">Tom da comunicação</p>
+                  <div className="pi-filter" role="radiogroup" aria-label="Tom da comunicação">
+                    {toneOptions.map((option) => (
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={tone === option}
+                        key={option}
+                        className={tone === option ? "on" : ""}
+                        onClick={() => setTone(option)}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pi-card">
+                  <p className="pi-step-title"><span>3</span>Detalhes do pedido <em>opcional</em></p>
+                  <textarea
+                    className="pi-textarea"
+                    value={studentProductInfo}
+                    onChange={(event) => setStudentProductInfo(event.target.value)}
+                    placeholder="Ex.: entrega simples para iniciantes, com exemplos práticos, sem linguagem técnica e um bônus de cardápio semanal."
+                    rows={4}
+                    aria-label="Detalhes do pedido"
+                  />
+                </div>
+              </div>
+
+              <aside className="pi-order-side">
+                <div className="pi-card pi-summary">
+                  <p className="pi-kicker">Seu pacote</p>
+                  <h3>{niche.trim() ? `${displayText(productType)}: ${niche.trim()}` : "Preencha o nicho"}</h3>
+                  <ul className="pi-files">
+                    {packageItems.map((item) => (
+                      <li key={item.label}>
+                        <Icon name={item.icon} />
+                        {item.label}
+                      </li>
+                    ))}
+                  </ul>
+                  <button type="button" className="pi-btn-main" onClick={generateProductWithAi} disabled={activeGeneration !== null}>
+                    <Icon name="star" />
+                    {activeGeneration === "product" ? "Criando..." : "Fazer o pedido"}
+                  </button>
+                  <button type="button" className="pi-btn-text" onClick={generateProduct} disabled={activeGeneration !== null}>
+                    Ver um rascunho rápido antes
+                  </button>
+                  {currentProjectId && lastPackageName && (
+                    <div className="pi-ready">
+                      <div>
+                        <strong>Pacote pronto</strong>
+                        <span>{lastPackageName}</span>
+                      </div>
+                      <button type="button" className="pi-dl" onClick={downloadProject} aria-label="Baixar novamente">
+                        <Icon name="download" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </aside>
+            </div>
           </section>
 
           {result && (
             <>
-              <section className={`panel output-panel view-panel ${activeView === "produto" ? "" : "is-hidden"}`} id="produto">
-                <div className="panel-heading">
+              <section className={`pi-view view-panel ${activeView === "produto" ? "" : "is-hidden"}`} id="produto">
+                <header className="pi-view-head" style={{ "--c": "var(--pi-pink)" } as CSSProperties}>
+                  <span className="pi-ico"><Icon name="doc" /></span>
                   <div>
-                    <p className="eyebrow">Passo 2</p>
+                    <p className="pi-kicker">Produto criado</p>
                     <h2>{result.title}</h2>
+                    <p>{result.subtitle}</p>
                   </div>
-                  <button className="secondary" onClick={saveProject}>
-                    Salvar
-                  </button>
+                </header>
+
+                {!currentProjectId && (
+                  <div className="pi-draft">
+                    <Icon name="star" />
+                    <p>Esta é uma prévia em rascunho. Faça o pedido para gerar o pacote completo com PDF, página de vendas e copy.</p>
+                    <button type="button" className="pi-btn-grad" onClick={() => goTo("gerador")}>
+                      Fazer o pedido
+                    </button>
+                  </div>
+                )}
+
+                <div className="pi-product-hero">
+                  <div className="pi-cover" aria-hidden="true">
+                    <div className="pi-cover-book">
+                      <span>{displayText(productType)}</span>
+                      <strong>{result.title}</strong>
+                      <p>{result.promise}</p>
+                      <i />
+                    </div>
+                  </div>
+                  <div className="pi-card pi-product-info">
+                    <p className="pi-kicker">Promessa</p>
+                    <p className="pi-promise">{result.promise}</p>
+                    <div className="pi-stats">
+                      <div>
+                        <b>{result.modules.length}</b>
+                        <span>módulos</span>
+                      </div>
+                      <div>
+                        <b>{result.productContent.length}</b>
+                        <span>seções de conteúdo</span>
+                      </div>
+                      <div>
+                        <b>10+</b>
+                        <span>páginas no PDF</span>
+                      </div>
+                    </div>
+                    <div className="pi-actions">
+                      <button type="button" className="pi-btn-grad" onClick={downloadProject}>
+                        <Icon name="download" />
+                        Baixar pacote ZIP
+                      </button>
+                      <button type="button" className="pi-btn-soft" onClick={() => goTo("copy")}>
+                        <Icon name="chat" />
+                        Gerar copy
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <p className="lead small">{result.subtitle}</p>
-                <div className="cover-preview">
-                  <span>Produto digital</span>
-                  <strong>{result.title}</strong>
-                  <p>{result.promise}</p>
-                </div>
-                <div className="two-column">
-                  <div>
-                    <h3>Modulos sugeridos</h3>
-                    <ol>
-                      {result.modules.map((module) => (
-                        <li key={module}>{module}</li>
+
+                <div className="pi-two">
+                  <div className="pi-card">
+                    <h3 className="pi-card-title">Módulos</h3>
+                    <ol className="pi-olist">
+                      {result.modules.map((module, index) => (
+                        <li key={module}>
+                          <span>{String(index + 1).padStart(2, "0")}</span>
+                          {module}
+                        </li>
                       ))}
                     </ol>
                   </div>
-                  <div>
-                    <h3>Estrutura da entrega</h3>
-                    <ul>
+                  <div className="pi-card">
+                    <h3 className="pi-card-title">Estrutura da entrega</h3>
+                    <ul className="pi-checklist">
                       {result.productBlueprint.map((item) => (
-                        <li key={item}>{item}</li>
+                        <li key={item}>
+                          <Icon name="check" />
+                          {item}
+                        </li>
                       ))}
                     </ul>
                   </div>
                 </div>
-                <div className="content-blocks">
-                  <h3>Conteudo completo da entrega</h3>
+
+                <h3 className="pi-section-title">Conteúdo completo</h3>
+                <div className="pi-blocks">
                   {result.productContent.map((block, index) => (
-                    <article className="content-block" key={`${block.title}-${index}`}>
-                      <span>{String(index + 1).padStart(2, "0")}</span>
+                    <article className="pi-block" key={`${block.title}-${index}`}>
+                      <span className="pi-block-n">{String(index + 1).padStart(2, "0")}</span>
                       <div>
                         <h4>{block.title}</h4>
                         <p>{block.body}</p>
-                        <strong>{block.task}</strong>
+                        <p className="pi-block-task">
+                          <Icon name="target" />
+                          {block.task}
+                        </p>
                       </div>
                     </article>
                   ))}
                 </div>
               </section>
 
-              <section className={`panel output-panel view-panel ${activeView === "copy" ? "" : "is-hidden"}`} id="copy">
-                <div className="panel-heading">
+              <section className={`pi-view view-panel ${activeView === "copy" ? "" : "is-hidden"}`} id="copy">
+                <header className="pi-view-head" style={{ "--c": "var(--pi-pink)" } as CSSProperties}>
+                  <span className="pi-ico"><Icon name="chat" /></span>
                   <div>
-                    <p className="eyebrow">Passo 3</p>
-                    <h2>Agente de Copy</h2>
+                    <p className="pi-kicker">Copy de vendas</p>
+                    <h2>Copy para vender o produto</h2>
+                    <p>Roteiros de criativos em vídeo e textos de anúncio prontos para o produto escolhido.</p>
                   </div>
-                  <div className="button-pair">
-                    <button className="primary" onClick={generateCopyWithAi} disabled={activeGeneration !== null}>
+                  {currentProjectId && (
+                    <span className="pi-quota">
+                      <b>{usage.copyUsage[currentProjectId] || 0}</b> de {usage.copyEditsPerProductLimit} alterações usadas neste produto
+                    </span>
+                  )}
+                </header>
+
+                <div className="pi-card pi-copy-config">
+                  <div className="pi-form-grid">
+                    <label className="pi-label">
+                      Produto
+                      <select value={currentProjectId} onChange={(event) => selectSavedProject(event.target.value, "copy")}>
+                        <option value="">Selecione um produto criado</option>
+                        {recentSavedProjects.map((project) => (
+                          <option key={project.id} value={project.id}>
+                            {project.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="pi-label">
+                      Tipo de copy
+                      <div className="pi-segment" role="group" aria-label="Tipo de copy">
+                        <button className={copyMode === "video" ? "on" : ""} onClick={() => setCopyMode("video")} type="button">
+                          <Icon name="play" />
+                          Criativos em vídeo
+                        </button>
+                        <button className={copyMode === "ad" ? "on" : ""} onClick={() => setCopyMode("ad")} type="button">
+                          <Icon name="page" />
+                          Anúncios
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <label className="pi-label pi-copy-brief">
+                    <span>Pedido específico <em>opcional</em></span>
+                    <textarea
+                      className="pi-textarea"
+                      value={copyBrief}
+                      onChange={(event) => setCopyBrief(event.target.value)}
+                      placeholder="Ex.: copy mais direta, foco na dor financeira, tom popular e CTA para o WhatsApp."
+                      rows={3}
+                    />
+                  </label>
+                  <div className="pi-actions">
+                    <button type="button" className="pi-btn-grad" onClick={generateCopyWithAi} disabled={activeGeneration !== null}>
+                      <Icon name="star" />
                       {activeGeneration === "copy" ? "Criando..." : "Gerar variações"}
                     </button>
                     <button
-                      className="secondary"
+                      type="button"
+                      className="pi-btn-soft"
                       onClick={() =>
                         copyText(
-                      "Copy copiada",
-                      copyMode === "video"
+                          "Copy copiada",
+                          copyMode === "video"
                             ? formatVideoCreatives(buildVideoCreatives(result, copyBrief))
                             : formatAdCopies(buildAdCopies(result, copyBrief)),
                         )
                       }
                     >
-                      Copiar
+                      Copiar tudo
                     </button>
                   </div>
                 </div>
-                <div className="copy-tabs" role="group" aria-label="Tipo de copy">
-                  <button className={copyMode === "video" ? "active" : ""} onClick={() => setCopyMode("video")} type="button">
-                    Criativos em video
-                  </button>
-                  <button className={copyMode === "ad" ? "active" : ""} onClick={() => setCopyMode("ad")} type="button">
-                    Anuncios
-                  </button>
-                </div>
-                <div className="copy-source-grid">
-                  <label>
-                    Produto para gerar copy
-                    <select
-                      value={currentProjectId}
-                      onChange={(event) => selectSavedProject(event.target.value, "copy")}
-                    >
-                      <option value="">Selecione um produto salvo</option>
-                      {recentSavedProjects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.title}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Pedido especifico
-                    <textarea
-                      value={copyBrief}
-                      onChange={(event) => setCopyBrief(event.target.value)}
-                      placeholder="Ex: quero copy mais direta, foco em dor financeira, tom popular, CTA para WhatsApp..."
-                      rows={3}
-                    />
-                  </label>
-                </div>
 
                 {copyMode === "video" ? (
-                  <div className="copy-list">
+                  <div className="pi-copy-grid">
                     {buildVideoCreatives(result, copyBrief).map((creative, index) => (
-                      <article className="copy-card rich-copy-card" key={`${creative.angle}-${index}`}>
-                        <div className="copy-card-heading">
-                          <span>Criativo {String(index + 1).padStart(2, "0")}</span>
-                          <strong>{creative.angle}</strong>
+                      <article className="pi-copy" key={`${creative.angle}-${index}`}>
+                        <div className="pi-copy-head">
+                          <div>
+                            <span>Criativo {String(index + 1).padStart(2, "0")}</span>
+                            <strong>{creative.angle}</strong>
+                          </div>
+                          <button type="button" className="pi-icon-btn" aria-label="Copiar criativo" onClick={() => copyText("Criativo copiado", formatVideoCreatives([creative]))}>
+                            <Icon name="copy" />
+                          </button>
                         </div>
-                        <span>Gancho</span>
-                        <p>{creative.hook}</p>
-                        <span>Contexto</span>
-                        <p>{creative.context}</p>
-                        <span>Desenvolvimento</span>
-                        <p>{creative.development}</p>
-                        <span>CTA</span>
-                        <p>{creative.cta}</p>
-                        <span>Texto na tela</span>
-                        <p>{creative.screenText}</p>
+                        <dl className="pi-copy-parts">
+                          <dt className="c1">Gancho</dt>
+                          <dd>{creative.hook}</dd>
+                          <dt className="c2">Contexto</dt>
+                          <dd>{creative.context}</dd>
+                          <dt className="c3">Desenvolvimento</dt>
+                          <dd>{creative.development}</dd>
+                          <dt className="c4">CTA</dt>
+                          <dd>{creative.cta}</dd>
+                          <dt className="c5">Texto na tela</dt>
+                          <dd>{creative.screenText}</dd>
+                        </dl>
                       </article>
                     ))}
                   </div>
                 ) : (
-                  <div className="copy-list">
+                  <div className="pi-copy-grid">
                     {buildAdCopies(result, copyBrief).map((ad, index) => (
-                      <article className="copy-card rich-copy-card" key={`${ad.angle}-${index}`}>
-                        <div className="copy-card-heading">
-                          <span>Anuncio {String(index + 1).padStart(2, "0")}</span>
-                          <strong>{ad.angle}</strong>
+                      <article className="pi-copy" key={`${ad.angle}-${index}`}>
+                        <div className="pi-copy-head">
+                          <div>
+                            <span>Anúncio {String(index + 1).padStart(2, "0")}</span>
+                            <strong>{ad.angle}</strong>
+                          </div>
+                          <button type="button" className="pi-icon-btn" aria-label="Copiar anúncio" onClick={() => copyText("Anúncio copiado", formatAdCopies([ad]))}>
+                            <Icon name="copy" />
+                          </button>
                         </div>
-                        <span>Texto principal</span>
-                        <p className="multiline-copy">{ad.primaryText}</p>
-                        <span>Titulo</span>
-                        <h3>{ad.headline}</h3>
-                        <span>Descricao</span>
-                        <p>{ad.description}</p>
+                        <dl className="pi-copy-parts">
+                          <dt className="c1">Texto principal</dt>
+                          <dd className="pi-multiline">{ad.primaryText}</dd>
+                          <dt className="c2">Título</dt>
+                          <dd className="pi-headline">{ad.headline}</dd>
+                          <dt className="c3">Descrição</dt>
+                          <dd>{ad.description}</dd>
+                        </dl>
                       </article>
                     ))}
                   </div>
                 )}
               </section>
 
-              <section className={`panel output-panel view-panel ${activeView === "arquivos" ? "" : "is-hidden"}`} id="arquivos">
-                <div className="panel-heading">
+              <section className={`pi-view view-panel ${activeView === "arquivos" ? "" : "is-hidden"}`} id="arquivos">
+                <header className="pi-view-head" style={{ "--c": "var(--pi-amber)" } as CSSProperties}>
+                  <span className="pi-ico"><Icon name="folder" /></span>
                   <div>
-                    <p className="eyebrow">Downloads e histórico</p>
+                    <p className="pi-kicker">Downloads e histórico</p>
                     <h2>Meus arquivos</h2>
+                    <p>Baixe de novo o pacote completo de cada projeto. Os pacotes ficam disponíveis por 30 dias após a criação.</p>
+                  </div>
+                </header>
+
+                <div className="pi-usage">
+                  <div className="pi-card">
+                    <span>Produtos este mês</span>
+                    <b>{usage.productsUsed}<small>/{usage.productsLimit}</small></b>
+                    <div className="pi-bar">
+                      <i style={{ width: `${Math.min((usage.productsUsed / Math.max(usage.productsLimit, 1)) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                  <div className="pi-card">
+                    <span>Alterações de copy neste produto</span>
+                    <b>{currentProjectId ? usage.copyUsage[currentProjectId] || 0 : 0}<small>/{usage.copyEditsPerProductLimit}</small></b>
+                    <div className="pi-bar">
+                      <i style={{ width: `${currentProjectId ? Math.min(((usage.copyUsage[currentProjectId] || 0) / Math.max(usage.copyEditsPerProductLimit, 1)) * 100, 100) : 0}%` }} />
+                    </div>
+                  </div>
+                  <div className="pi-card">
+                    <span>Disponibilidade</span>
+                    <b>30<small> dias</small></b>
+                    <p>para baixar cada pacote</p>
                   </div>
                 </div>
-                <div className="usage-grid">
-                  <div className="integration-card">
-                    <strong>{usage.productsUsed}/{usage.productsLimit}</strong>
-                    <p>Produtos criados neste mes.</p>
+
+                <h3 className="pi-section-title">Projetos</h3>
+                {savedProjects.length === 0 ? (
+                  <div className="pi-card pi-empty-state">
+                    <span className="pi-ico" style={{ "--c": "var(--pi-violet)" } as CSSProperties}><Icon name="folder" /></span>
+                    <h4>Nenhum projeto ainda</h4>
+                    <p>Faça o primeiro pedido e o pacote aparece aqui para baixar quando quiser.</p>
+                    <button type="button" className="pi-btn-grad" onClick={() => goTo("gerador")}>
+                      Fazer o pedido
+                      <Icon name="arrow" />
+                    </button>
                   </div>
-                  <div className="integration-card">
-                    <strong>{currentProjectId ? usage.copyUsage[currentProjectId] || 0 : 0}/{usage.copyEditsPerProductLimit}</strong>
-                    <p>Alteracoes usadas neste produto.</p>
+                ) : (
+                  <div className="pi-files-list">
+                    {savedProjects.map((project, index) => (
+                      <div className={`pi-file ${project.id === currentProjectId ? "on" : ""}`} key={project.id}>
+                        <span className={`pi-thumb t${index % 3}`} />
+                        <div className="pi-file-info">
+                          <strong>{project.title}</strong>
+                          <small>
+                            Pacote ZIP
+                            {project.created_at ? ` · criado ${formatRelativeDate(project.created_at)}` : ""}
+                          </small>
+                        </div>
+                        <div className="pi-file-actions">
+                          <button type="button" className="pi-btn-soft" onClick={() => selectSavedProject(project.id, "produto")}>
+                            Abrir
+                          </button>
+                          <button type="button" className="pi-btn-soft pi-hide-xs" onClick={() => selectSavedProject(project.id, "copy")}>
+                            Copy
+                          </button>
+                          <button type="button" className="pi-btn-grad" onClick={() => downloadSavedProject(project)}>
+                            <Icon name="download" />
+                            <span className="pi-hide-xs">Baixar</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="integration-card">
-                    <strong>30 dias</strong>
-                    <p>Pacotes ZIP ficam disponíveis para download por 30 dias após a criação.</p>
-                  </div>
-                </div>
-                <div className="archive-box">
-                  <div>
-                    <span>Pacote mais recente</span>
-                    <strong>{lastPackageName || "Nenhum pacote baixado nesta sessão"}</strong>
-                    <p>Em produção, este arquivo ficará arquivado por 30 dias e será removido automaticamente após o prazo.</p>
-                  </div>
-                  <button className="secondary" onClick={downloadProject} disabled={!result}>
-                    Baixar pacote atual
-                  </button>
-                </div>
+                )}
+
+                {currentProjectId && result.prompts.length > 0 && (
+                  <>
+                    <h3 className="pi-section-title">Prompts do projeto aberto</h3>
+                    <div className="pi-prompts">
+                      {result.prompts.map((prompt) => (
+                        <button type="button" key={prompt} onClick={() => copyText("Prompt copiado", prompt)}>
+                          <span>{prompt}</span>
+                          <Icon name="copy" />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </section>
             </>
           )}
         </div>
 
-        <section className={`bottom-row view-panel ${activeView === "arquivos" ? "" : "is-hidden"}`}>
-          <div className="panel saved-panel">
-            <h2>Projetos recentes</h2>
-            {savedProjects.length === 0 ? (
-              <p>Nenhum projeto salvo ainda.</p>
-            ) : (
-              savedProjects.map((project) => (
-                <button
-                  key={project.id}
-                  onClick={() => selectSavedProject(project.id, "produto")}
-                >
-                  {project.title}
-                </button>
-              ))
-            )}
-          </div>
-          <div className="panel prompt-panel">
-            <h2>Prompts de alta conversao</h2>
-            <div>
-              {result?.prompts.map((prompt) => (
-                <button key={prompt} onClick={() => copyText("Prompt copiado", prompt)}>
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
+        </div>
+
+        {activeGeneration && <GenerationOverlay kind={activeGeneration} />}
 
         <div className={`toast ${copiedLabel ? "show" : ""} ${activeGeneration ? "working" : ""}`} aria-live="polite">
           <span>{copiedLabel}</span>
@@ -3193,6 +3940,30 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      <nav className="pi-mnav" aria-label="Navegação rápida">
+        <button type="button" className={activeView === "inicio" ? "on" : ""} onClick={() => goTo("inicio")}>
+          <Icon name="home" />
+          Início
+        </button>
+        <button type="button" className={activeView === "radar" ? "on" : ""} onClick={() => goTo("radar")}>
+          <Icon name="trend" />
+          Nichos
+        </button>
+        <button type="button" className="pi-fab-wrap" aria-label="Fazer o pedido" onClick={() => goTo("gerador")}>
+          <span className="pi-fab">
+            <Icon name="star" />
+          </span>
+        </button>
+        <button type="button" className={activeView === "copy" ? "on" : ""} onClick={() => goTo("copy")}>
+          <Icon name="chat" />
+          Copy
+        </button>
+        <button type="button" className={activeView === "arquivos" ? "on" : ""} onClick={() => goTo("arquivos")}>
+          <Icon name="folder" />
+          Arquivos
+        </button>
+      </nav>
     </main>
   );
 }

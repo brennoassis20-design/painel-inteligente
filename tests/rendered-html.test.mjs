@@ -13,9 +13,9 @@ test("keeps the Painel Inteligente app ready for Vercel", async () => {
   ]);
 
   assert.match(layout, /title:\s*"Painel Inteligente"/);
-  assert.match(page, /Entrar no Painel Inteligente/);
+  assert.match(page, /Entrar no painel/);
   assert.match(page, /Nichos em alta/);
-  assert.match(page, /Agente de Copy/);
+  assert.match(page, /Copy de vendas/);
   assert.match(packageJson, /"build":\s*"next build --webpack"/);
   assert.match(packageJson, /"next":\s*"16\.4\.0"/);
   assert.match(vercelConfig, /"path":\s*"\/api\/trends\/refresh"/);
