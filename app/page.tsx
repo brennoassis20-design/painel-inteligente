@@ -2518,6 +2518,13 @@ export default function Home() {
                 <Icon name="external" />
               </span>
             </a>
+            <a href="/manual" target="_blank" rel="noreferrer">
+              <Icon name="list" />
+              Manual das aulas
+              <span className="pi-ext">
+                <Icon name="external" />
+              </span>
+            </a>
           </div>
         </nav>
 
