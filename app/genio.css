@@ -4383,3 +4383,37 @@ a.pi-pill:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Nichos em alta: prova real da Biblioteca de Anúncios */
+.pi-trend-proof {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0 0 12px;
+  color: var(--pi-green);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.pi-trend-proof svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 1px;
+}
+
+.pi-proof {
+  border-color: rgba(78, 240, 166, 0.3);
+  background: linear-gradient(120deg, rgba(78, 240, 166, 0.1), rgba(159, 233, 255, 0.05));
+}
+
+.pi-proof span {
+  color: var(--pi-green);
+}
+
+.pi-proof p + p {
+  margin-top: 6px;
+  color: var(--pi-muted);
+  font-size: 12.5px;
+}

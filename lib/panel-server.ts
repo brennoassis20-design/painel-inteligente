@@ -1,5 +1,6 @@
 import { normalizeSalesExtras, salesCopyRules, salesExtrasJsonShape } from "@/lib/sales-page";
 import { buildProduct, normalizeAiProduct, productFormatFor, ProductResult, requestAiJson } from "@/lib/product-engine";
+import { collectAdLibraryTrends, hasAdLibrarySource } from "@/lib/trend-ads";
 
 export type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
 
@@ -452,6 +453,28 @@ export async function refreshTrendOpportunities(force = false) {
         opportunities: current,
       };
     }
+  }
+
+  // Com a Biblioteca de Anúncios ligada, só entra dado real: se a coleta falhar, a lista atual fica.
+  if (hasAdLibrarySource()) {
+    const { products, stats } = await collectAdLibraryTrends(getServerAiKey());
+    if (products.length < 4) {
+      throw new Error(`Coleta trouxe só ${products.length} oportunidades; lista atual mantida.`);
+    }
+    const startedAt = new Date().toISOString();
+    const rows = products.map((product) => ({ ...mapTrendProductToRow(product), source: "meta-ad-library", collected_at: startedAt }));
+    const savedRows = await supabaseRest<TrendOpportunityRow[]>("/trend_opportunities?on_conflict=slug", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+      body: JSON.stringify(rows),
+    });
+    // Sai da lista o que não apareceu nesta coleta.
+    await supabaseRest(`/trend_opportunities?is_active=eq.true&collected_at=lt.${encodeURIComponent(startedAt)}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ is_active: false }),
+    });
+    return { updated: savedRows.length, skipped: false, stats, opportunities: savedRows.map(mapTrendRowToProduct) };
   }
 
   const products = await collectTrendProducts();

@@ -452,6 +452,11 @@ const trendProducts: TrendProduct[] = [
   },
 ];
 
+// Só oportunidades da Biblioteca de Anúncios trazem contagem real de anunciantes.
+function hasAdProof(product: TrendProduct) {
+  return /anunciantes? ativos?/.test(product.adSignal || "");
+}
+
 function getTrendStatus(product: TrendProduct) {
   return product.status || (product.score >= 88 ? "Validado" : product.score >= 82 ? "Tendencia" : "Promissor");
 }
@@ -2864,6 +2869,12 @@ export default function Home() {
                       </div>
                       <h3>{product.title}</h3>
                       <p className="pi-trend-promise">{product.promise || product.angle}</p>
+                      {hasAdProof(product) && (
+                        <p className="pi-trend-proof">
+                          <Icon name="trend" />
+                          {product.adSignal}
+                        </p>
+                      )}
                       <dl className="pi-trend-meta">
                         <div>
                           <dt>Formato</dt>
@@ -2933,6 +2944,14 @@ export default function Home() {
                           <p>{selectedTrendProduct.pageType || "Landing curta com prova e checkout"}</p>
                         </div>
                       </div>
+                      {hasAdProof(selectedTrendProduct) && (
+                        <div className="pi-insight pi-proof">
+                          <span><Icon name="trend" />Prova na Biblioteca de Anúncios</span>
+                          <p>{selectedTrendProduct.adSignal}</p>
+                          {selectedTrendProduct.trendSignal && <p>{selectedTrendProduct.trendSignal}</p>}
+                          {selectedTrendProduct.searchSignal && <p>{selectedTrendProduct.searchSignal}</p>}
+                        </div>
+                      )}
                       <div className="pi-insight">
                         <span><Icon name="star" />Insight estratégico</span>
                         <p>{selectedTrendProduct.strategicInsight || selectedTrendProduct.trendSignal}</p>

@@ -1,9 +1,13 @@
 import { jsonError, refreshTrendOpportunities } from "@/lib/panel-server";
 
-function isAuthorized(request: Request) {
-  const secret = process.env.TREND_REFRESH_SECRET?.trim() || process.env.CRON_SECRET?.trim();
+// Coleta na Biblioteca de Anúncios + IA leva cerca de 1 a 3 minutos.
+export const maxDuration = 300;
 
-  if (!secret) {
+// A Vercel Cron envia CRON_SECRET; chamadas manuais podem usar TREND_REFRESH_SECRET.
+function isAuthorized(request: Request) {
+  const secrets = [process.env.TREND_REFRESH_SECRET?.trim(), process.env.CRON_SECRET?.trim()].filter(Boolean);
+
+  if (!secrets.length) {
     return false;
   }
 
@@ -11,7 +15,7 @@ function isAuthorized(request: Request) {
   const bearer = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
   const querySecret = new URL(request.url).searchParams.get("secret");
 
-  return bearer === secret || querySecret === secret;
+  return secrets.some((secret) => bearer === secret || querySecret === secret);
 }
 
 async function handleRefresh(request: Request) {
