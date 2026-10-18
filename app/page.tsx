@@ -1903,6 +1903,7 @@ export default function Home() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [loginFailed, setLoginFailed] = useState(false);
   const [sessionToken, setSessionToken] = useState(() =>
     typeof window === "undefined" ? "" : window.localStorage.getItem(sessionKey) || "",
   );
@@ -2138,6 +2139,7 @@ export default function Home() {
 
     setLoginError("");
     setLoginNotice("");
+    setLoginFailed(false);
 
     try {
       if (mode === "forgot") {
@@ -2190,7 +2192,10 @@ export default function Home() {
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || "Não foi possível acessar.");
+      if (!response.ok) {
+        setLoginFailed(true);
+        throw new Error(data.error || "Não foi possível acessar.");
+      }
 
       const token = data.session.accessToken as string;
       window.localStorage.setItem(sessionKey, token);
@@ -2419,6 +2424,20 @@ export default function Home() {
           )}
           {loginError && <p className="form-error">{loginError}</p>}
           {loginNotice && <p className="form-notice">{loginNotice}</p>}
+          {mode === "login" && loginFailed && (
+            <div className="pi-not-student">
+              <p>
+                <strong>Já é aluno?</strong> Use &quot;Esqueci minha senha&quot; logo abaixo com o e-mail da compra.
+              </p>
+              <p>
+                <strong>Ainda não é aluno?</strong> O painel é exclusivo de quem tem o Método Gênio.
+              </p>
+              <a className="pi-btn-ghost" href="/metodo-genio?utm_source=painel&utm_medium=login&utm_campaign=metodo-genio&utm_content=erro-login">
+                Conhecer o Método Gênio
+                <Icon name="arrow" />
+              </a>
+            </div>
+          )}
 
           <button className="pi-btn-main" type="submit">
             {mode === "login" && "Entrar no painel"}
@@ -2444,6 +2463,11 @@ export default function Home() {
             <Icon name="shield" />
             Acesso exclusivo para quem tem o Método Gênio
           </p>
+          {mode === "login" && (
+            <p className="pi-join">
+              Ainda não é aluno? <a href="/metodo-genio?utm_source=painel&utm_medium=login&utm_campaign=metodo-genio&utm_content=link-rodape-login">Conheça o Método Gênio</a>
+            </p>
+          )}
         </form>
       </main>
     );

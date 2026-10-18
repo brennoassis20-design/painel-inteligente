@@ -4417,3 +4417,38 @@ a.pi-pill:hover {
   color: var(--pi-muted);
   font-size: 12.5px;
 }
+
+.pi-not-student {
+  margin: 4px 0 6px;
+  padding: 14px 14px 2px;
+  border: 1px solid var(--pi-line);
+  border-radius: 14px;
+  background: rgba(183, 155, 255, 0.06);
+  color: var(--pi-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pi-not-student p {
+  margin: 0 0 6px;
+}
+
+.pi-not-student strong {
+  color: var(--pi-text);
+}
+
+.pi-not-student .pi-btn-ghost {
+  margin: 10px 0 12px;
+}
+
+.pi-join {
+  margin: 12px 0 0;
+  color: var(--pi-dim);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.pi-join a {
+  color: var(--pi-cyan);
+  font-weight: 600;
+}

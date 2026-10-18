@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const data = await response.json();
 
     if (!response.ok) {
-      return jsonError("Email, senha ou confirmacao de email pendente.", response.status);
+      return jsonError("E-mail ou senha incorretos.", response.status);
     }
 
     const user = {

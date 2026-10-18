@@ -5,6 +5,18 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/generate/pdf": ["./node_modules/@sparticuz/chromium/bin/**", "./lib/pdf-fonts/**"],
   },
+  // genio.brennolimaoficial.com abre direto na página de vendas do Método Gênio.
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: "/",
+          has: [{ type: "host", value: "genio.brennolimaoficial.com" }],
+          destination: "/metodo-genio",
+        },
+      ],
+    };
+  },
 };
 
 export default nextConfig;
