@@ -839,22 +839,49 @@ function styleCss(style: DocumentStyle) {
 
 /* ---------- configuração editável e script ---------- */
 
-const configScript = `<script>
+export type OfertaConfig = {
+  preco: string;
+  precoDe: string;
+  checkout: string;
+  pixel: string;
+  bonus: string[];
+};
+
+export const defaultOferta: OfertaConfig = { preco: "19,90", precoDe: "", checkout: "", pixel: "", bonus: [] };
+
+// Só números: o ID do pixel da Meta tem de 15 a 16 dígitos.
+export function cleanPixelId(value: string) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.length >= 8 && digits.length <= 20 ? digits : "";
+}
+
+// Valores entram dentro de <script>: JSON.stringify + escape de "<" impede fechar a tag.
+function jsValue(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
+function configScript(input: Partial<OfertaConfig> = {}) {
+  const oferta = { ...defaultOferta, ...input };
+  const checkout = /^https?:\/\//i.test(oferta.checkout.trim()) ? oferta.checkout.trim() : "";
+  return `<script>
 /* =====================================================================
    CONFIGURAÇÃO DA OFERTA: troque só estes valores antes de publicar.
    - preco: valor que aparece em toda a página (ex.: "19,90")
    - precoDe: preço "de" riscado, só se for real (deixe "" para esconder)
    - checkout: link do seu checkout (enquanto vazio, os botões levam à oferta)
+   - pixel: ID do seu pixel da Meta, só os números (deixe "" se ainda não tiver)
    - bonus: só se você realmente entregar bônus, ex.: ["Planilha de compras"]
    Os textos da página podem ser editados direto no HTML abaixo.
    ===================================================================== */
 window.OFERTA = {
-  preco: "19,90",
-  precoDe: "",
-  checkout: "",
-  bonus: []
+  preco: ${jsValue(oferta.preco.trim() || defaultOferta.preco)},
+  precoDe: ${jsValue(oferta.precoDe.trim())},
+  checkout: ${jsValue(checkout)},
+  pixel: ${jsValue(cleanPixelId(oferta.pixel))},
+  bonus: ${jsValue((oferta.bonus || []).map((b) => String(b).trim()).filter(Boolean))}
 };
 </script>`;
+}
 
 const runtimeScript = `<script>
 (function () {
@@ -870,6 +897,18 @@ const runtimeScript = `<script>
   all("[data-ancora]").forEach(function (el) { el.textContent = precoDe ? "Pagamento único, acesso imediato." : ancora; });
   if (o.checkout && /^https?:\\/\\//.test(o.checkout)) {
     all("[data-checkout]").forEach(function (el) { el.href = o.checkout; });
+  }
+  var pixel = String(o.pixel || "").replace(/\\D/g, "");
+  if (pixel) {
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");
+    fbq("init", pixel);
+    fbq("track", "PageView");
+    fbq("track", "ViewContent", { value: valor, currency: "BRL" });
+  }
+  if (pixel && o.checkout && /^https?:\\/\\//.test(o.checkout)) {
+    all("[data-checkout]").forEach(function (el) {
+      el.addEventListener("click", function () { if (window.fbq) fbq("track", "InitiateCheckout", { value: valor, currency: "BRL" }); });
+    });
   }
   var bonus = Array.isArray(o.bonus) ? o.bonus.filter(Boolean) : [];
   if (bonus.length) {
@@ -896,7 +935,7 @@ const runtimeScript = `<script>
 
 /* ---------- página ---------- */
 
-export function buildSalesPage(input: SalesProduct) {
+export function buildSalesPage(input: SalesProduct, oferta?: Partial<OfertaConfig>) {
   // Projetos muito antigos podem não ter algum bloco; a página sai com o que existir.
   const product: SalesProduct = {
     ...input,
@@ -939,7 +978,7 @@ export function buildSalesPage(input: SalesProduct) {
 <title>${esc(product.title)}</title>
 <meta name="description" content="${esc(copy.subheadline)}" />
 <meta name="theme-color" content="${copy.palette.deep}" />
-${configScript}
+${configScript(oferta)}
 <style>${googleFontCss(copy.style)}${css(copy)}</style>
 </head>
 <body>

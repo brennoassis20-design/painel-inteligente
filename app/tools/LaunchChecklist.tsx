@@ -6,7 +6,7 @@ import { Icon, IconName } from "../icons";
 // Checklist de lançamento: progresso salvo no navegador do aluno, sem IA.
 const storagePrefix = "painel-inteligente-lancamento";
 
-export type LaunchTarget = "gerador" | "produto" | "copy" | "arquivos" | "calculadora" | "mockup";
+export type LaunchTarget = "gerador" | "produto" | "criativos" | "copy" | "arquivos" | "calculadora" | "mockup";
 
 type LaunchItem = {
   id: string;
@@ -33,8 +33,8 @@ const phases: { title: string; icon: IconName; color: string; items: LaunchItem[
     color: "var(--pi-cyan)",
     items: [
       { id: "plataforma", label: "Cadastrar o produto na plataforma de pagamento", hint: "Nome, preço, arquivo de entrega e e-mail de acesso do comprador." },
-      { id: "pagina", label: "Publicar a página de vendas", hint: "A página já vem pronta dentro do ZIP do projeto.", action: { label: "Meus arquivos", target: "arquivos" } },
-      { id: "checkout", label: "Ligar o botão da página ao checkout", hint: "Todos os botões de compra devem abrir o link do checkout." },
+      { id: "checkout", label: "Ligar o botão da página ao checkout", hint: "Cole o link do checkout em Produto criado. Todos os botões de compra passam a abrir o pagamento.", action: { label: "Abrir produto", target: "produto" } },
+      { id: "pagina", label: "Publicar a página de vendas", hint: "Baixe a página pronta em Produto criado e arraste o arquivo no Netlify Drop para ter o link.", action: { label: "Abrir produto", target: "produto" } },
       { id: "compra-teste", label: "Fazer uma compra de teste", hint: "Confirme que o pagamento passa e que o produto chega no e-mail." },
     ],
   },
@@ -44,7 +44,7 @@ const phases: { title: string; icon: IconName; color: string; items: LaunchItem[
     color: "var(--pi-amber)",
     items: [
       { id: "pixel", label: "Criar o pixel da Meta", hint: "No Gerenciador de Eventos, um pixel por negócio." },
-      { id: "pixel-pagina", label: "Instalar o pixel na página e no checkout", hint: "Assim a Meta sabe quem visitou e quem comprou." },
+      { id: "pixel-pagina", label: "Instalar o pixel na página e no checkout", hint: "Cole o ID do pixel em Produto criado (a página já baixa com ele) e coloque o mesmo pixel na plataforma de pagamento.", action: { label: "Abrir produto", target: "produto" } },
       { id: "eventos", label: "Conferir os eventos de compra", hint: "Visualização da página, início de checkout e compra aparecendo no Gerenciador de Eventos." },
     ],
   },
@@ -53,7 +53,7 @@ const phases: { title: string; icon: IconName; color: string; items: LaunchItem[
     icon: "rocket",
     color: "var(--pi-pink)",
     items: [
-      { id: "criativos", label: "Gravar 3 criativos com a copy do painel", hint: "Ganchos diferentes para descobrir qual chama mais atenção.", action: { label: "Abrir copy", target: "copy" } },
+      { id: "criativos", label: "Baixar os Criativos prontos", hint: "Imagens e carrossel prontos, sem precisar gravar. Suba pelo menos 3 variações diferentes para testar.", action: { label: "Abrir criativos", target: "criativos" } },
       { id: "campanha", label: "Criar a campanha de vendas", hint: "Objetivo de vendas, otimizando para compra, com orçamento de teste." },
       { id: "publicar", label: "Publicar e não mexer por 3 dias", hint: "O algoritmo precisa de tempo para aprender antes de qualquer mudança." },
     ],

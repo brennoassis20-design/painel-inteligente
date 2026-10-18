@@ -4312,3 +4312,74 @@ a.pi-pill:hover {
     border-radius: 10px;
   }
 }
+
+/* Página de vendas pronta: preço, checkout e pixel no Produto criado */
+.pi-page-setup {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.pi-page-setup-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pi-page-setup-head .pi-card-title {
+  margin: 0 0 4px;
+}
+
+.pi-page-setup-head p {
+  margin: 0;
+  color: var(--pi-muted);
+  font-size: 13px;
+}
+
+.pi-page-setup-status {
+  display: flex;
+  gap: 8px;
+}
+
+.pi-page-setup-status > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--pi-line);
+  border-radius: 999px;
+  color: var(--pi-dim);
+  font-size: 12px;
+}
+
+.pi-page-setup-status .pi-dot {
+  background: var(--pi-dim);
+  box-shadow: none;
+  animation: none;
+}
+
+.pi-page-setup-status .ok {
+  color: var(--pi-muted);
+}
+
+.pi-page-setup-status .ok .pi-dot {
+  background: var(--pi-green);
+  box-shadow: 0 0 0 3px rgba(78, 240, 166, 0.18);
+}
+
+.pi-page-setup .pi-actions {
+  margin-top: 4px;
+}
+
+.pi-page-setup-note {
+  color: var(--pi-dim);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .pi-page-setup .pi-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

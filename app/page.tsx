@@ -8,7 +8,8 @@ import { LaunchChecklist } from "./tools/LaunchChecklist";
 import { MentorChat } from "./tools/MentorChat";
 import { ProductMockup } from "./tools/ProductMockup";
 import { ProfitCalculator } from "./tools/ProfitCalculator";
-import { buildSalesPage, normalizeSalesExtras, withoutReadingWords, type SalesPageExtras } from "@/lib/sales-page";
+import { SalesPageSetup, readOferta } from "./tools/SalesPageSetup";
+import { buildSalesPage, normalizeSalesExtras, withoutReadingWords, type OfertaConfig, type SalesPageExtras } from "@/lib/sales-page";
 import { googleFontCss, renderProductDocument, resolveDocumentStyle, type DocumentBlock } from "@/lib/product-document";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
@@ -1767,7 +1768,7 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function buildProjectBundle(product: ProductResult, token: string) {
+async function buildProjectBundle(product: ProductResult, token: string, oferta?: OfertaConfig) {
   const baseName = slugify(product.title);
   const pdf = (await fetchPremiumPdf(product, token)) || buildProductPdf(product);
   return {
@@ -1775,7 +1776,7 @@ async function buildProjectBundle(product: ProductResult, token: string) {
     blob: buildZip([
       { name: "01-produto-pronto.pdf", data: pdf },
       { name: "02-produto-editavel.html", data: buildProductHtml(product) },
-      { name: "03-pagina-de-vendas.html", data: buildSalesPage(product) },
+      { name: "03-pagina-de-vendas.html", data: buildSalesPage(product, oferta) },
       { name: "04-copy-da-pagina.txt", data: buildCopyText(product) },
       { name: "05-prompts.txt", data: buildPromptsText(product) },
       { name: "06-revisao-da-entrega.txt", data: buildReviewText(product) },
@@ -2307,10 +2308,17 @@ export default function Home() {
     if (!result) return;
 
     setCopiedLabel("Preparando o pacote...");
-    const bundle = await buildProjectBundle(result, sessionToken);
+    const bundle = await buildProjectBundle(result, sessionToken, readOferta(currentProjectId));
     downloadBlob(bundle.blob, bundle.filename);
     setLastPackageName(bundle.filename);
     setCopiedLabel("Pacote do projeto baixado");
+  }
+
+  function downloadSalesPage(oferta: OfertaConfig) {
+    if (!result) return;
+    const html = buildSalesPage(result, oferta);
+    downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${slugify(result.title)}-pagina.html`);
+    setCopiedLabel("Página de vendas baixada");
   }
 
   function goTo(view: ActiveView) {
@@ -2333,7 +2341,7 @@ export default function Home() {
 
   async function downloadSavedProject(project: SavedProject) {
     setCopiedLabel("Preparando o pacote...");
-    const bundle = await buildProjectBundle(sanitizeProductLanguage(project.payload), sessionToken);
+    const bundle = await buildProjectBundle(sanitizeProductLanguage(project.payload), sessionToken, readOferta(project.id));
     downloadBlob(bundle.blob, bundle.filename);
     setLastPackageName(bundle.filename);
     setCopiedLabel("Pacote do projeto baixado");
@@ -3167,6 +3175,8 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {currentProjectId && <SalesPageSetup key={currentProjectId} projectId={currentProjectId} onDownload={downloadSalesPage} />}
 
                 <div className="pi-two">
                   <div className="pi-card">
