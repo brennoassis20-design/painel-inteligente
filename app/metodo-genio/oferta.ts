@@ -6,8 +6,9 @@ export const OFERTA = {
   gdm: "https://groupdigitalmedia.com.br/",
   painel: "https://painelinteligente.bagencymidia.site/",
   pixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID || "1134983832285410",
-  // Trocar por "/mg/brenno.jpg" quando as fotos novas estiverem em public/mg.
-  foto: "" as string,
+  // Originais em ~/Documents/Brenno Fotos.
+  foto: "/mg/brenno.jpg" as string,
+  avatar: "/mg/brenno-avatar.jpg",
   foto2: "/mg/brenno-familia.jpg" as string,
 };
 

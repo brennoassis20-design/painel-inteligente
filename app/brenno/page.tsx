@@ -7,6 +7,7 @@ import "../metodo-genio/mg.css";
 export const metadata: Metadata = {
   title: "Brenno Lima | Links",
   description: "Método Gênio e serviços da GDM: tráfego pago, assessoria e consultoria comercial.",
+  openGraph: { title: "Brenno Lima", images: ["/mg/brenno-avatar.jpg"] },
 };
 
 export default function BrennoLinksPage() {
@@ -14,13 +15,7 @@ export default function BrennoLinksPage() {
     <main className="mg">
       <div className="mg-bg" aria-hidden="true" />
       <div className="bio-wrap">
-        {OFERTA.foto ? (
-          <img className="bio-photo" src={OFERTA.foto} alt="Brenno Lima" />
-        ) : (
-          <div className="bio-photo mg-photo-empty" aria-hidden="true">
-            <span>BL</span>
-          </div>
-        )}
+        <img className="bio-photo" src={OFERTA.avatar} alt="Brenno Lima" />
         <h1>Brenno Lima</h1>
         <p className="bio-sub">
           +R$ 5 milhões em produtos digitais · tráfego pago desde 2016 · pai da Ayla e da Aurora
