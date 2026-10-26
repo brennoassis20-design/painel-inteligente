@@ -3,6 +3,7 @@
 // Sem dependências de Node: pode ser importado pelo cliente e pelo servidor.
 
 import { documentArt } from "@/lib/document-art";
+import { currencyOf, languageOf, translator } from "@/lib/locale";
 
 export type DocumentStyle = "editorial" | "manual" | "catalogo";
 
@@ -26,6 +27,7 @@ export type DocumentProduct = {
   format?: string;
   intro?: string;
   closing?: string;
+  language?: string;
 };
 
 export type DocumentPalette = {
@@ -95,8 +97,8 @@ export function resolveDocumentStyle(product: DocumentProduct): DocumentStyle {
   if (declared.startsWith("catalog")) return "catalogo";
 
   const value = normalize(`${product.title} ${product.subtitle} ${product.promise}`);
-  if (/fornecedor|lista|catalogo|diretorio|curadoria|selecao|onde comprar/.test(value)) return "catalogo";
-  if (/protocolo|plano de \d+|dias|rotina|desafio|passo a passo|cronograma|treino/.test(value)) return "manual";
+  if (/fornecedor|lista|catalogo|diretorio|curadoria|selecao|onde comprar|proveedor|directorio|seleccion|donde comprar/.test(value)) return "catalogo";
+  if (/protocolo|plano de \d+|plan de \d+|dias|rotina|rutina|desafio|reto|passo a passo|paso a paso|cronograma|treino|entrenamiento/.test(value)) return "manual";
   return "editorial";
 }
 
@@ -107,12 +109,12 @@ export function resolveDocumentPalette(product: DocumentProduct): DocumentPalett
 }
 
 function paletteFor(value: string) {
-  if (/casamento|noiva|festa|evento|maternidade|bebe|gestante/.test(value)) return palettes.rose;
-  if (/saude|bem-estar|alongamento|postura|sono|ansiedade|yoga|treino|fitness|corpo/.test(value)) return palettes.sage;
-  if (/financ|dinheiro|divida|orcamento|invest|renda|negocio|empresa|vendas/.test(value)) return palettes.navy;
-  if (/receita|cozinha|marmita|cardapio|bolo|doce|comida|aliment|confeitaria|cafe/.test(value)) return palettes.terracotta;
-  if (/beleza|skincare|pele|cabelo|maquiagem|unha|estetica|moda/.test(value)) return palettes.plum;
-  if (/pet|cachorro|gato|planta|jardim|horta|viagem|natureza|casa/.test(value)) return palettes.forest;
+  if (/casamento|noiva|festa|evento|maternidade|bebe|gestante|boda|novia|fiesta|maternidad|embarazada/.test(value)) return palettes.rose;
+  if (/saude|bem-estar|alongamento|postura|sono|ansiedade|yoga|treino|fitness|corpo|salud|bienestar|estiramiento|sueno|ansiedad|entrenamiento|cuerpo/.test(value)) return palettes.sage;
+  if (/financ|dinheiro|divida|orcamento|invest|renda|negocio|empresa|vendas|dinero|deuda|presupuesto|ingreso|ventas/.test(value)) return palettes.navy;
+  if (/receita|cozinha|marmita|cardapio|bolo|doce|comida|aliment|confeitaria|cafe|receta|cocina|menu|pastel|postre|reposteria|desayuno/.test(value)) return palettes.terracotta;
+  if (/beleza|skincare|pele|cabelo|maquiagem|unha|estetica|moda|belleza|piel|cabello|maquillaje|unas/.test(value)) return palettes.plum;
+  if (/pet|cachorro|gato|planta|jardim|horta|viagem|natureza|casa|perro|mascota|jardin|huerto|viaje|naturaleza|hogar/.test(value)) return palettes.forest;
   return undefined;
 }
 
@@ -290,6 +292,7 @@ function editorialCss() {
 }
 
 function editorialBody(product: DocumentProduct, palette: DocumentPalette, options: RenderOptions) {
+  const t = translator(languageOf(product));
   const blocks = product.productContent;
   const pageOf = (index: number) => (options.pageNumbers?.[index] ? pad(options.pageNumbers[index]) : "00");
   const showPages = options.target === "pdf";
@@ -297,17 +300,17 @@ function editorialBody(product: DocumentProduct, palette: DocumentPalette, optio
   const sheet = (content: string, extra = "") => `<section class="sheet ${extra}">${content}</section>`;
   const tables = blocks.filter((block) => block.table?.rows?.length).length;
   const facts = [
-    [pad(blocks.length), "capítulos"],
-    tables ? [pad(tables), tables === 1 ? "quadro comparativo" : "quadros comparativos"] : [pad(blocks.length), "ações práticas"],
-    ["1", "checklist final"],
+    [pad(blocks.length), t("capítulos")],
+    tables ? [pad(tables), t(tables === 1 ? "quadro comparativo" : "quadros comparativos")] : [pad(blocks.length), t("ações práticas")],
+    ["1", t("checklist final")],
   ];
 
   const cover = sheet(
     `<div class="cover">
-      <div class="cover-head"><span>Guia completo</span><span>Leitura e consulta</span></div>
+      <div class="cover-head"><span>${t("Guia completo")}</span><span>${t("Leitura e consulta")}</span></div>
       <div class="arch">${documentArt(palette.id, 0)}</div>
       <div class="cover-body">
-        <span class="kicker">Guia editorial</span>
+        <span class="kicker">${t("Guia editorial")}</span>
         <h1 style="font-size:${coverTitleSize(product.title, 46)}">${esc(product.title)}</h1>
         <div class="sub">${esc(product.subtitle)}</div>
       </div>
@@ -318,8 +321,8 @@ function editorialBody(product: DocumentProduct, palette: DocumentPalette, optio
 
   const toc = sheet(
     `<div class="toc page-break">
-      <span class="kicker">Neste guia</span>
-      <h2>Sumário</h2>
+      <span class="kicker">${t("Neste guia")}</span>
+      <h2>${t("Sumário")}</h2>
       <ol>
         ${blocks
           .map(
@@ -334,16 +337,16 @@ function editorialBody(product: DocumentProduct, palette: DocumentPalette, optio
 
   const intro = sheet(
     `<div class="intro page-break">
-      <span class="kicker">Antes de começar</span>
-      <h2>Como usar este guia</h2>
+      <span class="kicker">${t("Antes de começar")}</span>
+      <h2>${t("Como usar este guia")}</h2>
       <div class="sub">${esc(product.subtitle)}</div>
       <div class="lead">${paragraphs(product.intro || product.promise)}</div>
       <div class="pull">${esc(product.promise)}</div>
       ${
         product.modules.length
-          ? `<span class="label">O que você vai encontrar</span><div class="map">${product.modules
+          ? `<span class="label">${t("O que você vai encontrar")}</span><div class="map">${product.modules
               .slice(0, 6)
-              .map((item, index) => `<div><b>Parte ${pad(index + 1)}</b>${esc(item)}</div>`)
+              .map((item, index) => `<div><b>${t("Parte")} ${pad(index + 1)}</b>${esc(item)}</div>`)
               .join("")}</div>`
           : ""
       }
@@ -353,11 +356,11 @@ function editorialBody(product: DocumentProduct, palette: DocumentPalette, optio
   const chapters = blocks
     .map((block, index) => {
       const aside = [
-        block.tip ? `<div class="tip"><span class="label">Dica</span>${esc(block.tip)}</div>` : "",
-        block.example ? `<div class="example"><span class="label">Na vida real</span><p>${esc(block.example)}</p></div>` : "",
+        block.tip ? `<div class="tip"><span class="label">${t("Dica")}</span>${esc(block.tip)}</div>` : "",
+        block.example ? `<div class="example"><span class="label">${t("Na vida real")}</span><p>${esc(block.example)}</p></div>` : "",
       ].join("");
       const points = block.points?.length
-        ? `<div class="keypoints"><span class="label">Pontos-chave</span><ol>${block.points.map((point) => `<li>${esc(point)}</li>`).join("")}</ol></div>`
+        ? `<div class="keypoints"><span class="label">${t("Pontos-chave")}</span><ol>${block.points.map((point) => `<li>${esc(point)}</li>`).join("")}</ol></div>`
         : "";
       return sheet(`<article class="chapter page-break${compact.has(index) ? " compact" : ""}">
         <header class="chapter-head">
@@ -370,18 +373,18 @@ function editorialBody(product: DocumentProduct, palette: DocumentPalette, optio
           ${aside ? `<aside class="aside">${aside}</aside>` : ""}
         </div>
         ${tableHtml(block.table)}
-        <div class="practice"><span class="label">Na prática</span><p>${esc(block.task)}</p></div>
+        <div class="practice"><span class="label">${t("Na prática")}</span><p>${esc(block.task)}</p></div>
       </article>`);
     })
     .join("");
 
   const checklist = sheet(
     `<div class="checklist page-break${blocks.length > 10 ? " compact" : ""}">
-      <span class="kicker">Para revisar</span>
-      <h2>${endTitles.editorial}</h2>
-      <p>Uma ação por capítulo. Marque à medida que concluir e volte ao capítulo sempre que um item travar.</p>
+      <span class="kicker">${t("Para revisar")}</span>
+      <h2>${t(endTitles.editorial)}</h2>
+      <p>${t("Uma ação por capítulo. Marque à medida que concluir e volte ao capítulo sempre que um item travar.")}</p>
       <ul>${blocks
-        .map((block, index) => `<li><div><small>Capítulo ${pad(index + 1)}</small>${esc(block.task)}</div></li>`)
+        .map((block, index) => `<li><div><small>${t("Capítulo")} ${pad(index + 1)}</small>${esc(block.task)}</div></li>`)
         .join("")}</ul>
     </div>`,
   );
@@ -389,7 +392,7 @@ function editorialBody(product: DocumentProduct, palette: DocumentPalette, optio
   const closing = sheet(
     `<div class="closing page-break">
       <div class="closing-body">
-        <span class="kicker">Para fechar</span>
+        <span class="kicker">${t("Para fechar")}</span>
         <h2>${esc(product.title)}</h2>
         ${paragraphs(product.closing || product.promise)}
       </div>
@@ -522,6 +525,7 @@ function manualCss() {
 }
 
 function manualBody(product: DocumentProduct, palette: DocumentPalette, options: RenderOptions) {
+  const t = translator(languageOf(product));
   const blocks = product.productContent;
   const total = blocks.length;
   const pageOf = (index: number) => (options.pageNumbers?.[index] ? pad(options.pageNumbers[index]) : "00");
@@ -529,26 +533,26 @@ function manualBody(product: DocumentProduct, palette: DocumentPalette, options:
   const compact = new Set(options.compact || []);
   const tight = new Set(options.tight || []);
   const sheet = (content: string, extra = "") => `<section class="sheet ${extra}">${content}</section>`;
-  const route = `<div class="route"><div class="line">${blocks.map((_, index) => `<i>${pad(index + 1)}</i>`).join("")}</div><div class="ends"><span>Início</span><span>Concluído</span></div></div>`;
+  const route = `<div class="route"><div class="line">${blocks.map((_, index) => `<i>${pad(index + 1)}</i>`).join("")}</div><div class="ends"><span>${t("Início")}</span><span>${t("Concluído")}</span></div></div>`;
   const records = blocks.filter((block) => block.table?.rows?.length).length;
 
   const cover = sheet(
     `<div class="m-cover">
-      <div class="rail"><span>Manual prático</span></div>
-      <div class="top"><span class="tag">Manual prático</span><span class="tag">${pad(total)} etapas</span></div>
+      <div class="rail"><span>${t("Manual prático")}</span></div>
+      <div class="top"><span class="tag">${t("Manual prático")}</span><span class="tag">${pad(total)} ${t("etapas")}</span></div>
       <div class="m-title"><h1 style="font-size:${coverTitleSize(product.title, 40)}">${esc(product.title)}</h1><div class="sub">${esc(product.subtitle)}</div></div>
       ${route}
       <div class="disc"></div>
       ${documentArt(palette.id, 0)}
-      <div class="m-facts"><div><b>${pad(total)}</b>etapas</div><div><b>${pad(records || total)}</b>${records ? "fichas" : "tarefas"}</div><div><b>1</b>quadro de acompanhamento</div></div>
+      <div class="m-facts"><div><b>${pad(total)}</b>${t("etapas")}</div><div><b>${pad(records || total)}</b>${t(records ? "fichas" : "tarefas")}</div><div><b>1</b>${t("quadro de acompanhamento")}</div></div>
     </div>`,
     "full",
   );
 
   const percurso = sheet(
     `<div class="percurso page-break">
-      <span class="tag">Mapa do manual</span>
-      <h2>Seu percurso</h2>
+      <span class="tag">${t("Mapa do manual")}</span>
+      <h2>${t("Seu percurso")}</h2>
       <ol>${blocks
         .map(
           (block, index) =>
@@ -560,17 +564,17 @@ function manualBody(product: DocumentProduct, palette: DocumentPalette, options:
 
   const intro = sheet(
     `<div class="m-intro page-break">
-      <span class="tag">Antes de começar</span>
-      <h2>Como usar este manual</h2>
+      <span class="tag">${t("Antes de começar")}</span>
+      <h2>${t("Como usar este manual")}</h2>
       <div class="lead">${paragraphs(product.intro || product.promise)}</div>
       <div class="how">
-        <div><b>01</b><strong>Leia a etapa</strong>Entenda o objetivo e o passo a passo antes de agir.</div>
-        <div><b>02</b><strong>Execute a tarefa</strong>Cada etapa termina com uma ação concreta.</div>
-        <div><b>03</b><strong>Registre</strong>Anote a data e como foi no quadro da própria etapa.</div>
+        <div><b>01</b><strong>${t("Leia a etapa")}</strong>${t("Entenda o objetivo e o passo a passo antes de agir.")}</div>
+        <div><b>02</b><strong>${t("Execute a tarefa")}</strong>${t("Cada etapa termina com uma ação concreta.")}</div>
+        <div><b>03</b><strong>${t("Registre")}</strong>${t("Anote a data e como foi no quadro da própria etapa.")}</div>
       </div>
       ${
         product.modules.length
-          ? `<span class="box-label">Ao final você terá</span><ul class="goals">${product.modules.slice(0, 6).map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`
+          ? `<span class="box-label">${t("Ao final você terá")}</span><ul class="goals">${product.modules.slice(0, 6).map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`
           : ""
       }
     </div>`,
@@ -580,23 +584,23 @@ function manualBody(product: DocumentProduct, palette: DocumentPalette, options:
     .map((block, index) => {
       const bar = blocks.map((_, i) => `<i${i <= index ? ' class="on"' : ""}></i>`).join("");
       const points = block.points?.length
-        ? `<div class="steps"><span class="box-label">Passo a passo</span><ol>${block.points.map((point) => `<li>${esc(point)}</li>`).join("")}</ol></div>`
+        ? `<div class="steps"><span class="box-label">${t("Passo a passo")}</span><ol>${block.points.map((point) => `<li>${esc(point)}</li>`).join("")}</ol></div>`
         : "";
       const boxes = [
-        block.tip ? `<div class="alert"><span class="box-label">Atenção</span>${esc(block.tip)}</div>` : "",
-        block.example ? `<div class="sample"><span class="box-label">Exemplo</span>${esc(block.example)}</div>` : "",
+        block.tip ? `<div class="alert"><span class="box-label">${t("Atenção")}</span>${esc(block.tip)}</div>` : "",
+        block.example ? `<div class="sample"><span class="box-label">${t("Exemplo")}</span>${esc(block.example)}</div>` : "",
       ].filter(Boolean);
       const ficha = tableHtml(block.table).replace("<table>", '<table class="ficha">');
       return sheet(`<article class="step page-break${compact.has(index) ? " compact" : ""}${tight.has(index) ? " tight" : ""}">
-        <div class="step-meta"><span class="tag">Etapa ${pad(index + 1)} de ${pad(total)}</span><div class="bar">${bar}</div></div>
+        <div class="step-meta"><span class="tag">${t("Etapa")} ${pad(index + 1)} ${t("de")} ${pad(total)}</span><div class="bar">${bar}</div></div>
         <div class="step-title"><h2>${esc(blockTitle(block))}</h2>${documentArt(palette.id, index + 1)}</div>
         <div class="step-body">${paragraphs(block.body)}</div>
         ${points}
         ${ficha}
         ${boxes.length ? `<div class="boxes${boxes.length === 1 ? " one" : ""}">${boxes.join("")}</div>` : ""}
         <div class="record">
-          <div class="task"><div><span class="box-label">Sua tarefa</span>${esc(block.task)}</div></div>
-          <div class="fields"><div>Feito em ____/____</div><div class="feel">Como foi: <span>Fácil</span><span>Ok</span><span>Difícil</span></div><div class="notes"><span>Anotações</span></div></div>
+          <div class="task"><div><span class="box-label">${t("Sua tarefa")}</span>${esc(block.task)}</div></div>
+          <div class="fields"><div>${t("Feito em ____/____")}</div><div class="feel">${t("Como foi:")} <span>${t("Fácil")}</span><span>${t("Ok")}</span><span>${t("Difícil")}</span></div><div class="notes"><span>${t("Anotações")}</span></div></div>
         </div>
       </article>`);
     })
@@ -604,9 +608,9 @@ function manualBody(product: DocumentProduct, palette: DocumentPalette, options:
 
   const tracking = sheet(
     `<div class="tracking page-break${total > 10 ? " compact" : ""}">
-      <span class="tag">Para acompanhar</span>
-      <h2>${endTitles.manual}</h2>
-      <table class="track"><thead><tr><th>#</th><th>Tarefa da etapa</th><th>Data</th><th>Feito</th></tr></thead><tbody>${blocks
+      <span class="tag">${t("Para acompanhar")}</span>
+      <h2>${t(endTitles.manual)}</h2>
+      <table class="track"><thead><tr><th>#</th><th>${t("Tarefa da etapa")}</th><th>${t("Data")}</th><th>${t("Feito")}</th></tr></thead><tbody>${blocks
         .map((block, index) => `<tr><td class="n">${pad(index + 1)}</td><td>${esc(block.task)}</td><td class="d"></td><td class="c"></td></tr>`)
         .join("")}</tbody></table>
     </div>`,
@@ -615,7 +619,7 @@ function manualBody(product: DocumentProduct, palette: DocumentPalette, options:
   const closing = sheet(
     `<div class="m-closing page-break">
       <div class="body">
-        <span class="tag">Percurso concluído</span>
+        <span class="tag">${t("Percurso concluído")}</span>
         <h2>${esc(product.title)}</h2>
         ${paragraphs(product.closing || product.promise)}
       </div>
@@ -759,6 +763,7 @@ function catalogoCss() {
 }
 
 function catalogoBody(product: DocumentProduct, palette: DocumentPalette, options: RenderOptions) {
+  const t = translator(languageOf(product));
   const blocks = product.productContent;
   const pageOf = (index: number) => (options.pageNumbers?.[index] ? pad(options.pageNumbers[index]) : "00");
   const showPages = options.target === "pdf";
@@ -771,23 +776,23 @@ function catalogoBody(product: DocumentProduct, palette: DocumentPalette, option
   const cover = sheet(
     `<div class="c-cover">
       <div class="frame"></div>
-      <div class="eyebrow">Seleção curada</div>
+      <div class="eyebrow">${t("Seleção curada")}</div>
       <div class="medal">${documentArt(palette.id, 0)}</div>
       <div class="c-title"><h1 style="font-size:${coverTitleSize(product.title, 46)}">${esc(product.title)}</h1><div class="sub">${esc(product.subtitle)}</div></div>
-      <div class="count"><b>${pad(blocks.length)}</b> categorias${items ? ` · <b>${pad(items)}</b> itens selecionados` : ""}</div>
+      <div class="count"><b>${pad(blocks.length)}</b> ${t("categorias")}${items ? ` · <b>${pad(items)}</b> ${t("itens selecionados")}` : ""}</div>
     </div>`,
     "full",
   );
 
   const index = sheet(
     `<div class="c-index page-break">
-      <div class="eyebrow">Índice</div>
-      <h2>As categorias</h2>
+      <div class="eyebrow">${t("Índice")}</div>
+      <h2>${t("As categorias")}</h2>
       <div class="cards${blocks.length > 8 ? " dense" : ""}">${blocks
         .map(
           (block, i) =>
             `<div><span class="r">${roman(i + 1)}</span>${showPages ? `<span class="p">${pageOf(i)}</span>` : ""}<span class="t">${esc(blockTitle(block))}</span>${
-              content[i].entries.length ? `<span class="m">${content[i].entries.length} itens</span>` : ""
+              content[i].entries.length ? `<span class="m">${content[i].entries.length} ${t("itens")}</span>` : ""
             }</div>`,
         )
         .join("")}</div>
@@ -796,13 +801,13 @@ function catalogoBody(product: DocumentProduct, palette: DocumentPalette, option
 
   const criteria = sheet(
     `<div class="c-criteria page-break">
-      <div class="eyebrow">Antes de escolher</div>
-      <h2>Como usar esta seleção</h2>
+      <div class="eyebrow">${t("Antes de escolher")}</div>
+      <h2>${t("Como usar esta seleção")}</h2>
       <div class="lead">${paragraphs(product.intro || product.promise)}</div>
       <div class="quote">${esc(product.promise)}</div>
       ${
         product.modules.length
-          ? `<span class="mini" style="text-align:center">Critérios desta seleção</span><div class="crit">${product.modules
+          ? `<span class="mini" style="text-align:center">${t("Critérios desta seleção")}</span><div class="crit">${product.modules
               .slice(0, 6)
               .map((item, i) => `<div><b>${roman(i + 1)}</b><span>${esc(item)}</span></div>`)
               .join("")}</div>`
@@ -823,30 +828,30 @@ function catalogoBody(product: DocumentProduct, palette: DocumentPalette, option
             .join("")}</div>`
         : "";
       const points = block.points?.length
-        ? `<div class="observe"><span class="mini">O que observar</span><ul class="crit-list">${block.points.slice(0, 3).map((point) => `<li>${esc(point)}</li>`).join("")}</ul></div>`
+        ? `<div class="observe"><span class="mini">${t("O que observar")}</span><ul class="crit-list">${block.points.slice(0, 3).map((point) => `<li>${esc(point)}</li>`).join("")}</ul></div>`
         : "";
       const table = rest?.rows?.length ? `<div class="cat-table">${tableHtml(rest)}</div>` : "";
       const notes = [
-        block.tip ? `<div class="curator"><span class="mini">Nota da curadoria</span>${esc(block.tip)}</div>` : "",
-        block.example ? `<div class="feature"><span class="mini">Em destaque</span>${esc(block.example)}</div>` : "",
+        block.tip ? `<div class="curator"><span class="mini">${t("Nota da curadoria")}</span>${esc(block.tip)}</div>` : "",
+        block.example ? `<div class="feature"><span class="mini">${t("Em destaque")}</span>${esc(block.example)}</div>` : "",
       ].filter(Boolean);
       return sheet(`<article class="category page-break${compact.has(i) ? " compact" : ""}${tight.has(i) ? " tight" : ""}">
-        <header class="cat-head">${documentArt(palette.id, i + 1)}<div class="eyebrow">Categoria ${roman(i + 1)}</div><h2>${esc(blockTitle(block))}</h2></header>
+        <header class="cat-head">${documentArt(palette.id, i + 1)}<div class="eyebrow">${t("Categoria")} ${roman(i + 1)}</div><h2>${esc(blockTitle(block))}</h2></header>
         <div class="cat-intro">${paragraphs(block.body)}</div>
         ${entries}
         ${points}
         ${table}
         ${notes.length ? `<div class="notes2${notes.length === 1 ? " one" : ""}">${notes.join("")}</div>` : ""}
-        <div class="choice"><p>${esc(block.task)}</p><div class="line">Minha escolha</div></div>
+        <div class="choice"><p>${esc(block.task)}</p><div class="line">${t("Minha escolha")}</div></div>
       </article>`);
     })
     .join("");
 
   const selection = sheet(
     `<div class="selection page-break${blocks.length > 9 ? " compact" : ""}">
-      <div class="eyebrow">Para decidir</div>
-      <h2>${endTitles.catalogo}</h2>
-      <table class="sel"><thead><tr><th>Categoria</th><th>Minha escolha</th><th>Por quê</th></tr></thead><tbody>${blocks
+      <div class="eyebrow">${t("Para decidir")}</div>
+      <h2>${t(endTitles.catalogo)}</h2>
+      <table class="sel"><thead><tr><th>${t("Categoria")}</th><th>${t("Minha escolha")}</th><th>${t("Por quê")}</th></tr></thead><tbody>${blocks
         .map((block, i) => `<tr><td><i>${roman(i + 1)}</i>${esc(blockTitle(block))}</td><td></td><td></td></tr>`)
         .join("")}</tbody></table>
     </div>`,
@@ -857,7 +862,7 @@ function catalogoBody(product: DocumentProduct, palette: DocumentPalette, option
       <div class="frame"></div>
       ${documentArt(palette.id, -1)}
       <div class="body">
-        <div class="eyebrow">Para fechar</div>
+        <div class="eyebrow">${t("Para fechar")}</div>
         <h2>${esc(product.title)}</h2>
         ${paragraphs(product.closing || product.promise)}
       </div>
@@ -884,7 +889,7 @@ export function renderProductDocument(product: DocumentProduct, options: RenderO
   const editable = options.target === "html" ? ' contenteditable="true" spellcheck="true"' : "";
 
   return `<!doctype html>
-<html lang="pt-BR" data-style="${style}">
+<html lang="${currencyOf(languageOf(product)).htmlLang}" data-style="${style}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -893,7 +898,7 @@ export function renderProductDocument(product: DocumentProduct, options: RenderO
 </head>
 <body>${
     options.target === "html"
-      ? '<div class="edit-hint">Clique em qualquer texto para editar. Para salvar em PDF, use Imprimir (Ctrl+P ou Cmd+P), escolha "Salvar como PDF" e ative "Gráficos de fundo".</div>'
+      ? `<div class="edit-hint">${translator(languageOf(product))('Clique em qualquer texto para editar. Para salvar em PDF, use Imprimir (Ctrl+P ou Cmd+P), escolha "Salvar como PDF" e ative "Gráficos de fundo".')}</div>`
       : ""
   }<main${editable}>${body}</main></body>
 </html>`;

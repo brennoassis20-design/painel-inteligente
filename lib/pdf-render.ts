@@ -3,6 +3,7 @@ import path from "node:path";
 import chromium from "@sparticuz/chromium";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, PDFString } from "pdf-lib";
 import puppeteer, { type Browser } from "puppeteer-core";
+import { languageOf, translator } from "@/lib/locale";
 import { blockTitle, documentFonts, endTitles, renderProductDocument, resolveDocumentStyle, type DocumentProduct, type RenderOptions } from "@/lib/product-document";
 
 const LOCAL_CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
@@ -85,7 +86,7 @@ async function locateChapters(bytes: Uint8Array, product: DocumentProduct) {
     return outline[found].page;
   };
   const starts = product.productContent.map((block) => find(blockTitle(block)));
-  const end = find(endTitles[resolveDocumentStyle(product)]);
+  const end = find(translator(languageOf(product))(endTitles[resolveDocumentStyle(product)]));
   return { starts, end };
 }
 

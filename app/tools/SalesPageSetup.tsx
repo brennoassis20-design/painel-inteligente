@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { cleanPixelId, defaultOferta, type OfertaConfig } from "@/lib/sales-page";
+import { currencyOf, type ProductLanguage } from "@/lib/locale";
+import { cleanPixelId, defaultOferta, defaultPrice, type OfertaConfig } from "@/lib/sales-page";
 import { Icon } from "../icons";
 
 // Preço, checkout e pixel de cada projeto: ficam no navegador e entram no HTML da página
@@ -20,9 +21,11 @@ export function readOferta(projectId: string): OfertaConfig {
 
 export function SalesPageSetup({
   projectId,
+  language = "pt",
   onDownload,
 }: {
   projectId: string;
+  language?: ProductLanguage;
   onDownload: (oferta: OfertaConfig) => void;
 }) {
   const [oferta, setOferta] = useState<OfertaConfig>(() => readOferta(projectId));
@@ -37,6 +40,7 @@ export function SalesPageSetup({
     }
   }
 
+  const symbol = currencyOf(language).symbol;
   const checkoutOk = /^https?:\/\//i.test(oferta.checkout.trim());
   const pixelOk = Boolean(cleanPixelId(oferta.pixel));
 
@@ -72,8 +76,8 @@ export function SalesPageSetup({
       </div>
 
       <div className="pi-form-grid">
-        {field("preco", "Preço", "19,90", "R$")}
-        {field("precoDe", "Preço “de” (opcional)", "", "R$", "Só se for um preço real; vazio esconde")}
+        {field("preco", "Preço", defaultPrice(language), symbol, language === "es" ? "Em dólar, com ponto: 9.90" : "")}
+        {field("precoDe", "Preço “de” (opcional)", "", symbol, "Só se for um preço real; vazio esconde")}
       </div>
       {field("checkout", "Link do checkout", "https://pay.cakto.com.br/...", "", "Copie o link de pagamento do produto na sua plataforma")}
       {field(

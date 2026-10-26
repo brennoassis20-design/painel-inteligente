@@ -1,6 +1,7 @@
 // Criativos em imagem: desenhados em canvas no navegador, sem IA e sem custo por imagem.
 // O mesmo desenho serve para o PNG, o carrossel e o vídeo (com o tempo t controlando a animação).
 
+import { currencyOf, translator, type ProductLanguage } from "@/lib/locale";
 import { drawCover, drawMockup, fontFamily, roundRect, type Palette, type Shape } from "./canvas-kit";
 
 export type FormatId = "feed" | "quadrado" | "story";
@@ -32,6 +33,7 @@ export type CreativeTheme = {
   sprite: HTMLCanvasElement | null;
   price: string;
   brand: string;
+  language?: ProductLanguage;
 };
 
 export type CreativeCopy = {
@@ -42,6 +44,7 @@ export type CreativeCopy = {
   label: string;
   modules: string[];
   bullets: string[];
+  language?: ProductLanguage;
 };
 
 // ---------- Textos padrão (o aluno pode editar tudo) ----------
@@ -59,6 +62,7 @@ function pickItems(copy: CreativeCopy, count: number) {
 }
 
 export function buildImageCreatives(copy: CreativeCopy): CreativeSpec[] {
+  const t = translator(copy.language || "pt");
   const items = pickItems(copy, 4);
   const benefits = (copy.bullets.length ? copy.bullets : copy.modules).map(shortItem).filter(Boolean).slice(0, 3);
   return [
@@ -66,45 +70,45 @@ export function buildImageCreatives(copy: CreativeCopy): CreativeSpec[] {
       id: "dor",
       angle: "Dor direta",
       layout: "pergunta",
-      kicker: "Atenção",
+      kicker: t("Atenção"),
       headline: copy.pain,
-      support: `${copy.title} mostra o caminho, passo a passo.`,
+      support: `${copy.title} ${t("mostra o caminho, passo a passo.")}`,
       items: [],
       before: [],
-      cta: "Saiba mais",
+      cta: t("Saiba mais"),
     },
     {
       id: "resultado",
       angle: "Resultado desejado",
       layout: "destaque",
-      kicker: copy.label || "Novo",
+      kicker: copy.label || t("Novo"),
       headline: copy.promise,
       support: copy.title,
       items: [],
       before: [],
-      cta: "Quero começar",
+      cta: t("Quero começar"),
     },
     {
       id: "dentro",
       angle: "O que tem dentro",
       layout: "lista",
       kicker: copy.title,
-      headline: "O que você vai *receber*",
+      headline: t("O que você vai *receber*"),
       support: "",
       items,
       before: [],
-      cta: "Ver tudo",
+      cta: t("Ver tudo"),
     },
     {
       id: "antesdepois",
       angle: "Antes e depois",
       layout: "antesdepois",
       kicker: copy.title,
-      headline: "Antes x *Depois*",
+      headline: t("Antes x *Depois*"),
       support: "",
-      items: ["Um passo a passo claro", "Sabe exatamente o que fazer", "Resultado mais rápido"],
-      before: ["Informação solta e confusa", "Não sabe por onde começar", "Tentativa e erro"],
-      cta: "Quero o depois",
+      items: ["Um passo a passo claro", "Sabe exatamente o que fazer", "Resultado mais rápido"].map(t),
+      before: ["Informação solta e confusa", "Não sabe por onde começar", "Tentativa e erro"].map(t),
+      cta: t("Quero o depois"),
     },
     {
       id: "oferta",
@@ -115,18 +119,19 @@ export function buildImageCreatives(copy: CreativeCopy): CreativeSpec[] {
       support: copy.subtitle,
       items: benefits,
       before: [],
-      cta: "Quero o meu agora",
+      cta: t("Quero o meu agora"),
     },
   ];
 }
 
 export function buildCarousel(copy: CreativeCopy): CreativeSpec[] {
+  const t = translator(copy.language || "pt");
   const slides: CreativeSpec[] = [
     {
       id: "c1",
       angle: "Capa",
       layout: "pergunta",
-      kicker: "Leia até o final",
+      kicker: t("Leia até o final"),
       headline: copy.pain,
       support: "",
       items: [],
@@ -138,9 +143,9 @@ export function buildCarousel(copy: CreativeCopy): CreativeSpec[] {
       id: "c2",
       angle: "O problema",
       layout: "texto",
-      kicker: "O problema",
-      headline: "Por que tanta gente *trava* no começo?",
-      support: "A maioria tenta resolver no improviso, junta dicas soltas e desiste antes de ver resultado. Não é falta de vontade: é falta de um caminho claro.",
+      kicker: t("O problema"),
+      headline: t("Por que tanta gente *trava* no começo?"),
+      support: t("A maioria tenta resolver no improviso, junta dicas soltas e desiste antes de ver resultado. Não é falta de vontade: é falta de um caminho claro."),
       items: [],
       before: [],
       cta: "",
@@ -150,8 +155,8 @@ export function buildCarousel(copy: CreativeCopy): CreativeSpec[] {
       id: "c3",
       angle: "A virada",
       layout: "destaque",
-      kicker: "A virada",
-      headline: "Existe um caminho *mais simples*",
+      kicker: t("A virada"),
+      headline: t("Existe um caminho *mais simples*"),
       support: copy.promise,
       items: [],
       before: [],
@@ -162,7 +167,7 @@ export function buildCarousel(copy: CreativeCopy): CreativeSpec[] {
       id: "c4",
       angle: "O que tem dentro",
       layout: "lista",
-      kicker: "O que você recebe",
+      kicker: t("O que você recebe"),
       headline: copy.title,
       support: "",
       items: pickItems(copy, 4),
@@ -174,11 +179,11 @@ export function buildCarousel(copy: CreativeCopy): CreativeSpec[] {
       id: "c5",
       angle: "Antes e depois",
       layout: "antesdepois",
-      kicker: "A diferença",
-      headline: "Antes x *Depois*",
+      kicker: t("A diferença"),
+      headline: t("Antes x *Depois*"),
       support: "",
-      items: ["Um passo a passo claro", "Sabe exatamente o que fazer", "Resultado mais rápido"],
-      before: ["Informação solta e confusa", "Não sabe por onde começar", "Tentativa e erro"],
+      items: ["Um passo a passo claro", "Sabe exatamente o que fazer", "Resultado mais rápido"].map(t),
+      before: ["Informação solta e confusa", "Não sabe por onde começar", "Tentativa e erro"].map(t),
       cta: "",
       swipe: true,
     },
@@ -191,7 +196,7 @@ export function buildCarousel(copy: CreativeCopy): CreativeSpec[] {
       support: "",
       items: [],
       before: [],
-      cta: "Toque em saiba mais",
+      cta: t("Toque em saiba mais"),
     },
   ];
   return slides.map((slide, index) => ({ ...slide, page: [index + 1, slides.length] }));
@@ -524,14 +529,15 @@ function drawCta(ctx: CanvasRenderingContext2D, text: string, x: number, y: numb
   return h;
 }
 
-function formatPrice(price: string) {
-  const clean = price.trim();
+function formatPrice(price: string, language: ProductLanguage = "pt") {
+  const clean = price.trim().replace(/^(r\$|us\$|\$)\s*/i, "");
   if (!clean) return "";
-  return /r\$/i.test(clean) ? clean.replace(/r\$\s*/i, "R$ ") : `R$ ${clean}`;
+  return `${currencyOf(language).symbol} ${clean}`;
 }
 
-function drawPrice(ctx: CanvasRenderingContext2D, price: string, cx: number, cy: number, r: number, palette: Palette) {
-  const value = formatPrice(price);
+function drawPrice(ctx: CanvasRenderingContext2D, price: string, cx: number, cy: number, r: number, palette: Palette, language: ProductLanguage = "pt") {
+  const t = translator(language);
+  const value = formatPrice(price, language);
   if (!value) return;
   const c = colors(palette);
   const family = fontFamily();
@@ -563,7 +569,7 @@ function drawPrice(ctx: CanvasRenderingContext2D, price: string, cx: number, cy:
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = `600 ${Math.round(r * 0.2)}px ${family}`;
-  ctx.fillText("por apenas", 0, -r * 0.34);
+  ctx.fillText(t("por apenas"), 0, -r * 0.34);
   let size = Math.round(r * 0.44);
   ctx.font = `800 ${size}px ${family}`;
   while (ctx.measureText(value).width > r * 1.6 && size > 20) {
@@ -572,7 +578,7 @@ function drawPrice(ctx: CanvasRenderingContext2D, price: string, cx: number, cy:
   }
   ctx.fillText(value, 0, r * 0.08);
   ctx.font = `600 ${Math.round(r * 0.16)}px ${family}`;
-  ctx.fillText("acesso imediato", 0, r * 0.48);
+  ctx.fillText(t("acesso imediato"), 0, r * 0.48);
   ctx.restore();
 }
 
@@ -666,7 +672,7 @@ function drawChrome(ctx: CanvasRenderingContext2D, spec: CreativeSpec, theme: Cr
       ctx.font = `600 30px ${family}`;
       ctx.fillStyle = c.text;
       ctx.globalAlpha *= 0.8;
-      const text = "Arrasta para o lado";
+      const text = translator(theme.language || "pt")("Arrasta para o lado");
       const tw = ctx.measureText(text).width;
       const y = H - safeBottom - 40;
       ctx.fillText(text, W - 84 - tw - 64, y);
@@ -764,7 +770,7 @@ export function renderCreative(ctx: CanvasRenderingContext2D, W: number, H: numb
     y += supH;
     const box = drawSprite(ctx, theme.sprite, pad, y, innerW, ctaY - 30 - y, t, 0.35);
     if (theme.price.trim() && box.w) {
-      withAppear(ctx, appear(t, 0.8), () => drawPrice(ctx, theme.price, Math.min(W - pad - 110, box.x + box.w + 10), box.y + 120, 120, palette), 0);
+      withAppear(ctx, appear(t, 0.8), () => drawPrice(ctx, theme.price, Math.min(W - pad - 110, box.x + box.w + 10), box.y + 120, 120, palette, theme.language), 0);
     }
     drawFooter();
   } else if (spec.layout === "lista") {
@@ -825,8 +831,9 @@ export function renderCreative(ctx: CanvasRenderingContext2D, W: number, H: numb
         ctx.restore();
         paintItems(ctx, fit, x + 32, y + 36 + labelH, kind, palette, c.text, t, delay + 0.15);
       }, 20);
+    const es = theme.language === "es";
     card(pad, "x", beforeFit, "ANTES", 0.3);
-    card(pad + colW + gap, "check", afterFit, "DEPOIS", 0.55);
+    card(pad + colW + gap, "check", afterFit, es ? "DESPUÉS" : "DEPOIS", 0.55);
     y += cardH + 30;
     drawSprite(ctx, theme.sprite, pad, y, innerW, ctaY - 30 - y, t, 0.8);
     drawFooter();
@@ -847,7 +854,7 @@ export function renderCreative(ctx: CanvasRenderingContext2D, W: number, H: numb
     const box = drawSprite(ctx, theme.sprite, pad, y, innerW, ctaY - 30 - y - itemsH, t, 0.3);
     if (theme.price.trim()) {
       const r = story ? 140 : 118;
-      withAppear(ctx, appear(t, 0.7), () => drawPrice(ctx, theme.price, Math.min(W - pad - r + 20, (box.w ? box.x + box.w : W - pad) - 10), (box.w ? box.y : y) + r + 10, r, palette), 0);
+      withAppear(ctx, appear(t, 0.7), () => drawPrice(ctx, theme.price, Math.min(W - pad - r + 20, (box.w ? box.x + box.w : W - pad) - 10), (box.w ? box.y : y) + r + 10, r, palette, theme.language), 0);
     }
     if (items) paintItems(ctx, items, pad, ctaY - 30 - itemsH + 10, "check", palette, c.text, t, 0.55);
     drawFooter();

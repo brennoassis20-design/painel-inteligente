@@ -4452,3 +4452,8 @@ a.pi-pill:hover {
   color: var(--pi-cyan);
   font-weight: 600;
 }
+
+/* Produtos em dólar: resumo em português do produto em espanhol */
+.pi-summary-pt { margin-bottom: 18px; }
+.pi-summary-pt p { margin: 8px 0 10px; line-height: 1.6; }
+.pi-summary-pt small { color: var(--pi-muted, rgba(255,255,255,.6)); }

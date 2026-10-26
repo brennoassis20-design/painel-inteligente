@@ -1,3 +1,4 @@
+import { withoutReadingWordsEs, type Market, type ProductLanguage } from "@/lib/locale";
 import { normalizeSalesExtras, withoutReadingWords, type SalesPageExtras } from "@/lib/sales-page";
 
 export type ProductContentBlock = {
@@ -51,7 +52,45 @@ export type ProductResult = {
   salesPage: SalesPageContent;
   landingSections: string[];
   prompts: string[];
+  // Produtos em dólar (América Latina): entrega em espanhol; o painel mostra o resumo em português.
+  language?: ProductLanguage;
+  market?: Market;
+  resumoPt?: string;
+  // Só nos produtos em espanhol: a IA escreve os anúncios e roteiros (os modelos fixos são em português).
+  ads?: AdCopy[];
+  videoScripts?: VideoScript[];
 };
+
+export type AdCopy = { angle: string; primaryText: string; headline: string; description: string };
+export type VideoScript = { angle: string; hook: string; context: string; development: string; cta: string; screenText: string };
+
+export const adsJsonShape =
+  '"ads":[{"angle":"string","primaryText":"string","headline":"string","description":"string"}],"videoScripts":[{"angle":"string","hook":"string","context":"string","development":"string","cta":"string","screenText":"string"}]';
+
+export function normalizeAds(value: unknown): AdCopy[] {
+  return Array.isArray(value)
+    ? value
+        .map((ad) => ({ angle: text(ad?.angle), primaryText: text(ad?.primaryText), headline: text(ad?.headline), description: text(ad?.description) }))
+        .filter((ad) => ad.primaryText && ad.headline)
+        .slice(0, 4)
+    : [];
+}
+
+export function normalizeVideoScripts(value: unknown): VideoScript[] {
+  return Array.isArray(value)
+    ? value
+        .map((item) => ({
+          angle: text(item?.angle),
+          hook: text(item?.hook),
+          context: text(item?.context),
+          development: text(item?.development),
+          cta: text(item?.cta),
+          screenText: text(item?.screenText),
+        }))
+        .filter((item) => item.hook && item.development)
+        .slice(0, 4)
+    : [];
+}
 
 export const productTypes = [
   "Guia pratico",
@@ -174,9 +213,13 @@ export function buildProduct(niche: string, productType: string, audience: strin
 }
 
 export function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResult): ProductResult {
+  const spanish = data.language === "es" || fallback.language === "es";
+  const noReading = spanish ? withoutReadingWordsEs : withoutReadingWords;
+  const ads = normalizeAds(data.ads);
+  const videoScripts = normalizeVideoScripts(data.videoScripts);
   const normalized = {
-    title: withoutReadingWords(data.title || fallback.title),
-    subtitle: withoutReadingWords(data.subtitle || fallback.subtitle),
+    title: noReading(data.title || fallback.title),
+    subtitle: noReading(data.subtitle || fallback.subtitle),
     promise: data.promise || fallback.promise,
     modules: Array.isArray(data.modules) && data.modules.length ? data.modules.slice(0, 7) : fallback.modules,
     productBlueprint:
@@ -222,9 +265,13 @@ export function normalizeAiProduct(data: Partial<ProductResult>, fallback: Produ
     ...(isFormat(data.format) ? { format: data.format } : {}),
     ...(text(data.intro) ? { intro: text(data.intro) } : {}),
     ...(text(data.closing) ? { closing: text(data.closing) } : {}),
+    ...(spanish ? { language: "es" as const, market: "latam" as const } : {}),
+    ...(text(data.resumoPt) ? { resumoPt: text(data.resumoPt) } : {}),
+    ...(ads.length ? { ads } : {}),
+    ...(videoScripts.length ? { videoScripts } : {}),
   };
 
-  return sanitizeProductLanguage(normalized);
+  return spanish ? normalized : sanitizeProductLanguage(normalized);
 }
 
 function isFormat(value: unknown): value is ProductFormat {

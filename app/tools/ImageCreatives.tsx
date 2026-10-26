@@ -227,7 +227,7 @@ export function ImageCreatives({
   }, [fontsReady, mock, palette, variationPalettes, copy.title, copy.subtitle, copy.label, brand]);
 
   const themeFor = (item: Palette): CreativeTheme | null =>
-    fontsReady ? { palette: item, sprite: sprites.get(item.id) || null, price, brand } : null;
+    fontsReady ? { palette: item, sprite: sprites.get(item.id) || null, price, brand, language: copy.language } : null;
 
   const images = useMemo(() => applyEdits(buildImageCreatives(copy), edits), [copy, edits]);
   const slides = useMemo(() => applyEdits(buildCarousel(copy), edits), [copy, edits]);
@@ -456,7 +456,7 @@ export function ImageCreatives({
           <div className="pi-form-grid">
             <label className="pi-label">
               Preço
-              <input value={price} placeholder="Ex.: 19,90" inputMode="decimal" onChange={(event) => setPrice(event.target.value)} />
+              <input value={price} placeholder={copy.language === "es" ? "Ex.: 9.90 (em dólar)" : "Ex.: 19,90"} inputMode="decimal" onChange={(event) => setPrice(event.target.value)} />
             </label>
             <label className="pi-label">
               Seu @ ou marca

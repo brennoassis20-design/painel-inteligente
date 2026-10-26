@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 const storageKey = "painel-inteligente-calculadora";
 
 type CalcInputs = {
+  // Produto em dólar (América Latina): preço e taxas em US$, anúncios e meta em reais.
+  currency: "BRL" | "USD";
+  rate: string;
   price: string;
   feePercent: string;
   feeFixed: string;
@@ -14,6 +17,8 @@ type CalcInputs = {
 };
 
 const defaults: CalcInputs = {
+  currency: "BRL",
+  rate: "5,50",
   price: "27",
   feePercent: "5",
   feeFixed: "2,50",
@@ -29,8 +34,15 @@ function readInputs(): CalcInputs {
   }
 }
 
+// Aceita "2,50", "9.90", "3.000" e "3000": o último separador com 1 ou 2 casas é o decimal.
 function toNumber(value: string) {
-  const parsed = Number(value.replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, ""));
+  const clean = value.replace(/[^\d.,-]/g, "");
+  const last = Math.max(clean.lastIndexOf(","), clean.lastIndexOf("."));
+  const decimals = last < 0 ? 0 : clean.length - last - 1;
+  const parsed =
+    last >= 0 && decimals <= 2
+      ? Number(`${clean.slice(0, last).replace(/[.,]/g, "")}.${clean.slice(last + 1)}`)
+      : Number(clean.replace(/[.,]/g, ""));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -48,9 +60,12 @@ export function ProfitCalculator({ onOpenLaunch }: { onOpenLaunch: () => void })
     }
   }, [inputs]);
 
-  const price = toNumber(inputs.price);
+  const usd = inputs.currency === "USD";
+  // Tudo é calculado em reais: no modo dólar, preço e taxa fixa são convertidos pela cotação.
+  const rate = usd ? toNumber(inputs.rate) : 1;
+  const price = toNumber(inputs.price) * rate;
   const feePercent = toNumber(inputs.feePercent);
-  const feeFixed = toNumber(inputs.feeFixed);
+  const feeFixed = toNumber(inputs.feeFixed) * rate;
   const costPerSale = toNumber(inputs.costPerSale);
   const goal = toNumber(inputs.goal);
 
@@ -99,18 +114,33 @@ export function ProfitCalculator({ onOpenLaunch }: { onOpenLaunch: () => void })
   return (
     <div className="pi-calc">
       <div className="pi-card pi-calc-form">
+        <div className="pi-filter" role="group" aria-label="Moeda do produto">
+          <button type="button" className={usd ? "" : "on"} onClick={() => setInputs({ ...inputs, currency: "BRL" })}>
+            Produto em reais
+          </button>
+          <button type="button" className={usd ? "on" : ""} onClick={() => setInputs({ ...inputs, currency: "USD" })}>
+            Produto em dólar
+          </button>
+        </div>
         <p className="pi-step-title"><span>1</span>Seu produto</p>
         <div className="pi-form-grid">
-          {field("price", "Preço de venda", "R$")}
+          {field("price", "Preço de venda", usd ? "US$" : "R$")}
           {field("goal", "Meta de lucro por mês", "R$")}
         </div>
+        {usd && field("rate", "Cotação do dólar", "R$", "", "Use a cotação do dia. A Cakto mostra o custo da conversão antes de passar o saldo para reais")}
         <p className="pi-step-title"><span>2</span>Taxas e anúncios</p>
         <div className="pi-form-grid">
-          {field("feePercent", "Taxa da plataforma", "", "%", "Confira na sua plataforma de pagamento")}
-          {field("feeFixed", "Taxa fixa por venda", "R$")}
+          {field(
+            "feePercent",
+            "Taxa da plataforma",
+            "",
+            "%",
+            usd ? "Cakto: Meu Perfil → Planos e Taxas → escolha o país do comprador" : "Confira na sua plataforma de pagamento",
+          )}
+          {field("feeFixed", "Taxa fixa por venda", usd ? "US$" : "R$")}
         </div>
         {field("costPerSale", "Custo por venda nos anúncios", "R$", "", "Use o valor real do Gerenciador de Anúncios ou uma estimativa")}
-        <button type="button" className="pi-btn-text" onClick={() => setInputs(defaults)}>
+        <button type="button" className="pi-btn-text" onClick={() => setInputs(usd ? { ...defaults, currency: "USD", price: "9.90", feePercent: "8", feeFixed: "0.50" } : defaults)}>
           Voltar aos valores de exemplo
         </button>
       </div>

@@ -1,6 +1,7 @@
 import { normalizeSalesExtras, salesCopyRules, salesExtrasJsonShape } from "@/lib/sales-page";
-import { buildProduct, normalizeAiProduct, productFormatFor, ProductResult, requestAiJson } from "@/lib/product-engine";
-import { collectAdLibraryTrends, hasAdLibrarySource } from "@/lib/trend-ads";
+import { spanishRules, type Market } from "@/lib/locale";
+import { adsJsonShape, buildProduct, normalizeAds, normalizeAiProduct, normalizeVideoScripts, productFormatFor, ProductResult, requestAiJson } from "@/lib/product-engine";
+import { collectAdLibraryTrends, hasAdLibrarySource, isCollectionDay } from "@/lib/trend-ads";
 
 export type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
 
@@ -69,6 +70,7 @@ type TrendOpportunityRow = {
   trend_signal: string;
   angle: string;
   source: string;
+  market?: Market;
   is_active?: boolean;
   collected_at?: string;
 };
@@ -426,10 +428,10 @@ export async function listProjects(userId: string) {
   >(`/projects?user_id=eq.${encodeURIComponent(userId)}&select=id,title,payload,created_at&order=created_at.desc&limit=12`);
 }
 
-export async function listTrendOpportunities() {
+export async function listTrendOpportunities(market: Market = "br") {
   try {
     const rows = await supabaseRest<TrendOpportunityRow[]>(
-      "/trend_opportunities?is_active=eq.true&select=*&order=score.desc,title.asc&limit=24",
+      `/trend_opportunities?is_active=eq.true&market=eq.${market}&select=*&order=score.desc,title.asc&limit=24`,
     );
 
     if (rows.length) {
@@ -439,12 +441,18 @@ export async function listTrendOpportunities() {
     console.warn("Trend opportunities fell back to the local seed.", error);
   }
 
-  return fallbackTrendProducts;
+  // América Latina sem coleta ainda: lista vazia (nunca nicho inventado).
+  return market === "latam" ? [] : fallbackTrendProducts;
 }
 
-export async function refreshTrendOpportunities(force = false) {
+export async function refreshTrendOpportunities(force = false, market: Market = "br") {
+  // A Vercel chama todo dia; cada mercado só coleta nos seus dias (ver isCollectionDay).
+  if (!force && !isCollectionDay(market)) {
+    return { updated: 0, skipped: true, reason: "fora do dia de coleta", market };
+  }
+
   if (!force) {
-    const current = await getFreshTrendOpportunities();
+    const current = await getFreshTrendOpportunities(market);
 
     if (current) {
       return {
@@ -457,25 +465,34 @@ export async function refreshTrendOpportunities(force = false) {
 
   // Com a Biblioteca de Anúncios ligada, só entra dado real: se a coleta falhar, a lista atual fica.
   if (hasAdLibrarySource()) {
-    const { products, stats } = await collectAdLibraryTrends(getServerAiKey());
+    const { products, stats } = await collectAdLibraryTrends(getServerAiKey(), market);
     if (products.length < 4) {
       throw new Error(`Coleta trouxe só ${products.length} oportunidades; lista atual mantida.`);
     }
     const startedAt = new Date().toISOString();
-    const rows = products.map((product) => ({ ...mapTrendProductToRow(product), source: "meta-ad-library", collected_at: startedAt }));
+    const rows = products.map((product) => ({
+      ...mapTrendProductToRow(product),
+      // Mesmo título nos dois mercados não pode sobrescrever o outro.
+      slug: market === "latam" ? `latam-${slugify(product.title)}` : slugify(product.title),
+      market,
+      source: "meta-ad-library",
+      collected_at: startedAt,
+    }));
     const savedRows = await supabaseRest<TrendOpportunityRow[]>("/trend_opportunities?on_conflict=slug", {
       method: "POST",
       headers: { Prefer: "resolution=merge-duplicates,return=representation" },
       body: JSON.stringify(rows),
     });
     // Sai da lista o que não apareceu nesta coleta.
-    await supabaseRest(`/trend_opportunities?is_active=eq.true&collected_at=lt.${encodeURIComponent(startedAt)}`, {
+    await supabaseRest(`/trend_opportunities?is_active=eq.true&market=eq.${market}&collected_at=lt.${encodeURIComponent(startedAt)}`, {
       method: "PATCH",
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({ is_active: false }),
     });
-    return { updated: savedRows.length, skipped: false, stats, opportunities: savedRows.map(mapTrendRowToProduct) };
+    return { updated: savedRows.length, skipped: false, market, stats, opportunities: savedRows.map(mapTrendRowToProduct) };
   }
+
+  if (market === "latam") throw new Error("APIFY_TOKEN nao configurado para a America Latina.");
 
   const products = await collectTrendProducts();
   const rows = products.map(mapTrendProductToRow);
@@ -519,12 +536,15 @@ export async function generateProductPayload(input: {
   audience: string;
   tone: string;
   productBrief?: string;
+  language?: "pt" | "es";
 }) {
+  const spanish = input.language === "es";
   const fallback = buildProduct(input.niche, input.productType, input.audience, input.tone);
   const format = productFormatFor(input.productType);
   const apiKey = getServerAiKey();
 
   if (!apiKey) {
+    if (spanish) throw new Error("Chave de IA não configurada.");
     return {
       product: fallback,
       source: "internal" as const,
@@ -534,7 +554,7 @@ export async function generateProductPayload(input: {
   try {
     const data = await requestAiJson(
       apiKey,
-      "Voce cria produtos low ticket em portugues do Brasil. Retorne somente JSON valido, sem markdown, sem comentarios e sem chamar a entrega por nomes genericos. Use linguagem profissional e operacional: fale de entrega, comprador, publico, projeto e execucao. Nao use a palavra aluno. O produto final deve ser uma entrega pratica para o comprador, sem bastidores comerciais.",
+      `Voce cria produtos low ticket ${spanish ? "em espanhol para compradores da America Latina, vendidos em dolar" : "em portugues do Brasil"}. Retorne somente JSON valido, sem markdown, sem comentarios e sem chamar a entrega por nomes genericos. Use linguagem profissional e operacional: fale de entrega, comprador, publico, projeto e execucao. Nao use a palavra aluno. O produto final deve ser uma entrega pratica para o comprador, sem bastidores comerciais.`,
       `Crie um produto completo, vendavel e pronto para aplicar com estes dados:
 Nicho: ${input.niche}
 Publico: ${input.audience}
@@ -553,7 +573,7 @@ ${salesCopyRules}
 - Escolha a arquitetura mais natural para o produto. Nao force todo projeto para o mesmo formato: checklist/curadoria deve parecer uma ferramenta de validacao; protocolo/plano deve parecer uma sequencia guiada; guia/mapa deve parecer um playbook de decisao e aplicacao.
 - Pense tambem na direcao visual do produto: lista/fornecedores deve gerar conteudo com cara de catalogo ou diretorio premium; guia consultivo deve gerar conteudo editorial com capitulos, tabelas e exemplos; protocolo deve gerar conteudo de manual pratico com rotina, fichas e acompanhamento. Varie estrutura, tipo de pagina e conteudo conforme o nicho.
 - format: use "${format}" (editorial = guia de consulta em capitulos; manual = sequencia de etapas, dias ou rotina para executar; catalogo = selecao organizada em categorias com itens e criterios).
-- Escreva com acentuacao correta do portugues em todos os textos (ex.: "você", "não", "orçamento").
+${spanish ? spanishRules : '- Escreva com acentuacao correta do portugues em todos os textos (ex.: "você", "não", "orçamento").'}
 - intro: 2 paragrafos curtos de abertura para o comprador (o documento ja tem uma pagina "como usar"; nao crie bloco de introducao ou de como usar em productContent, comece direto no conteudo). Nao numere os titulos dos blocos. closing: 1 paragrafo de fechamento.
 - Cada bloco de productContent: body com 2 paragrafos especificos do nicho (separados por \\n\\n, 90 a 140 palavras no total), task com uma acao concreta e 3 points curtos. Use tip ou example (caso realista curto) em pelo menos metade dos blocos.
 - Estrutura conforme o format escolhido:
@@ -562,17 +582,28 @@ ${salesCopyRules}
   * catalogo: no maximo 2 blocos de orientacao (ex.: como escolher); TODOS os outros blocos sao categorias e cada categoria OBRIGATORIAMENTE tem entries com 4 a 6 itens (name, detail de 1 a 2 frases com criterio pratico, tag de 1 a 2 palavras); table em no maximo 1 bloco. Nao invente nomes de marcas, lojas ou pessoas reais: descreva tipos, modelos ou perfis.
 
 Use no maximo 6 modulos, 6 itens de estrutura, 10 a 12 blocos de conteudo, 4 secoes de pagina, 10 secoes de landing page e 5 prompts. Escreva textos objetivos, prontos para usar, sem alongar demais. Nao mencione aluno, aula, curso ou bastidores da ferramenta.
+${
+  spanish
+    ? `
+Campos extras desta entrega em espanhol:
+- resumoPt: em PORTUGUES do Brasil com acentuacao correta (você, não, café da manhã), 3 a 4 frases para o vendedor brasileiro entender o produto: o que e, para quem, o que tem dentro e a promessa. Unico campo em portugues.
+- ads: 3 textos de anuncio para Facebook/Instagram em espanhol (angle em portugues, um de cada: "Dor direta", "Benefício prático", "Antes e depois"; primaryText com 3 a 5 linhas separadas por \\n terminando com chamada para clicar; headline ate 6 palavras; description ate 10 palavras).
+- videoScripts: 3 roteiros curtos de video em espanhol (angle em portugues: "Dor direta", "Resultado desejado", "Erro comum"; hook, context, development, cta e screenText curtos).`
+    : ""
+}
 
 Retorne exatamente este formato JSON:
-{"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"format":"editorial|manual|catalogo","intro":"string","closing":"string","productContent":[{"title":"string","body":"string","task":"string","points":["string"],"tip":"string opcional","example":"string opcional","table":{"columns":["string"],"rows":[["string"]]},"entries":[{"name":"string","detail":"string","tag":"string"}]}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string",${salesExtrasJsonShape},"sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]}`,
-      12000,
+{"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"format":"editorial|manual|catalogo","intro":"string","closing":"string","productContent":[{"title":"string","body":"string","task":"string","points":["string"],"tip":"string opcional","example":"string opcional","table":{"columns":["string"],"rows":[["string"]]},"entries":[{"name":"string","detail":"string","tag":"string"}]}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string",${salesExtrasJsonShape},"sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]${spanish ? `,"resumoPt":"string",${adsJsonShape}` : ""}}`,
+      spanish ? 14000 : 12000,
     );
 
     return {
-      product: { ...normalizeAiProduct(data, fallback), format },
+      product: { ...normalizeAiProduct(spanish ? { ...data, language: "es" } : data, fallback), format },
       source: "automatic" as const,
     };
   } catch (error) {
+    // O rascunho interno é em português: produto em espanhol falha sem gastar o pedido do mês.
+    if (spanish) throw new Error("Não foi possível criar o produto em espanhol agora. Tente de novo em alguns minutos.");
     console.warn("Product generation fell back to the internal engine.", error);
     return {
       product: fallback,
@@ -604,6 +635,7 @@ export async function updateCopyForProject(
   }
 
   const base = project.payload;
+  const spanish = base.language === "es";
   const apiKey = getServerAiKey();
   let nextPayload = base;
 
@@ -611,7 +643,7 @@ export async function updateCopyForProject(
     try {
       const data = await requestAiJson(
         apiKey,
-        "Voce e especialista em copy de resposta direta para vender produtos low ticket no Brasil. Retorne somente JSON valido, sem markdown. A copy sempre deve vender o produto descrito para o comprador final.",
+        "Voce e especialista em copy de resposta direta para vender produtos low ticket " + (spanish ? "na America Latina, em espanhol." : "no Brasil.") + " Retorne somente JSON valido, sem markdown. A copy sempre deve vender o produto descrito para o comprador final.",
         `Crie uma copy completa para vender esta oferta ao comprador final:
 Titulo: ${base.title}
 Subtitulo: ${base.subtitle}
@@ -628,12 +660,15 @@ Regras obrigatorias:
 - Nao venda o Painel Inteligente, uma ferramenta, uma IA, um metodo de criacao, um curso, um processo interno ou a criacao de produtos.
 - Nao fale sobre o criador, bastidores, painel, prompts, APIs ou como a oferta foi produzida.
 - O texto deve fazer sentido mesmo que o comprador nunca tenha ouvido falar de inteligencia artificial.
-- Escreva em portugues do Brasil, com clareza e sem promessas absolutas.
+${spanish ? `${spanishRules}
+- Escreva com clareza e sem promessas absolutas. ads: 3 textos de anuncio (angle em portugues: "Dor direta", "Benefício prático", "Antes e depois"). videoScripts: 3 roteiros curtos (angle em portugues: "Dor direta", "Resultado desejado", "Erro comum"). Siga o pedido especifico nos dois.` : "- Escreva em portugues do Brasil, com clareza e sem promessas absolutas."}
 
 Retorne exatamente este JSON:
-{"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"prompts":["string"]}`,
-        1600,
+{"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"prompts":["string"]${spanish ? `,${adsJsonShape}` : ""}}`,
+        spanish ? 3600 : 1600,
       );
+      const ads = spanish ? normalizeAds(data.ads) : [];
+      const videoScripts = spanish ? normalizeVideoScripts(data.videoScripts) : [];
 
       nextPayload = {
         ...base,
@@ -647,11 +682,13 @@ Retorne exatamente este JSON:
           cta: data.copyBlocks?.cta || base.copyBlocks.cta,
         },
         prompts: Array.isArray(data.prompts) && data.prompts.length ? data.prompts.slice(0, 6) : base.prompts,
+        ...(ads.length ? { ads } : {}),
+        ...(videoScripts.length ? { videoScripts } : {}),
       };
     } catch (error) {
       console.warn("Copy generation kept the current project payload.", error);
     }
-  } else {
+  } else if (!spanish) {
     nextPayload = {
       ...base,
       copyBlocks: {
@@ -869,17 +906,17 @@ function slugify(value: string) {
     .slice(0, 80);
 }
 
-async function getFreshTrendOpportunities() {
+async function getFreshTrendOpportunities(market: Market) {
   try {
     const intervalDays = Math.max(1, Math.min(30, Number(process.env.TREND_REFRESH_INTERVAL_DAYS || 3) || 3));
     const latest = await supabaseRest<{ collected_at: string }[]>(
-      "/trend_opportunities?is_active=eq.true&select=collected_at&order=collected_at.desc&limit=1",
+      `/trend_opportunities?is_active=eq.true&market=eq.${market}&select=collected_at&order=collected_at.desc&limit=1`,
     );
     const latestCollectedAt = latest[0]?.collected_at ? new Date(latest[0].collected_at).getTime() : 0;
     const nextRefreshAt = latestCollectedAt + intervalDays * 24 * 60 * 60 * 1000;
 
     if (latestCollectedAt && Date.now() < nextRefreshAt) {
-      return listTrendOpportunities();
+      return listTrendOpportunities(market);
     }
   } catch (error) {
     console.warn("Trend freshness check failed.", error);
@@ -907,6 +944,7 @@ export async function updatePageForProject(userId: string, projectId: string, in
   }
 
   const base = project.payload;
+  const spanish = base.language === "es";
   const apiKey = getServerAiKey();
   let nextPayload = base;
 
@@ -914,7 +952,7 @@ export async function updatePageForProject(userId: string, projectId: string, in
     try {
       const data = await requestAiJson(
         apiKey,
-        "Voce cria paginas de venda diretas, claras e persuasivas em portugues do Brasil. Retorne somente JSON valido, sem markdown.",
+        `Voce cria paginas de venda diretas, claras e persuasivas ${spanish ? "em espanhol para a America Latina" : "em portugues do Brasil"}. Retorne somente JSON valido, sem markdown.`,
         `Crie a estrutura completa de uma pagina de venda para esta oferta:
 Titulo: ${base.title}
 Promessa: ${base.promise}
@@ -925,7 +963,7 @@ Tom: ${input.tone}
 
 Regras:
 ${salesCopyRules}
-- Escreva com acentuacao correta do portugues.
+${spanish ? spanishRules : "- Escreva com acentuacao correta do portugues."}
 
 Retorne exatamente este JSON:
 {"salesPage":{"headline":"string","subheadline":"string",${salesExtrasJsonShape},"sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"]}`,

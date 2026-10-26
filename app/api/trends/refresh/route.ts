@@ -1,3 +1,4 @@
+import { marketOf } from "@/lib/locale";
 import { jsonError, refreshTrendOpportunities } from "@/lib/panel-server";
 
 // Coleta na Biblioteca de Anúncios + IA leva cerca de 1 a 3 minutos.
@@ -24,8 +25,9 @@ async function handleRefresh(request: Request) {
   }
 
   try {
-    const force = new URL(request.url).searchParams.get("force") === "1";
-    const result = await refreshTrendOpportunities(force);
+    const params = new URL(request.url).searchParams;
+    const force = params.get("force") === "1";
+    const result = await refreshTrendOpportunities(force, marketOf(params.get("market")));
     return Response.json(result);
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Erro ao atualizar oportunidades.", 500);

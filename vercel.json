@@ -2,8 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/trends/refresh",
-      "schedule": "0 9 * * 1"
+      "path": "/api/trends/refresh?market=br",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/trends/refresh?market=latam",
+      "schedule": "0 10 * * *"
     }
   ]
 }

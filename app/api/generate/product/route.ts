@@ -29,13 +29,15 @@ export async function POST(request: Request) {
       productType?: string;
       tone?: string;
       productBrief?: string;
+      language?: string;
     };
     const niche = payload.niche?.trim() || "marmita fit";
     const audience = payload.audience?.trim() || "pessoas que querem vender comida saudavel";
     const productType = productTypes.includes(payload.productType || "") ? payload.productType || productTypes[0] : productTypes[0];
     const tone = toneOptions.includes(payload.tone || "") ? payload.tone || toneOptions[0] : toneOptions[0];
     const productBrief = payload.productBrief?.trim().slice(0, 1800) || "";
-    const generated = await generateProductPayload({ niche, audience, productType, tone, productBrief });
+    const language = payload.language === "es" ? "es" : "pt";
+    const generated = await generateProductPayload({ niche, audience, productType, tone, productBrief, language });
     const project = await createProductForUser(user.id, generated.product);
     const nextUsage = await getUsage(user.id);
 

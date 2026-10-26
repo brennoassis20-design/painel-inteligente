@@ -11,9 +11,11 @@ import { ProfitCalculator } from "./tools/ProfitCalculator";
 import { SalesPageSetup, readOferta } from "./tools/SalesPageSetup";
 import { buildSalesPage, normalizeSalesExtras, withoutReadingWords, type OfertaConfig, type SalesPageExtras } from "@/lib/sales-page";
 import { googleFontCss, renderProductDocument, resolveDocumentStyle, type DocumentBlock } from "@/lib/product-document";
+import { languageOf, withoutReadingWordsEs, type Market } from "@/lib/locale";
+import type { AdCopy as AiAdCopy, VideoScript } from "@/lib/product-engine";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
-type ActiveView = "inicio" | "radar" | "gerador" | "produto" | "criativos" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor";
+type ActiveView = "inicio" | "radar" | "gerador" | "radarLatam" | "geradorLatam" | "produto" | "criativos" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor";
 
 // Os campos opcionais (pontos, dica, tabela, fichas...) alimentam o PDF premium.
 type ProductContentBlock = DocumentBlock;
@@ -47,6 +49,11 @@ type ProductResult = {
   salesPage: SalesPageContent;
   landingSections: string[];
   prompts: string[];
+  language?: "pt" | "es";
+  market?: Market;
+  resumoPt?: string;
+  ads?: AiAdCopy[];
+  videoScripts?: VideoScript[];
 };
 
 type TrendProduct = {
@@ -112,6 +119,13 @@ const menuGroups: { title?: string; items: { id: ActiveView; label: string; icon
     ],
   },
   {
+    title: "Produtos em dólar",
+    items: [
+      { id: "radarLatam", label: "Nichos América Latina", icon: "trend" },
+      { id: "geradorLatam", label: "Pedido em espanhol", icon: "spark" },
+    ],
+  },
+  {
     title: "Meus projetos",
     items: [
       { id: "produto", label: "Produto criado", icon: "doc" },
@@ -132,6 +146,8 @@ const viewLabels: Record<ActiveView, string> = {
   inicio: "Início",
   gerador: "Fazer o pedido",
   radar: "Nichos em alta",
+  radarLatam: "Nichos América Latina",
+  geradorLatam: "Pedido em espanhol",
   criativos: "Criativos prontos",
   copy: "Copy de vendas",
   produto: "Produto criado",
@@ -711,6 +727,9 @@ function getCleanProductTitle(product: ProductResult) {
 }
 
 function inferBuyerPain(product: ProductResult) {
+  // Produto em espanhol: a dor vem da própria página de vendas (os modelos abaixo são em português).
+  if (languageOf(product) === "es") return product.salesPage.pains?.[0] || product.copyBlocks.hook;
+
   const text = `${product.title} ${product.subtitle} ${product.promise}`.toLowerCase();
 
   if (text.includes("fornecedor") || text.includes("revender")) {
@@ -755,6 +774,7 @@ function withBrief(value: string, brief = "") {
 }
 
 function buildVideoCreatives(product: ProductResult, brief = ""): VideoCreative[] {
+  if (product.videoScripts?.length) return product.videoScripts;
   const title = getCleanProductTitle(product);
   const pain = inferBuyerPain(product);
   const outcome = inferBuyerOutcome(product);
@@ -807,10 +827,12 @@ function buildCreativeCopy(product: ProductResult, label: string): CreativeCopy 
     label,
     modules: product.modules,
     bullets: product.copyBlocks.bullets,
+    language: languageOf(product),
   };
 }
 
 function buildAdCopies(product: ProductResult, brief = ""): AdCopy[] {
+  if (product.ads?.length) return product.ads;
   const cleanTitle = getCleanProductTitle(product);
   const pain = inferBuyerPain(product);
   const outcome = inferBuyerOutcome(product);
@@ -1792,9 +1814,11 @@ async function buildProjectBundle(product: ProductResult, token: string, oferta?
 }
 
 function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResult): ProductResult {
+  const spanish = data.language === "es";
+  const noReading = spanish ? withoutReadingWordsEs : withoutReadingWords;
   const normalized = {
-    title: withoutReadingWords(data.title || fallback.title),
-    subtitle: withoutReadingWords(data.subtitle || fallback.subtitle),
+    title: noReading(data.title || fallback.title),
+    subtitle: noReading(data.subtitle || fallback.subtitle),
     promise: data.promise || fallback.promise,
     modules: Array.isArray(data.modules) && data.modules.length ? data.modules.slice(0, 7) : fallback.modules,
     productBlueprint:
@@ -1840,9 +1864,13 @@ function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResul
     ...(data.format ? { format: data.format } : {}),
     ...(data.intro ? { intro: data.intro } : {}),
     ...(data.closing ? { closing: data.closing } : {}),
+    ...(spanish ? { language: "es" as const, market: "latam" as const } : {}),
+    ...(data.resumoPt ? { resumoPt: data.resumoPt } : {}),
+    ...(data.ads?.length ? { ads: data.ads } : {}),
+    ...(data.videoScripts?.length ? { videoScripts: data.videoScripts } : {}),
   };
 
-  return sanitizeProductLanguage(normalized);
+  return spanish ? normalized : sanitizeProductLanguage(normalized);
 }
 
 function professionalizeText(value: string) {
@@ -1915,6 +1943,7 @@ export default function Home() {
   const [trendSearch, setTrendSearch] = useState("");
   const [trendCategory, setTrendCategory] = useState("Todos");
   const [trendOpportunities, setTrendOpportunities] = useState<TrendProduct[]>(trendProducts);
+  const [trendOpportunitiesLatam, setTrendOpportunitiesLatam] = useState<TrendProduct[]>([]);
   const [selectedTrendProduct, setSelectedTrendProduct] = useState<TrendProduct | null>(null);
   const [productBrief, setProductBrief] = useState("");
   const [studentProductInfo, setStudentProductInfo] = useState("");
@@ -1945,15 +1974,18 @@ export default function Home() {
   const [lastPackageName, setLastPackageName] = useState("");
 
   const canAccess = accessStatus === "active";
+  // "Produtos em dólar" usa as mesmas telas de nichos e de pedido, com a lista e o idioma da América Latina.
+  const isLatam = activeView === "radarLatam" || activeView === "geradorLatam";
+  const visibleTrends = isLatam ? trendOpportunitiesLatam : trendOpportunities;
 
   const trendCategories = useMemo(() => {
-    return ["Todos", ...Array.from(new Set(trendOpportunities.map((product) => product.category)))];
-  }, [trendOpportunities]);
+    return ["Todos", ...Array.from(new Set(visibleTrends.map((product) => product.category)))];
+  }, [visibleTrends]);
 
   const filteredTrendProducts = useMemo(() => {
     const query = trendSearch.trim().toLowerCase();
 
-    return trendOpportunities.filter((product) => {
+    return visibleTrends.filter((product) => {
       const matchesCategory = trendCategory === "Todos" || product.category === trendCategory;
       const matchesSearch =
         !query ||
@@ -1966,7 +1998,7 @@ export default function Home() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [trendCategory, trendOpportunities, trendSearch]);
+  }, [trendCategory, visibleTrends, trendSearch]);
 
   const lockedTrendCards = useMemo(() => Array.from({ length: 6 }, (_, index) => index), []);
 
@@ -2066,6 +2098,9 @@ export default function Home() {
     setSavedProjects(data.projects);
     if (Array.isArray(data.trends) && data.trends.length) {
       setTrendOpportunities(data.trends);
+    }
+    if (Array.isArray(data.trendsLatam)) {
+      setTrendOpportunitiesLatam(data.trendsLatam);
     }
     setIsLoggedIn(true);
 
@@ -2233,7 +2268,7 @@ export default function Home() {
     try {
       const data = await authenticatedJson("/api/generate/product", {
         method: "POST",
-        body: JSON.stringify({ niche, audience, productType, tone, productBrief: fullProductBrief }),
+        body: JSON.stringify({ niche, audience, productType, tone, productBrief: fullProductBrief, language: isLatam ? "es" : "pt" }),
       });
       const product = normalizeAiProduct(data.product, buildProduct(niche, productType, audience, tone));
       setResult(product);
@@ -2297,7 +2332,7 @@ export default function Home() {
     setGenerationSource("Oportunidade aplicada do radar");
     setSelectedTrendProduct(null);
     setCopiedLabel("Oportunidade aplicada no pedido");
-    setActiveView("gerador");
+    setActiveView(isLatam ? "geradorLatam" : "gerador");
   }
 
   function selectSavedProject(projectId: string, view: ActiveView = "copy") {
@@ -2334,6 +2369,8 @@ export default function Home() {
   function goTo(view: ActiveView) {
     setActiveView(view);
     setMenuOpen(false);
+    // Trocar entre Brasil e América Latina limpa o filtro de categoria (as categorias mudam).
+    if ((view === "radarLatam") !== (activeView === "radarLatam")) setTrendCategory("Todos");
     if (view === "radar" && !trailFlags.radar) {
       const nextTrail = { ...trailFlags, radar: true };
       setTrailFlags(nextTrail);
@@ -2773,7 +2810,7 @@ export default function Home() {
             </div>
             {result && (
               <ImageCreatives
-                copy={buildCreativeCopy(result, displayText(productType))}
+                copy={buildCreativeCopy(result, languageOf(result) === "es" ? "" : displayText(productType))}
                 captions={buildAdCopies(result).map((ad) => ad.primaryText)}
                 projectKey={currentProjectId}
                 makeZip={buildZip}
@@ -2845,13 +2882,17 @@ export default function Home() {
         )}
 
         <div className={canAccess ? "content-grid single-view" : "content-grid single-view locked"}>
-          <section className={`pi-view view-panel ${activeView === "radar" ? "" : "is-hidden"} ${canAccess ? "" : "is-locked"}`} id="tendencias">
+          <section className={`pi-view view-panel ${activeView === "radar" || activeView === "radarLatam" ? "" : "is-hidden"} ${canAccess ? "" : "is-locked"}`} id="tendencias">
             <header className="pi-view-head" style={{ "--c": "var(--pi-cyan)" } as CSSProperties}>
               <span className="pi-ico"><Icon name="trend" /></span>
               <div>
-                <p className="pi-kicker">Radar de oportunidades</p>
-                <h2>Nichos em alta</h2>
-                <p>Oportunidades de produtos até R$ 97 com promessa, público, ângulo e canal definidos. Escolha uma e aplique no pedido.</p>
+                <p className="pi-kicker">{isLatam ? "Produtos em dólar · América Latina" : "Radar de oportunidades"}</p>
+                <h2>{isLatam ? "Nichos em alta na América Latina" : "Nichos em alta"}</h2>
+                <p>
+                  {isLatam
+                    ? "Anúncios em espanhol ativos há mais de 30 dias no México, Colômbia, Argentina, Chile e Peru. O produto sai em espanhol e você vende em dólar."
+                    : "Oportunidades de produtos até R$ 97 com promessa, público, ângulo e canal definidos. Escolha uma e aplique no pedido."}
+                </p>
               </div>
             </header>
 
@@ -2884,7 +2925,11 @@ export default function Home() {
             {canAccess ? (
               <>
                 {filteredTrendProducts.length === 0 && (
-                  <p className="pi-empty">Nenhuma oportunidade encontrada para essa busca.</p>
+                  <p className="pi-empty">
+                    {isLatam && !visibleTrends.length
+                      ? "A primeira coleta da América Latina sai no próximo dia 1º ou 15. Enquanto isso, faça o pedido em espanhol com o nicho que você quiser."
+                      : "Nenhuma oportunidade encontrada para essa busca."}
+                  </p>
                 )}
                 <div className="pi-trend-grid">
                   {filteredTrendProducts.map((product) => (
@@ -3027,13 +3072,17 @@ export default function Home() {
             )}
           </section>
 
-          <section className={`pi-view view-panel ${activeView === "gerador" ? "" : "is-hidden"}`} id="gerador">
+          <section className={`pi-view view-panel ${activeView === "gerador" || activeView === "geradorLatam" ? "" : "is-hidden"}`} id="gerador">
             <header className="pi-view-head" style={{ "--c": "var(--pi-violet)" } as CSSProperties}>
               <span className="pi-ico"><Icon name="spark" /></span>
               <div>
-                <p className="pi-kicker">Gerador</p>
-                <h2>Faça o seu pedido</h2>
-                <p>Descreva o produto. A IA cria o conteúdo, a página de vendas e a copy, e o pacote ZIP baixa sozinho.</p>
+                <p className="pi-kicker">{isLatam ? "Produtos em dólar · América Latina" : "Gerador"}</p>
+                <h2>{isLatam ? "Pedido em espanhol" : "Faça o seu pedido"}</h2>
+                <p>
+                  {isLatam
+                    ? "Descreva o produto em português. A IA entrega tudo em espanhol (produto, PDF, página de vendas, copy e criativos) com preço em dólar, e um resumo em português para você."
+                    : "Descreva o produto. A IA cria o conteúdo, a página de vendas e a copy, e o pacote ZIP baixa sozinho."}
+                </p>
               </div>
               {canAccess && (
                 <span className="pi-quota">
@@ -3146,9 +3195,11 @@ export default function Home() {
                     <Icon name="star" />
                     {activeGeneration === "product" ? "Criando..." : "Fazer o pedido"}
                   </button>
-                  <button type="button" className="pi-btn-text" onClick={generateProduct} disabled={activeGeneration !== null}>
-                    Ver um rascunho rápido antes
-                  </button>
+                  {!isLatam && (
+                    <button type="button" className="pi-btn-text" onClick={generateProduct} disabled={activeGeneration !== null}>
+                      Ver um rascunho rápido antes
+                    </button>
+                  )}
                   {currentProjectId && lastPackageName && (
                     <div className="pi-ready">
                       <div>
@@ -3171,7 +3222,7 @@ export default function Home() {
                 <header className="pi-view-head" style={{ "--c": "var(--pi-pink)" } as CSSProperties}>
                   <span className="pi-ico"><Icon name="doc" /></span>
                   <div>
-                    <p className="pi-kicker">Produto criado</p>
+                    <p className="pi-kicker">{languageOf(result) === "es" ? "Produto criado · em espanhol · vender em dólar" : "Produto criado"}</p>
                     <h2>{result.title}</h2>
                     <p>{result.subtitle}</p>
                   </div>
@@ -3226,7 +3277,17 @@ export default function Home() {
                   </div>
                 </div>
 
-                {currentProjectId && <SalesPageSetup key={currentProjectId} projectId={currentProjectId} onDownload={downloadSalesPage} />}
+                {result.resumoPt && (
+                  <div className="pi-card pi-summary-pt">
+                    <h3 className="pi-card-title">Resumo em português</h3>
+                    <p>{result.resumoPt}</p>
+                    <small>O produto, o PDF, a página de vendas, a copy e os criativos estão em espanhol. Na Cakto, crie o produto com a moeda em dólar.</small>
+                  </div>
+                )}
+
+                {currentProjectId && (
+                  <SalesPageSetup key={currentProjectId} projectId={currentProjectId} language={languageOf(result)} onDownload={downloadSalesPage} />
+                )}
 
                 <div className="pi-two">
                   <div className="pi-card">
@@ -3452,6 +3513,7 @@ export default function Home() {
                           <strong>{project.title}</strong>
                           <small>
                             Pacote ZIP
+                            {languageOf(project.payload) === "es" ? " · espanhol, em dólar" : ""}
                             {project.created_at ? ` · criado ${formatRelativeDate(project.created_at)}` : ""}
                           </small>
                         </div>

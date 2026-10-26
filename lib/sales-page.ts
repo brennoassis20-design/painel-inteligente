@@ -3,6 +3,7 @@
 // Sem dependências de Node: pode ser importado pelo cliente e pelo servidor.
 
 import { documentArt } from "@/lib/document-art";
+import { currencyOf, languageOf, translator, type ProductLanguage } from "@/lib/locale";
 import {
   blockTitle,
   endTitles,
@@ -34,6 +35,7 @@ export type SalesProduct = {
   format?: string;
   intro?: string;
   closing?: string;
+  language?: string;
   copyBlocks: { hook: string; headline: string; bullets: string[]; cta: string };
   salesPage: { headline: string; subheadline: string; sections: { title: string; body: string }[]; cta: string } & SalesPageExtras;
 };
@@ -159,6 +161,8 @@ function contrast(a: string, b: string) {
 /* ---------- conteúdo de cada dobra (com fallback para projetos antigos) ---------- */
 
 type Copy = {
+  lang: ProductLanguage;
+  t: (pt: string) => string;
   style: DocumentStyle;
   palette: DocumentPalette;
   headline: string;
@@ -197,18 +201,20 @@ function sentences(value: string, limit: number) {
 }
 
 // O nicho vem da mesma regra da paleta (título primeiro), para não confundir "economizar na maquiagem" com finanças.
-function responsibleNotice(product: SalesProduct, palette: DocumentPalette) {
+function responsibleNotice(product: SalesProduct, palette: DocumentPalette, t: (pt: string) => string) {
   const value = normalize(product.title);
-  if (palette.id === "sage" || /saude|alongamento|postura|dor nas|sono|ansiedade|dieta|emagrec|nutri|gestante|remedio|terapia/.test(value)) {
-    return "Conteúdo educativo. Não substitui a orientação de médico, fisioterapeuta, nutricionista ou outro profissional de saúde. Em caso de dor, sintoma ou condição específica, procure um profissional. Os resultados variam de pessoa para pessoa.";
+  if (palette.id === "sage" || /saude|alongamento|postura|dor nas|sono|ansiedade|dieta|emagrec|nutri|gestante|remedio|terapia|salud|estiramiento|dolor|sueno|ansiedad|adelgaz|embaraz/.test(value)) {
+    return t("Conteúdo educativo. Não substitui a orientação de médico, fisioterapeuta, nutricionista ou outro profissional de saúde. Em caso de dor, sintoma ou condição específica, procure um profissional. Os resultados variam de pessoa para pessoa.");
   }
-  if (palette.id === "navy" && /financ|dinheiro|divida|orcamento|invest|renda|credito|contas/.test(normalize(`${product.title} ${product.subtitle}`))) {
-    return "Conteúdo educativo, sem recomendação de investimento, crédito ou consultoria financeira individual. Os resultados dependem da situação e das decisões de cada pessoa.";
+  if (palette.id === "navy" && /financ|dinheiro|divida|orcamento|invest|renda|credito|contas|dinero|deuda|presupuesto|ingreso/.test(normalize(`${product.title} ${product.subtitle}`))) {
+    return t("Conteúdo educativo, sem recomendação de investimento, crédito ou consultoria financeira individual. Os resultados dependem da situação e das decisões de cada pessoa.");
   }
   return "";
 }
 
 function buildCopy(product: SalesProduct): Copy {
+  const lang = languageOf(product);
+  const t = translator(lang);
   const style = resolveDocumentStyle(product);
   const palette = resolveDocumentPalette(product);
   const extras = normalizeSalesExtras(product.salesPage);
@@ -225,11 +231,13 @@ function buildCopy(product: SalesProduct): Copy {
     product.copyBlocks.bullets.slice(0, 6).map((bullet) => ({ title: "", text: bullet }));
 
   return {
+    lang,
+    t,
     style,
     palette,
     headline: product.salesPage.headline || product.copyBlocks.headline || product.title,
     subheadline: product.salesPage.subheadline || product.subtitle,
-    cta: product.salesPage.cta || product.copyBlocks.cta || "Quero acessar agora",
+    cta: product.salesPage.cta || product.copyBlocks.cta || t("Quero acessar agora"),
     pains,
     turn: extras.turn || (solution ? excerpt(solution.body, 260) : product.promise),
     benefits,
@@ -239,7 +247,7 @@ function buildCopy(product: SalesProduct): Copy {
     finalHeadline: extras.finalHeadline || product.copyBlocks.headline || product.salesPage.headline,
     blocks,
     chapters: blocks.map((block) => blockTitle(block)),
-    notice: responsibleNotice(product, palette),
+    notice: responsibleNotice(product, palette, t),
   };
 }
 
@@ -249,19 +257,19 @@ function coverMini(product: SalesProduct, copy: Copy) {
   const art = documentArt(copy.palette.id, 0, "mini-art");
   const size = product.title.length > 60 ? 7.4 : product.title.length > 40 ? 8.8 : 10.6;
   const title = `<b class="mini-title" style="font-size:${size}cqw">${esc(product.title)}</b>`;
-  const count = `${pad(copy.blocks.length)} ${nouns[copy.style][1]}`;
+  const count = `${pad(copy.blocks.length)} ${copy.t(nouns[copy.style][1])}`;
   if (copy.style === "manual") {
-    return `<div class="mini cover m"><i class="rail"></i><span class="mini-top">${esc(formatLabel.manual)}</span>${title}<span class="mini-route"><i></i><i></i><i></i><i></i><i></i></span><span class="disc"></span>${art}</div>`;
+    return `<div class="mini cover m"><i class="rail"></i><span class="mini-top">${esc(copy.t(formatLabel.manual))}</span>${title}<span class="mini-route"><i></i><i></i><i></i><i></i><i></i></span><span class="disc"></span>${art}</div>`;
   }
   if (copy.style === "catalogo") {
-    return `<div class="mini cover c"><i class="frame"></i><span class="mini-top">Seleção curada</span><span class="medal">${art}</span>${title}<span class="mini-foot">${esc(count)}</span></div>`;
+    return `<div class="mini cover c"><i class="frame"></i><span class="mini-top">${copy.t("Seleção curada")}</span><span class="medal">${art}</span>${title}<span class="mini-foot">${esc(count)}</span></div>`;
   }
-  return `<div class="mini cover e"><i class="glow"></i><span class="mini-top">${esc(formatLabel.editorial)}</span><span class="arch">${art}</span>${title}<span class="mini-foot">${esc(count)}</span></div>`;
+  return `<div class="mini cover e"><i class="glow"></i><span class="mini-top">${esc(copy.t(formatLabel.editorial))}</span><span class="arch">${art}</span>${title}<span class="mini-foot">${esc(count)}</span></div>`;
 }
 
 function innerMini(copy: Copy, index: number, extra = "") {
   const block = copy.blocks[index % copy.blocks.length];
-  const label = `${nouns[copy.style][0]} ${pad(index + 1)}`;
+  const label = `${copy.t(nouns[copy.style][0])} ${pad(index + 1)}`;
   const lines = '<span class="ln"></span><span class="ln"></span><span class="ln short"></span>';
   const body =
     copy.style === "catalogo" && block.entries?.length
@@ -285,25 +293,27 @@ function button(copy: Copy, extra = "") {
   return `<a class="btn ${extra}" href="#oferta" data-checkout>${esc(copy.cta)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`;
 }
 
-function priceLine(extra = "") {
-  return `<div class="price ${extra}"><s data-show="precoDe">R$ <span data-preco-de></span></s><span class="now"><small>R$</small><b data-preco>19,90</b></span><em data-ancora></em></div>`;
+function priceLine(copy: Copy, extra = "") {
+  const { symbol } = currencyOf(copy.lang);
+  return `<div class="price ${extra}"><s data-show="precoDe">${symbol} <span data-preco-de></span></s><span class="now"><small>${symbol}</small><b data-preco>${esc(defaultPrice(copy.lang))}</b></span><em data-ancora></em></div>`;
 }
 
-const trust = `<ul class="trust"><li>Acesso imediato</li><li>Pagamento seguro</li><li>Garantia de 7 dias</li></ul>`;
+const trust = (copy: Copy) =>
+  `<ul class="trust"><li>${copy.t("Acesso imediato")}</li><li>${copy.t("Pagamento seguro")}</li><li>${copy.t("Garantia de 7 dias")}</li></ul>`;
 
 function heroSection(product: SalesProduct, copy: Copy) {
   return `<header class="hero">
   <div class="wrap hero-grid">
     <div class="hero-text">
-      <p class="eyebrow">${esc(formatLabel[copy.style])}</p>
+      <p class="eyebrow">${esc(copy.t(formatLabel[copy.style]))}</p>
       <h1>${esc(copy.headline)}</h1>
       <p class="sub">${esc(copy.subheadline)}</p>
     </div>
     ${heroMockup(product, copy)}
     <div class="hero-buy" id="topo-compra">
-      ${priceLine()}
+      ${priceLine(copy)}
       ${button(copy, "big")}
-      ${trust}
+      ${trust(copy)}
     </div>
   </div>
 </header>`;
@@ -311,7 +321,7 @@ function heroSection(product: SalesProduct, copy: Copy) {
 
 function painsSection(copy: Copy) {
   if (!copy.pains.length && !copy.turn) return "";
-  const heading = { editorial: "Talvez você esteja aqui", manual: "Se você se reconhece em algum destes…", catalogo: "Você já passou por isso?" }[copy.style];
+  const heading = copy.t({ editorial: "Talvez você esteja aqui", manual: "Se você se reconhece em algum destes…", catalogo: "Você já passou por isso?" }[copy.style]);
   const items = copy.pains
     .map((pain, index) =>
       copy.style === "manual"
@@ -324,20 +334,20 @@ function painsSection(copy: Copy) {
   return `<section class="pains">
   <div class="wrap narrow">
     ${copy.pains.length ? `<h2>${heading}</h2><ul class="pain-list">${items}</ul>` : ""}
-    ${copy.turn ? `<div class="turn"><span class="label">A virada</span><p>${esc(copy.turn)}</p></div>` : ""}
+    ${copy.turn ? `<div class="turn"><span class="label">${copy.t("A virada")}</span><p>${esc(copy.turn)}</p></div>` : ""}
   </div>
 </section>`;
 }
 
 function receiveSection(product: SalesProduct, copy: Copy) {
-  const [one, many] = nouns[copy.style];
+  const [one, many] = nouns[copy.style].map(copy.t);
   const shown = copy.chapters.slice(0, 8);
   const more = copy.chapters.length - shown.length;
   const entries = copy.blocks.reduce((total, block) => total + (block.entries?.length || 0), 0);
   const facts = [
     [pad(copy.blocks.length), many],
-    copy.style === "catalogo" && entries ? [String(entries), "itens comentados"] : ["Na hora", "acesso no celular"],
-    ["1", endTitles[copy.style].toLowerCase()],
+    copy.style === "catalogo" && entries ? [String(entries), copy.t("itens comentados")] : [copy.t("Na hora"), copy.t("acesso no celular")],
+    ["1", copy.t(endTitles[copy.style]).toLowerCase()],
   ]
     .map(([value, label]) => `<div><b>${esc(value)}</b><span>${esc(label)}</span></div>`)
     .join("");
@@ -350,10 +360,10 @@ function receiveSection(product: SalesProduct, copy: Copy) {
   const pages = [0, 1, 2].map((index) => innerMini(copy, index)).join("");
   return `<section class="receive" id="conteudo">
   <div class="wrap">
-    <div class="sec-head"><span class="label">O que você recebe</span><h2>${esc(product.title)}</h2><p>${esc(product.promise)}</p></div>
+    <div class="sec-head"><span class="label">${copy.t("O que você recebe")}</span><h2>${esc(product.title)}</h2><p>${esc(product.promise)}</p></div>
     <div class="facts">${facts}</div>
     <div class="pages" aria-hidden="true">${pages}</div>
-    <div class="narrow">${list}${more > 0 ? `<p class="more">+ ${more} ${more === 1 ? one : many} e o “${esc(endTitles[copy.style])}”</p>` : `<p class="more">+ “${esc(endTitles[copy.style])}” para fechar com tudo em mãos</p>`}</div>
+    <div class="narrow">${list}${more > 0 ? `<p class="more">+ ${more} ${more === 1 ? one : many} ${copy.t("e o")} “${esc(copy.t(endTitles[copy.style]))}”</p>` : `<p class="more">+ “${esc(copy.t(endTitles[copy.style]))}” ${copy.t("para fechar com tudo em mãos")}</p>`}</div>
   </div>
 </section>`;
 }
@@ -366,10 +376,10 @@ function benefitsSection(copy: Copy) {
       return `<li><i>${marker}</i><div>${item.title ? `<h3>${esc(item.title)}</h3>` : ""}<p>${esc(item.text)}</p></div></li>`;
     })
     .join("");
-  const heading = { editorial: "O que muda quando você aplica", manual: "O que você vai conseguir", catalogo: "Por que vale ter esta seleção" }[copy.style];
+  const heading = copy.t({ editorial: "O que muda quando você aplica", manual: "O que você vai conseguir", catalogo: "Por que vale ter esta seleção" }[copy.style]);
   return `<section class="benefits">
   <div class="wrap">
-    <div class="sec-head"><span class="label">Benefícios</span><h2>${heading}</h2></div>
+    <div class="sec-head"><span class="label">${copy.t("Benefícios")}</span><h2>${heading}</h2></div>
     <ul class="benefit-list">${items}</ul>
   </div>
 </section>`;
@@ -385,24 +395,24 @@ function peekSection(copy: Copy) {
   if (copy.style === "catalogo" && block.entries?.length) {
     inside = `<div class="entries">${block.entries
       .slice(0, 3)
-      .map((entry) => `<div><span class="tag">${esc(entry.tag || "Seleção")}</span><h4>${esc(entry.name)}</h4><p>${esc(entry.detail)}</p></div>`)
+      .map((entry) => `<div><span class="tag">${esc(entry.tag || copy.t("Seleção"))}</span><h4>${esc(entry.name)}</h4><p>${esc(entry.detail)}</p></div>`)
       .join("")}</div>`;
   } else {
     const points = (block.points || []).slice(0, 3).map((point) => `<li>${esc(point)}</li>`).join("");
     const box = block.tip
-      ? `<div class="peek-box"><span class="label">Dica</span><p>${esc(excerpt(block.tip, 260))}</p></div>`
+      ? `<div class="peek-box"><span class="label">${copy.t("Dica")}</span><p>${esc(excerpt(block.tip, 260))}</p></div>`
       : block.example
-        ? `<div class="peek-box"><span class="label">Exemplo</span><p>${esc(excerpt(block.example, 260))}</p></div>`
+        ? `<div class="peek-box"><span class="label">${copy.t("Exemplo")}</span><p>${esc(excerpt(block.example, 260))}</p></div>`
         : block.task
-          ? `<div class="peek-box"><span class="label">Na prática</span><p>${esc(excerpt(block.task, 220))}</p></div>`
+          ? `<div class="peek-box"><span class="label">${copy.t("Na prática")}</span><p>${esc(excerpt(block.task, 220))}</p></div>`
           : "";
     inside = `<p class="peek-lead">${esc(excerpt(first, 380))}</p>${points ? `<ul class="peek-points">${points}</ul>` : ""}${box}`;
   }
   return `<section class="peek">
   <div class="wrap narrow">
-    <div class="sec-head"><span class="label">Uma espiada por dentro</span><h2>Veja um trecho real do material</h2></div>
+    <div class="sec-head"><span class="label">${copy.t("Uma espiada por dentro")}</span><h2>${copy.t("Veja um trecho real do material")}</h2></div>
     <article class="peek-page">
-      <header><small>${esc(nouns[copy.style][0])} ${pad(index + 1)}</small><h3>${esc(title)}</h3>${documentArt(copy.palette.id, index + 1, "peek-art")}</header>
+      <header><small>${esc(copy.t(nouns[copy.style][0]))} ${pad(index + 1)}</small><h3>${esc(title)}</h3>${documentArt(copy.palette.id, index + 1, "peek-art")}</header>
       ${inside}
     </article>
   </div>
@@ -415,51 +425,52 @@ function audienceSection(copy: Copy) {
     `<div class="aud ${kind}"><h3>${title}</h3><ul>${items.map((item) => `<li>${esc(item)}</li>`).join("")}</ul></div>`;
   return `<section class="audience">
   <div class="wrap">
-    <div class="sec-head"><span class="label">Para quem é</span><h2>Feito para um tipo de pessoa</h2></div>
-    <div class="aud-grid${copy.notFor.length ? "" : " solo"}">${col("É para você se…", copy.forWho, "yes")}${copy.notFor.length ? col("Não é para você se…", copy.notFor, "no") : ""}</div>
+    <div class="sec-head"><span class="label">${copy.t("Para quem é")}</span><h2>${copy.t("Feito para um tipo de pessoa")}</h2></div>
+    <div class="aud-grid${copy.notFor.length ? "" : " solo"}">${col(copy.t("É para você se…"), copy.forWho, "yes")}${copy.notFor.length ? col(copy.t("Não é para você se…"), copy.notFor, "no") : ""}</div>
   </div>
 </section>`;
 }
 
-function bonusSection() {
+function bonusSection(copy: Copy) {
   return `<section class="bonus" id="bonus" hidden>
   <div class="wrap narrow">
-    <div class="sec-head"><span class="label">Bônus</span><h2>Junto com o material</h2></div>
+    <div class="sec-head"><span class="label">${copy.t("Bônus")}</span><h2>${copy.t("Junto com o material")}</h2></div>
     <ul class="bonus-list" data-bonus-list></ul>
   </div>
 </section>`;
 }
 
 function offerSection(product: SalesProduct, copy: Copy) {
-  const [, many] = nouns[copy.style];
+  const many = copy.t(nouns[copy.style][1]);
   const items = [
-    `<b>${esc(product.title)}</b> · ${copy.blocks.length} ${many} prontos para aplicar`,
-    `“${esc(endTitles[copy.style])}” para acompanhar a aplicação`,
-    "Use no celular, no computador ou imprima",
-    "Acesso imediato depois da confirmação do pagamento",
+    `<b>${esc(product.title)}</b> · ${copy.blocks.length} ${many} ${copy.t("prontos para aplicar")}`,
+    `“${esc(copy.t(endTitles[copy.style]))}” ${copy.t("para acompanhar a aplicação")}`,
+    copy.t("Use no celular, no computador ou imprima"),
+    copy.t("Acesso imediato depois da confirmação do pagamento"),
   ]
     .map((item) => `<li>${item}</li>`)
     .join("");
   return `<section class="offer" id="oferta">
   <div class="wrap narrow">
     <div class="offer-card">
-      <span class="label">Oferta</span>
-      <h2>Tudo o que você leva hoje</h2>
+      <span class="label">${copy.t("Oferta")}</span>
+      <h2>${copy.t("Tudo o que você leva hoje")}</h2>
       <ul class="offer-list" data-offer-list>${items}</ul>
-      ${priceLine("center")}
-      <p class="once">Pagamento único. Sem mensalidade.</p>
+      ${priceLine(copy, "center")}
+      <p class="once">${copy.t("Pagamento único. Sem mensalidade.")}</p>
       ${button(copy, "big")}
-      ${trust}
+      ${trust(copy)}
     </div>
   </div>
 </section>`;
 }
 
-function guaranteeSection() {
+function guaranteeSection(copy: Copy) {
+  const t = copy.t;
   return `<section class="guarantee">
   <div class="wrap narrow g-grid">
-    <div class="seal"><b>7</b><span>dias de<br>garantia</span></div>
-    <div><h2>Risco zero para você</h2><p>Você tem 7 dias para conhecer o material com calma. Se achar que não é para você, peça o reembolso dentro do prazo e recebe 100% do valor de volta, sem perguntas.</p></div>
+    <div class="seal"><b>7</b><span>${t("dias de<br>garantia")}</span></div>
+    <div><h2>${t("Risco zero para você")}</h2><p>${t("Você tem 7 dias para conhecer o material com calma. Se achar que não é para você, peça o reembolso dentro do prazo e recebe 100% do valor de volta, sem perguntas.")}</p></div>
   </div>
 </section>`;
 }
@@ -469,13 +480,13 @@ function faqSection(copy: Copy) {
     { q: "Como vou receber o material?", a: "Logo depois da confirmação do pagamento, você recebe o acesso no e-mail usado na compra. É só baixar e começar." },
     { q: "Consigo usar pelo celular?", a: "Sim. O material abre no celular, no tablet ou no computador, e você também pode imprimir se preferir." },
     { q: "E se eu não gostar?", a: "Você tem 7 dias de garantia. Se não for para você, peça o reembolso dentro do prazo e devolvemos o valor integral." },
-  ];
+  ].map((item) => ({ q: copy.t(item.q), a: copy.t(item.a) }));
   const items = [...copy.faq, ...fixed]
     .map((item, index) => `<details${index === 0 ? " open" : ""}><summary>${esc(item.q)}</summary><p>${esc(item.a)}</p></details>`)
     .join("");
   return `<section class="faq">
   <div class="wrap narrow">
-    <div class="sec-head"><span class="label">Dúvidas</span><h2>Perguntas frequentes</h2></div>
+    <div class="sec-head"><span class="label">${copy.t("Dúvidas")}</span><h2>${copy.t("Perguntas frequentes")}</h2></div>
     <div class="faq-list">${items}</div>
   </div>
 </section>`;
@@ -487,19 +498,19 @@ function finalSection(product: SalesProduct, copy: Copy) {
   <div class="wrap narrow">
     ${documentArt(copy.palette.id, 0, "final-art")}
     <h2>${esc(copy.finalHeadline)}</h2>
-    ${priceLine("center light")}
+    ${priceLine(copy, "center light")}
     ${button(copy, "big")}
   </div>
 </section>
 <footer class="foot">
   <div class="wrap narrow">
     ${copy.notice ? `<p class="notice">${esc(copy.notice)}</p>` : ""}
-    <p>© ${year} · ${esc(product.title)}. Todos os direitos reservados.</p>
-    <p>Este site não faz parte do Facebook nem da Meta Platforms, Inc., e não é endossado por eles.</p>
+    <p>© ${year} · ${esc(product.title)}. ${copy.t("Todos os direitos reservados.")}</p>
+    <p>${copy.t("Este site não faz parte do Facebook nem da Meta Platforms, Inc., e não é endossado por eles.")}</p>
   </div>
 </footer>
 <div class="sticky" data-sticky aria-hidden="true">
-  <div class="sticky-price"><s data-show="precoDe">R$ <span data-preco-de></span></s><span>R$ <b data-preco>19,90</b></span></div>
+  <div class="sticky-price"><s data-show="precoDe">${currencyOf(copy.lang).symbol} <span data-preco-de></span></s><span>${currencyOf(copy.lang).symbol} <b data-preco>${esc(defaultPrice(copy.lang))}</b></span></div>
   <a class="btn" href="#oferta" data-checkout>${esc(copy.cta)}</a>
 </div>`;
 }
@@ -847,7 +858,12 @@ export type OfertaConfig = {
   bonus: string[];
 };
 
-export const defaultOferta: OfertaConfig = { preco: "19,90", precoDe: "", checkout: "", pixel: "", bonus: [] };
+export const defaultOferta: OfertaConfig = { preco: "", precoDe: "", checkout: "", pixel: "", bonus: [] };
+
+// Preço sugerido quando o aluno ainda não preencheu: low ticket em reais ou em dólar.
+export function defaultPrice(lang: ProductLanguage) {
+  return lang === "es" ? "9.90" : "19,90";
+}
 
 // Só números: o ID do pixel da Meta tem de 15 a 16 dígitos.
 export function cleanPixelId(value: string) {
@@ -860,13 +876,13 @@ function jsValue(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
-function configScript(input: Partial<OfertaConfig> = {}) {
+function configScript(lang: ProductLanguage, input: Partial<OfertaConfig> = {}) {
   const oferta = { ...defaultOferta, ...input };
   const checkout = /^https?:\/\//i.test(oferta.checkout.trim()) ? oferta.checkout.trim() : "";
   return `<script>
 /* =====================================================================
    CONFIGURAÇÃO DA OFERTA: troque só estes valores antes de publicar.
-   - preco: valor que aparece em toda a página (ex.: "19,90")
+   - preco: valor que aparece em toda a página (ex.: "${defaultPrice(lang)}")
    - precoDe: preço "de" riscado, só se for real (deixe "" para esconder)
    - checkout: link do seu checkout (enquanto vazio, os botões levam à oferta)
    - pixel: ID do seu pixel da Meta, só os números (deixe "" se ainda não tiver)
@@ -874,7 +890,7 @@ function configScript(input: Partial<OfertaConfig> = {}) {
    Os textos da página podem ser editados direto no HTML abaixo.
    ===================================================================== */
 window.OFERTA = {
-  preco: ${jsValue(oferta.preco.trim() || defaultOferta.preco)},
+  preco: ${jsValue(oferta.preco.trim() || defaultPrice(lang))},
   precoDe: ${jsValue(oferta.precoDe.trim())},
   checkout: ${jsValue(checkout)},
   pixel: ${jsValue(cleanPixelId(oferta.pixel))},
@@ -883,18 +899,20 @@ window.OFERTA = {
 </script>`;
 }
 
-const runtimeScript = `<script>
+const runtimeScript = (copy: Copy) => `<script>
 (function () {
   var o = window.OFERTA || {};
+  var moeda = ${jsValue(currencyOf(copy.lang).code)};
   var all = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
   var preco = String(o.preco || "").trim();
   var precoDe = String(o.precoDe || "").trim();
-  var valor = parseFloat(preco.replace(/\\./g, "").replace(",", ".")) || 0;
+  var valor = (moeda === "BRL" ? parseFloat(preco.replace(/\\./g, "").replace(",", ".")) : parseFloat(preco.replace(/,/g, ""))) || 0;
   all("[data-preco]").forEach(function (el) { el.textContent = preco; });
   all("[data-preco-de]").forEach(function (el) { el.textContent = precoDe; });
   all("[data-show=precoDe]").forEach(function (el) { el.hidden = !precoDe; });
-  var ancora = valor && valor <= 20 ? "Menos do que um lanche no delivery." : valor && valor <= 50 ? "Menos do que uma pizza no fim de semana." : "";
-  all("[data-ancora]").forEach(function (el) { el.textContent = precoDe ? "Pagamento único, acesso imediato." : ancora; });
+  var limite = moeda === "BRL" ? [20, 50] : [5, 15];
+  var ancora = valor && valor <= limite[0] ? ${jsValue(copy.t("Menos do que um lanche no delivery."))} : valor && valor <= limite[1] ? ${jsValue(copy.t("Menos do que uma pizza no fim de semana."))} : "";
+  all("[data-ancora]").forEach(function (el) { el.textContent = precoDe ? ${jsValue(copy.t("Pagamento único, acesso imediato."))} : ancora; });
   if (o.checkout && /^https?:\\/\\//.test(o.checkout)) {
     all("[data-checkout]").forEach(function (el) { el.href = o.checkout; });
   }
@@ -903,11 +921,11 @@ const runtimeScript = `<script>
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");
     fbq("init", pixel);
     fbq("track", "PageView");
-    fbq("track", "ViewContent", { value: valor, currency: "BRL" });
+    fbq("track", "ViewContent", { value: valor, currency: moeda });
   }
   if (pixel && o.checkout && /^https?:\\/\\//.test(o.checkout)) {
     all("[data-checkout]").forEach(function (el) {
-      el.addEventListener("click", function () { if (window.fbq) fbq("track", "InitiateCheckout", { value: valor, currency: "BRL" }); });
+      el.addEventListener("click", function () { if (window.fbq) fbq("track", "InitiateCheckout", { value: valor, currency: moeda }); });
     });
   }
   var bonus = Array.isArray(o.bonus) ? o.bonus.filter(Boolean) : [];
@@ -918,7 +936,7 @@ const runtimeScript = `<script>
       bonus.forEach(function (b) { var li = document.createElement("li"); li.textContent = b; ul.appendChild(li); });
     });
     all("[data-offer-list]").forEach(function (ul) {
-      bonus.forEach(function (b) { var li = document.createElement("li"); li.textContent = "Bônus: " + b; ul.appendChild(li); });
+      bonus.forEach(function (b) { var li = document.createElement("li"); li.textContent = ${jsValue(copy.t("Bônus: "))} + b; ul.appendChild(li); });
     });
   }
   var bar = document.querySelector("[data-sticky]");
@@ -963,27 +981,27 @@ export function buildSalesPage(input: SalesProduct, oferta?: Partial<OfertaConfi
     benefitsSection(copy),
     peekSection(copy),
     audienceSection(copy),
-    bonusSection(),
+    bonusSection(copy),
     offerSection(product, copy),
-    guaranteeSection(),
+    guaranteeSection(copy),
     faqSection(copy),
     finalSection(product, copy),
   ].join("\n");
 
   return `<!doctype html>
-<html lang="pt-BR" data-style="${copy.style}">
+<html lang="${currencyOf(copy.lang).htmlLang}" data-style="${copy.style}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>${esc(product.title)}</title>
 <meta name="description" content="${esc(copy.subheadline)}" />
 <meta name="theme-color" content="${copy.palette.deep}" />
-${configScript(oferta)}
+${configScript(copy.lang, oferta)}
 <style>${googleFontCss(copy.style)}${css(copy)}</style>
 </head>
 <body>
 ${body}
-${runtimeScript}
+${runtimeScript(copy)}
 </body>
 </html>`;
 }

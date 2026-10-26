@@ -179,3 +179,7 @@ on public.trend_opportunities for all
 to anon, authenticated
 using (false)
 with check (false);
+
+-- Produtos em dólar (26/10/2026): nichos do Brasil e da América Latina na mesma tabela.
+alter table public.trend_opportunities add column if not exists market text not null default 'br' check (market in ('br', 'latam'));
+create index if not exists trend_opportunities_market_active_idx on public.trend_opportunities (market, is_active);
