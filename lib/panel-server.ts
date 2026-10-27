@@ -2,7 +2,7 @@ import { normalizeSalesExtras, salesCopyRules, salesExtrasJsonShape } from "@/li
 import { spanishRules, type Market } from "@/lib/locale";
 import { adsJsonShape, buildProduct, normalizeAds, normalizeAiProduct, normalizeVideoScripts, productFormatFor, ProductResult, requestAiJson } from "@/lib/product-engine";
 import { collectAdLibraryTrends, hasAdLibrarySource, isCollectionDay } from "@/lib/trend-ads";
-import { blockedNicheReason, isPackNiche, packJsonShape, packRules } from "@/lib/pack";
+import { alignPackCount, blockedNicheReason, isPackNiche, packJsonShape, packRules } from "@/lib/pack";
 
 export type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
 
@@ -600,7 +600,7 @@ Retorne exatamente este formato JSON:
 {"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"format":"editorial|manual|catalogo","intro":"string","closing":"string","productContent":[{"title":"string","body":"string","task":"string","points":["string"],"tip":"string opcional","example":"string opcional","table":{"columns":["string"],"rows":[["string"]]},"entries":[{"name":"string","detail":"string","tag":"string"}]}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string",${salesExtrasJsonShape},"sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]${spanish ? `,"resumoPt":"string",${adsJsonShape}` : ""}${isPack ? `,${packJsonShape}` : ""}}`,
       (spanish ? 14000 : 12000) + (isPack ? 3000 : 0),
     );
-    const product = { ...normalizeAiProduct(spanish ? { ...data, language: "es" } : data, fallback), format };
+    const product = alignPackCount({ ...normalizeAiProduct(spanish ? { ...data, language: "es" } : data, fallback), format });
     if (isPack && !product.pack) throw new Error("A IA não montou as artes do pack.");
 
     return {

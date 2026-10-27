@@ -60,10 +60,32 @@ ESTE PRODUTO E UM PACK DE ARQUIVOS: o comprador recebe ${PACK_SIZE} artes em ima
 - As artes nunca tem texto, letras, logos, marcas, personagens conhecidos ou pessoas reais.
 - productBlueprint: liste "${PACK_SIZE} artes em alta resolução (1024 px)", "Kit de prompts para criar novas artes" e os componentes do PDF de uso.
 - productContent (8 a 10 blocos) ensina o comprador a USAR os arquivos: imprimir (papel, tamanho, configuracao), recortar ou aplicar, combinar as artes, ideias de uso e de revenda permitida, erros comuns. Nao descreva arte por arte.
-- Aqui pode prometer os arquivos de imagem: eles sao gerados e entram no pacote.`;
+- Aqui pode prometer os arquivos de imagem: eles sao gerados e entram no pacote.
+- QUANTIDADE: o pack tem exatamente ${PACK_SIZE} artes. Se o titulo, a promessa, a copy ou a pagina citarem quantidade, use ${PACK_SIZE}, mesmo que o briefing fale em outro numero. Nao cite formato de arquivo (PNG, JPG).`;
 
 function clean(value: unknown, max: number) {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+const COUNTED_ITEMS = "(stickers?|adesivos?|figurinhas?|artes?|cliparts?|estampas?|desenhos?|ilustra(?:ç|c)(?:ões|oes|ão|ao)|imagens?|pegatinas?|láminas?|laminas?|dibujos?)";
+
+// A IA às vezes copia a quantidade do card do nicho ("Kit 30 stickers") e o pack entrega 20: aqui o número
+// bate com as artes geradas nos textos de venda (teste no ar de 27/10/2026). O conteúdo do PDF fica como está,
+// porque lá "publique 3 stickers por semana" é instrução, não promessa.
+const SALES_FIELDS = ["title", "subtitle", "promise", "productBlueprint", "copyBlocks", "salesPage", "landingSections", "ads"] as const;
+
+export function alignPackCount<T extends { pack?: ProductPack }>(product: T): T {
+  if (!product.pack) return product;
+  const total = product.pack.items.length;
+  const fix = (value: unknown) =>
+    JSON.parse(
+      JSON.stringify(value)
+        .replace(new RegExp(`\\b\\d{1,4}(\\s+${COUNTED_ITEMS})`, "gi"), `${total}$1`)
+        .replace(/\s+(em|en)\s+(PNG|JPG|JPEG)\b/gi, ""),
+    );
+  const fixed: Record<string, unknown> = { ...product };
+  for (const field of SALES_FIELDS) if (fixed[field] !== undefined) fixed[field] = fix(fixed[field]);
+  return fixed as T;
 }
 
 export function normalizePack(value: unknown): ProductPack | undefined {
