@@ -1,5 +1,6 @@
 import { withoutReadingWordsEs, type Market, type ProductLanguage } from "@/lib/locale";
 import { normalizeSalesExtras, withoutReadingWords, type SalesPageExtras } from "@/lib/sales-page";
+import { normalizePack, type ProductPack } from "@/lib/pack";
 
 export type ProductContentBlock = {
   title: string;
@@ -59,6 +60,8 @@ export type ProductResult = {
   // Só nos produtos em espanhol: a IA escreve os anúncios e roteiros (os modelos fixos são em português).
   ads?: AdCopy[];
   videoScripts?: VideoScript[];
+  // Só nos nichos de pack: estilo e prompts das artes que o ZIP gera (lib/pack.ts).
+  pack?: ProductPack;
 };
 
 export type AdCopy = { angle: string; primaryText: string; headline: string; description: string };
@@ -217,6 +220,7 @@ export function normalizeAiProduct(data: Partial<ProductResult>, fallback: Produ
   const noReading = spanish ? withoutReadingWordsEs : withoutReadingWords;
   const ads = normalizeAds(data.ads);
   const videoScripts = normalizeVideoScripts(data.videoScripts);
+  const pack = normalizePack(data.pack);
   const normalized = {
     title: noReading(data.title || fallback.title),
     subtitle: noReading(data.subtitle || fallback.subtitle),
@@ -269,6 +273,7 @@ export function normalizeAiProduct(data: Partial<ProductResult>, fallback: Produ
     ...(text(data.resumoPt) ? { resumoPt: text(data.resumoPt) } : {}),
     ...(ads.length ? { ads } : {}),
     ...(videoScripts.length ? { videoScripts } : {}),
+    ...(pack ? { pack } : {}),
   };
 
   return spanish ? normalized : sanitizeProductLanguage(normalized);

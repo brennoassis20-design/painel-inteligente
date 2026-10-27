@@ -2,6 +2,7 @@ import { normalizeSalesExtras, salesCopyRules, salesExtrasJsonShape } from "@/li
 import { spanishRules, type Market } from "@/lib/locale";
 import { adsJsonShape, buildProduct, normalizeAds, normalizeAiProduct, normalizeVideoScripts, productFormatFor, ProductResult, requestAiJson } from "@/lib/product-engine";
 import { collectAdLibraryTrends, hasAdLibrarySource, isCollectionDay } from "@/lib/trend-ads";
+import { blockedNicheReason, isPackNiche, packJsonShape, packRules } from "@/lib/pack";
 
 export type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
 
@@ -101,25 +102,25 @@ const fallbackTrendProducts: TrendProduct[] = [
     angle: "Ensinar uma rotina simples para montar cardapio, calcular lucro e vender as primeiras marmitas.",
   },
   {
-    title: "Lista de fornecedores para comecar uma loja",
-    niche: "lista de fornecedores",
-    audience: "pessoas que querem revender produtos com baixo investimento",
+    title: "Pack de stickers digitais de cafe",
+    niche: "stickers digitais de cafe para imprimir",
+    audience: "pessoas que montam planners, cadernos e lembrancinhas e querem artes prontas",
     productType: "Checklist premium",
-    category: "Renda extra",
-    price: "R$27 a R$97",
+    category: "Packs digitais",
+    price: "R$9,90 a R$27",
     score: 91,
     status: "Validado",
-    promise: "Encontrar fornecedores confiaveis e iniciar uma revenda com baixo investimento.",
-    salesAngle: "Pare de comprar caro: use uma lista organizada para achar margem antes do primeiro pedido.",
+    promise: "Receber 20 stickers prontos para imprimir, recortar e usar ou revender em lembrancinhas.",
+    salesAngle: "Artes prontas e no mesmo estilo: imprima hoje, sem saber desenhar.",
     channel: "Trafego pago + organico",
-    creativeFormats: ["Dor direta", "Prova de catalogo", "Lista por segmento"],
-    pageType: "Landing direta com promessa, bonus e checkout",
-    strategicInsight: "A promessa de curadoria economiza tempo e reduz medo de comprar de fornecedor errado.",
-    tags: ["renda extra", "facil producao", "alta demanda"],
-    adSignal: "Anuncios com promessa direta, prova de catalogo e bonus",
-    searchSignal: "Buscas constantes por fornecedores confiaveis e atacado",
-    trendSignal: "Procura alta por renda extra com estoque pequeno",
-    angle: "Entregar uma curadoria organizada por segmento, margem e primeiro pedido recomendado.",
+    creativeFormats: ["Antes e depois", "Mostrar o pack", "Uso na pratica"],
+    pageType: "Landing direta com galeria das artes e checkout",
+    strategicInsight: "Pack visual vende pela vitrine: o comprador ve exatamente o que leva.",
+    tags: ["pack", "visual", "baixo ticket"],
+    adSignal: "Anuncios de packs de stickers e artes para imprimir com galeria",
+    searchSignal: "Buscas constantes por stickers e artes para imprimir",
+    trendSignal: "Procura alta por papelaria criativa e lembrancinhas",
+    angle: "Entregar um pack de artes com estilo unico e um passo a passo de impressao e uso.",
   },
   {
     title: "Bolo de pote lucrativo",
@@ -434,8 +435,10 @@ export async function listTrendOpportunities(market: Market = "br") {
       `/trend_opportunities?is_active=eq.true&market=eq.${market}&select=*&order=score.desc,title.asc&limit=24`,
     );
 
-    if (rows.length) {
-      return rows.map(mapTrendRowToProduct);
+    // Nichos de pirataria ou de fornecedores salvos antes do filtro de 27/10/2026 não aparecem.
+    const allowed = rows.map(mapTrendRowToProduct).filter((trend) => !blockedNicheReason(`${trend.title} ${trend.niche} ${trend.promise || ""}`));
+    if (allowed.length) {
+      return allowed;
     }
   } catch (error) {
     console.warn("Trend opportunities fell back to the local seed.", error);
@@ -540,11 +543,12 @@ export async function generateProductPayload(input: {
 }) {
   const spanish = input.language === "es";
   const fallback = buildProduct(input.niche, input.productType, input.audience, input.tone);
-  const format = productFormatFor(input.productType);
+  const isPack = isPackNiche(`${input.niche} ${input.productBrief || ""}`);
+  const format = isPack ? "manual" : productFormatFor(input.productType);
   const apiKey = getServerAiKey();
 
   if (!apiKey) {
-    if (spanish) throw new Error("Chave de IA não configurada.");
+    if (spanish || isPack) throw new Error("Chave de IA não configurada.");
     return {
       product: fallback,
       source: "internal" as const,
@@ -571,7 +575,7 @@ Regras para a entrega:
 - A copy e a salesPage sao arquivos comerciais separados e nao devem aparecer como parte interna do produto final.
 ${salesCopyRules}
 - Escolha a arquitetura mais natural para o produto. Nao force todo projeto para o mesmo formato: checklist/curadoria deve parecer uma ferramenta de validacao; protocolo/plano deve parecer uma sequencia guiada; guia/mapa deve parecer um playbook de decisao e aplicacao.
-- Pense tambem na direcao visual do produto: lista/fornecedores deve gerar conteudo com cara de catalogo ou diretorio premium; guia consultivo deve gerar conteudo editorial com capitulos, tabelas e exemplos; protocolo deve gerar conteudo de manual pratico com rotina, fichas e acompanhamento. Varie estrutura, tipo de pagina e conteudo conforme o nicho.
+- Pense tambem na direcao visual do produto: lista/curadoria deve gerar conteudo com cara de catalogo premium; guia consultivo deve gerar conteudo editorial com capitulos, tabelas e exemplos; protocolo deve gerar conteudo de manual pratico com rotina, fichas e acompanhamento. Varie estrutura, tipo de pagina e conteudo conforme o nicho.
 - format: use "${format}" (editorial = guia de consulta em capitulos; manual = sequencia de etapas, dias ou rotina para executar; catalogo = selecao organizada em categorias com itens e criterios).
 ${spanish ? spanishRules : '- Escreva com acentuacao correta do portugues em todos os textos (ex.: "você", "não", "orçamento").'}
 - intro: 2 paragrafos curtos de abertura para o comprador (o documento ja tem uma pagina "como usar"; nao crie bloco de introducao ou de como usar em productContent, comece direto no conteudo). Nao numere os titulos dos blocos. closing: 1 paragrafo de fechamento.
@@ -581,7 +585,7 @@ ${spanish ? spanishRules : '- Escreva com acentuacao correta do portugues em tod
   * manual: blocos sao etapas em sequencia; table como ficha de registro ou cronograma em 3 a 5 blocos; entries vazio.
   * catalogo: no maximo 2 blocos de orientacao (ex.: como escolher); TODOS os outros blocos sao categorias e cada categoria OBRIGATORIAMENTE tem entries com 4 a 6 itens (name, detail de 1 a 2 frases com criterio pratico, tag de 1 a 2 palavras); table em no maximo 1 bloco. Nao invente nomes de marcas, lojas ou pessoas reais: descreva tipos, modelos ou perfis.
 
-Use no maximo 6 modulos, 6 itens de estrutura, 10 a 12 blocos de conteudo, 4 secoes de pagina, 10 secoes de landing page e 5 prompts. Escreva textos objetivos, prontos para usar, sem alongar demais. Nao mencione aluno, aula, curso ou bastidores da ferramenta.
+${isPack ? `${packRules}\n\n` : ""}Use no maximo 6 modulos, 6 itens de estrutura, 10 a 12 blocos de conteudo, 4 secoes de pagina, 10 secoes de landing page e 5 prompts. Escreva textos objetivos, prontos para usar, sem alongar demais. Nao mencione aluno, aula, curso ou bastidores da ferramenta.
 ${
   spanish
     ? `
@@ -593,17 +597,23 @@ Campos extras desta entrega em espanhol:
 }
 
 Retorne exatamente este formato JSON:
-{"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"format":"editorial|manual|catalogo","intro":"string","closing":"string","productContent":[{"title":"string","body":"string","task":"string","points":["string"],"tip":"string opcional","example":"string opcional","table":{"columns":["string"],"rows":[["string"]]},"entries":[{"name":"string","detail":"string","tag":"string"}]}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string",${salesExtrasJsonShape},"sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]${spanish ? `,"resumoPt":"string",${adsJsonShape}` : ""}}`,
-      spanish ? 14000 : 12000,
+{"title":"string","subtitle":"string","promise":"string","modules":["string"],"productBlueprint":["string"],"format":"editorial|manual|catalogo","intro":"string","closing":"string","productContent":[{"title":"string","body":"string","task":"string","points":["string"],"tip":"string opcional","example":"string opcional","table":{"columns":["string"],"rows":[["string"]]},"entries":[{"name":"string","detail":"string","tag":"string"}]}],"copyBlocks":{"hook":"string","headline":"string","bullets":["string"],"cta":"string"},"salesPage":{"headline":"string","subheadline":"string",${salesExtrasJsonShape},"sections":[{"title":"string","body":"string"}],"cta":"string"},"landingSections":["string"],"prompts":["string"]${spanish ? `,"resumoPt":"string",${adsJsonShape}` : ""}${isPack ? `,${packJsonShape}` : ""}}`,
+      (spanish ? 14000 : 12000) + (isPack ? 3000 : 0),
     );
+    const product = { ...normalizeAiProduct(spanish ? { ...data, language: "es" } : data, fallback), format };
+    if (isPack && !product.pack) throw new Error("A IA não montou as artes do pack.");
 
     return {
-      product: { ...normalizeAiProduct(spanish ? { ...data, language: "es" } : data, fallback), format },
+      product,
       source: "automatic" as const,
     };
   } catch (error) {
-    // O rascunho interno é em português: produto em espanhol falha sem gastar o pedido do mês.
+    // O rascunho interno é em português e não tem artes: espanhol e pack falham sem gastar o pedido do mês.
     if (spanish) throw new Error("Não foi possível criar o produto em espanhol agora. Tente de novo em alguns minutos.");
+    if (isPack) {
+      console.warn("Pack generation failed.", error);
+      throw new Error("Não foi possível criar o pack agora. Tente de novo em alguns minutos.");
+    }
     console.warn("Product generation fell back to the internal engine.", error);
     return {
       product: fallback,

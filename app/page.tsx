@@ -13,6 +13,7 @@ import { buildSalesPage, normalizeSalesExtras, withoutReadingWords, type OfertaC
 import { googleFontCss, renderProductDocument, resolveDocumentStyle, type DocumentBlock } from "@/lib/product-document";
 import { languageOf, withoutReadingWordsEs, type Market } from "@/lib/locale";
 import type { AdCopy as AiAdCopy, VideoScript } from "@/lib/product-engine";
+import { packImageExtensions, packPromptsText, type ProductPack } from "@/lib/pack";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
 type ActiveView = "inicio" | "radar" | "gerador" | "radarLatam" | "geradorLatam" | "produto" | "criativos" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor";
@@ -54,6 +55,7 @@ type ProductResult = {
   resumoPt?: string;
   ads?: AiAdCopy[];
   videoScripts?: VideoScript[];
+  pack?: ProductPack;
 };
 
 type TrendProduct = {
@@ -362,25 +364,25 @@ const trendProducts: TrendProduct[] = [
     angle: "Ensinar uma rotina simples para montar cardápio, calcular lucro e vender as primeiras marmitas.",
   },
   {
-    title: "Lista de fornecedores para começar uma loja",
-    niche: "lista de fornecedores",
-    audience: "pessoas que querem revender produtos com baixo investimento",
+    title: "Pack de stickers digitais de café",
+    niche: "stickers digitais de café para imprimir",
+    audience: "pessoas que montam planners, cadernos e lembrancinhas e querem artes prontas",
     productType: "Checklist premium",
-    category: "Renda extra",
-    price: "R$27 a R$97",
+    category: "Packs digitais",
+    price: "R$9,90 a R$27",
     score: 91,
     status: "Validado",
-    promise: "Encontrar fornecedores confiáveis e iniciar uma revenda com baixo investimento.",
-    salesAngle: "Pare de comprar caro: use uma lista organizada para achar margem antes do primeiro pedido.",
+    promise: "Receber 20 stickers prontos para imprimir, recortar e usar ou revender em lembrancinhas.",
+    salesAngle: "Artes prontas e no mesmo estilo: imprima hoje, sem saber desenhar.",
     channel: "Tráfego pago + orgânico",
-    creativeFormats: ["Dor → solução", "Prova de catálogo", "Lista por segmento"],
-    pageType: "Landing direta com promessa, bônus e checkout",
-    strategicInsight: "A promessa de curadoria economiza tempo e reduz medo de comprar de fornecedor errado.",
-    tags: ["renda extra", "fácil produção", "alta demanda"],
-    adSignal: "Anúncios com promessa direta, prova de catálogo e bônus",
-    searchSignal: "Buscas constantes por fornecedores confiáveis e atacado",
-    trendSignal: "Procura alta por renda extra com estoque pequeno",
-    angle: "Entregar uma curadoria organizada por segmento, margem e primeiro pedido recomendado.",
+    creativeFormats: ["Antes e depois", "Mostrar o pack", "Uso na prática"],
+    pageType: "Landing direta com galeria das artes e checkout",
+    strategicInsight: "Pack visual vende pela vitrine: o comprador vê exatamente o que leva.",
+    tags: ["pack", "visual", "baixo ticket"],
+    adSignal: "Anúncios de packs de stickers e artes para imprimir com galeria",
+    searchSignal: "Buscas constantes por stickers e artes para imprimir",
+    trendSignal: "Procura alta por papelaria criativa e lembrancinhas",
+    angle: "Entregar um pack de artes com estilo único e um passo a passo de impressão e uso.",
   },
   {
     title: "Bolo de pote lucrativo",
@@ -1784,6 +1786,10 @@ function buildZip(files: { name: string; data: string | Uint8Array }[]) {
   return new Blob(blobParts, { type: "application/zip" });
 }
 
+function packedLabel(label: string, missing: number) {
+  return missing ? `${label}. ${missing === 1 ? "1 arte do pack falhou" : `${missing} artes do pack falharam`}: baixe o pacote de novo para completar.` : label;
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -1795,12 +1801,57 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function buildProjectBundle(product: ProductResult, token: string, oferta?: OfertaConfig) {
+// Pack de arquivos: cada arte vem do servidor (gerada uma vez e guardada), 4 por vez.
+async function fetchPackImages(pack: ProductPack, projectId: string, token: string, onProgress?: (done: number, total: number) => void) {
+  const files: { name: string; data: Uint8Array }[] = [];
+  let done = 0;
+  const fetchOne = async (index: number) => {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const response = await fetch("/api/generate/pack-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ projectId, index }),
+        });
+        const extension = packImageExtensions[response.headers.get("content-type") || ""];
+        if (response.ok && extension) {
+          const number = String(index + 1).padStart(2, "0");
+          files.push({ name: `00-pack-de-artes/${number}-${slugify(pack.items[index].name)}.${extension}`, data: new Uint8Array(await response.arrayBuffer()) });
+          break;
+        }
+      } catch {
+        // tenta mais uma vez; se falhar de novo, o ZIP sai sem esta arte
+      }
+      // Antes da segunda tentativa, espera o OpenRouter liberar os pedidos em andamento.
+      if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 4000));
+    }
+    done += 1;
+    onProgress?.(done, pack.items.length);
+  };
+  const queue = pack.items.map((_, index) => index);
+  await Promise.all(Array.from({ length: 4 }, async () => {
+    while (queue.length) await fetchOne(queue.shift() as number);
+  }));
+  return files.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function buildProjectBundle(
+  product: ProductResult,
+  token: string,
+  oferta?: OfertaConfig,
+  projectId?: string,
+  onPackProgress?: (done: number, total: number) => void,
+) {
   const baseName = slugify(product.title);
   const pdf = (await fetchPremiumPdf(product, token)) || buildProductPdf(product);
+  const pack = product.pack && projectId ? product.pack : undefined;
+  const packFiles = pack ? await fetchPackImages(pack, projectId as string, token, onPackProgress) : [];
   return {
     filename: `${baseName}-pacote.zip`,
+    packMissing: pack ? pack.items.length - packFiles.length : 0,
     blob: buildZip([
+      ...packFiles,
+      ...(pack ? [{ name: "00-kit-de-prompts-do-pack.txt", data: packPromptsText(pack) }] : []),
       { name: "01-produto-pronto.pdf", data: pdf },
       { name: "02-produto-editavel.html", data: buildProductHtml(product) },
       { name: "03-pagina-de-vendas.html", data: buildSalesPage(product, oferta) },
@@ -1868,6 +1919,7 @@ function normalizeAiProduct(data: Partial<ProductResult>, fallback: ProductResul
     ...(data.resumoPt ? { resumoPt: data.resumoPt } : {}),
     ...(data.ads?.length ? { ads: data.ads } : {}),
     ...(data.videoScripts?.length ? { videoScripts: data.videoScripts } : {}),
+    ...(data.pack?.items?.length ? { pack: data.pack } : {}),
   };
 
   return spanish ? normalized : sanitizeProductLanguage(normalized);
@@ -2276,10 +2328,12 @@ export default function Home() {
       setUsage(data.usage);
       setSavedProjects((projects) => [data.project, ...projects.filter((project) => project.id !== data.project.id)].slice(0, 12));
       setGenerationSource(data.source === "internal" ? "Criação concluída" : "Criação automática concluída");
-      const bundle = await buildProjectBundle(product, sessionToken);
+      const bundle = await buildProjectBundle(product, sessionToken, undefined, data.project.id, (done, total) =>
+        setCopiedLabel(`Gerando as artes do pack: ${done} de ${total}`),
+      );
       downloadBlob(bundle.blob, bundle.filename);
       setLastPackageName(bundle.filename);
-      setCopiedLabel("Produto completo criado e pacote baixado");
+      setCopiedLabel(packedLabel("Produto completo criado e pacote baixado", bundle.packMissing));
       setActiveView("produto");
     } catch (error) {
       setGenerationSource("Rascunho rápido");
@@ -2353,10 +2407,12 @@ export default function Home() {
     if (!result) return;
 
     setCopiedLabel("Preparando o pacote...");
-    const bundle = await buildProjectBundle(result, sessionToken, readOferta(currentProjectId));
+    const bundle = await buildProjectBundle(result, sessionToken, readOferta(currentProjectId), currentProjectId || undefined, (done, total) =>
+      setCopiedLabel(`Preparando as artes do pack: ${done} de ${total}`),
+    );
     downloadBlob(bundle.blob, bundle.filename);
     setLastPackageName(bundle.filename);
-    setCopiedLabel("Pacote do projeto baixado");
+    setCopiedLabel(packedLabel("Pacote do projeto baixado", bundle.packMissing));
   }
 
   function downloadSalesPage(oferta: OfertaConfig) {
@@ -2388,10 +2444,12 @@ export default function Home() {
 
   async function downloadSavedProject(project: SavedProject) {
     setCopiedLabel("Preparando o pacote...");
-    const bundle = await buildProjectBundle(sanitizeProductLanguage(project.payload), sessionToken, readOferta(project.id));
+    const bundle = await buildProjectBundle(sanitizeProductLanguage(project.payload), sessionToken, readOferta(project.id), project.id, (done, total) =>
+      setCopiedLabel(`Preparando as artes do pack: ${done} de ${total}`),
+    );
     downloadBlob(bundle.blob, bundle.filename);
     setLastPackageName(bundle.filename);
-    setCopiedLabel("Pacote do projeto baixado");
+    setCopiedLabel(packedLabel("Pacote do projeto baixado", bundle.packMissing));
   }
 
   function logout() {

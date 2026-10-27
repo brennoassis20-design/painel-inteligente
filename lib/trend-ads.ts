@@ -1,6 +1,7 @@
 import type { Market } from "@/lib/locale";
 import { productTypes, requestAiJson } from "@/lib/product-engine";
 import type { TrendProduct } from "@/lib/panel-server";
+import { blockedNicheReason, isPackNiche } from "@/lib/pack";
 
 // Nichos em alta com dado real: anúncios ativos no Brasil (e na América Latina), na Biblioteca de Anúncios da Meta,
 // que começaram há mais de 30 dias (ninguém paga anúncio por um mês sem vender).
@@ -15,7 +16,7 @@ const QUERIES: Record<Market, { query: string; country: string }[]> = {
     "acesso imediato",
     "receba no seu email",
     "pdf",
-    "lista de fornecedores",
+    "para imprimir",
     "receitas",
     "moldes",
     "atividades",
@@ -27,7 +28,7 @@ const QUERIES: Record<Market, { query: string; country: string }[]> = {
     { query: "acceso inmediato", country: "MX" },
     { query: "recetas pdf", country: "MX" },
     { query: "descarga inmediata", country: "MX" },
-    { query: "lista de proveedores", country: "MX" },
+    { query: "imprimibles", country: "MX" },
     { query: "moldes", country: "CO" },
     { query: "acceso inmediato", country: "CO" },
     { query: "actividades para imprimir", country: "AR" },
@@ -195,7 +196,6 @@ function statusFor(advertisers: number, oldestDays: number): TrendProduct["statu
 // Categorias fixas: a IA só encaixa cada anunciante; quem conta é o código.
 const CATEGORIES = [
   "Receitas",
-  "Lista de fornecedores",
   "Moldes e projetos",
   "Atividades infantis e educação",
   "Concursos e estudos",
@@ -221,8 +221,8 @@ async function classifyAdvertisers(advertisers: Advertiser[], aiKey: string, mar
 
 ${lines}
 
-Para cada anunciante que vende um MATERIAL DIGITAL BARATO ao consumidor final (PDF, receitas, lista de fornecedores, moldes, atividades para imprimir, planner, planilhas, modelos de documentos, kit digital, pack, aulas gravadas ${latam ? "ate US$ 27" : "ate R$ 97"}), diga a categoria.
-Deixe FORA: lojas, produtos fisicos, restaurantes, clinicas, servicos, apps, softwares, grandes marcas, cursos caros ou presenciais, conteudo gratis sem venda, anuncios ${latam ? "que nao estejam em espanhol" : "em outro idioma"}. Na duvida, deixe fora.
+Para cada anunciante que vende um MATERIAL DIGITAL BARATO ao consumidor final (PDF, receitas, moldes, atividades para imprimir, planner, planilhas, modelos de documentos, kit digital, pack, aulas gravadas ${latam ? "ate US$ 27" : "ate R$ 97"}), diga a categoria.
+Deixe FORA: lojas, produtos fisicos, restaurantes, clinicas, servicos, apps, softwares, grandes marcas, cursos caros ou presenciais, conteudo gratis sem venda, listas de fornecedores, packs ou materiais com personagens, marcas, quadrinhos, mangas, filmes, series ou obras de terceiros (pirataria), anuncios ${latam ? "que nao estejam em espanhol" : "em outro idioma"}. Na duvida, deixe fora.
 
 Categorias permitidas (responda com o nome exato, em portugues): ${CATEGORIES.join("; ")}.
 
@@ -312,6 +312,10 @@ export async function buildTrendsFromAds(ads: AdItem[], failures: string[], aiKe
   for (const group of ranked) {
     const card = cards.find((c) => String(c.category || "").trim().toLowerCase() === group.category.toLowerCase());
     if (!card?.title) continue;
+    // Pirataria e listas de fornecedores ficam fora mesmo que a IA deixe passar (decisão do Brenno, 27/10/2026).
+    const cardText = `${card.title} ${card.niche || ""} ${card.promise || ""} ${group.products.join(" ")}`;
+    if (blockedNicheReason(cardText)) continue;
+    const isPack = group.category === "Packs digitais" || isPackNiche(`${card.title} ${card.niche || ""}`);
     const examples = [...new Set(group.products)].slice(0, 3);
     products.push({
       title: String(card.title),
@@ -328,7 +332,7 @@ export async function buildTrendsFromAds(ads: AdItem[], failures: string[], aiKe
       creativeFormats: card.creativeFormats,
       pageType: card.pageType,
       strategicInsight: card.strategicInsight,
-      tags: card.tags,
+      tags: isPack ? ["pack de arquivos", ...(card.tags || []).slice(0, 3)] : card.tags,
       adSignal: `${group.advertisers} ${group.advertisers === 1 ? "anunciante ativo" : "anunciantes ativos"} · o mais antigo no ar há ${group.oldest} dias`,
       searchSignal: examples.length ? `No ar agora: ${examples.map((e) => `“${e}”`).join(", ")}` : "",
       trendSignal: `${group.totalAds} ${group.totalAds === 1 ? "anúncio ativo encontrado" : "anúncios ativos encontrados"} ${market === "latam" ? "nesta coleta (América Latina)" : "nesta coleta"}`,

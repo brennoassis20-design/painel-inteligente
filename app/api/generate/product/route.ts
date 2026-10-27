@@ -9,6 +9,7 @@ import {
   jsonError,
   syncProfileAccess,
 } from "@/lib/panel-server";
+import { blockedNicheReason } from "@/lib/pack";
 import { productTypes, toneOptions } from "@/lib/product-engine";
 
 export async function POST(request: Request) {
@@ -37,6 +38,9 @@ export async function POST(request: Request) {
     const tone = toneOptions.includes(payload.tone || "") ? payload.tone || toneOptions[0] : toneOptions[0];
     const productBrief = payload.productBrief?.trim().slice(0, 1800) || "";
     const language = payload.language === "es" ? "es" : "pt";
+    // Antes de gastar o pedido do mês: pirataria e listas de fornecedores não são geradas.
+    const blocked = blockedNicheReason(niche);
+    if (blocked) return jsonError(blocked, 422);
     const generated = await generateProductPayload({ niche, audience, productType, tone, productBrief, language });
     const project = await createProductForUser(user.id, generated.product);
     const nextUsage = await getUsage(user.id);
