@@ -6,7 +6,7 @@ import "../metodo-genio/mg.css";
 
 export const metadata: Metadata = {
   title: "Brenno Lima | Links",
-  description: "Método Gênio e serviços da GDM: tráfego pago, assessoria e consultoria comercial.",
+  description: "Kit Produto Pronto, aulas no YouTube, Método Gênio e serviços da GDM: tráfego pago, assessoria e consultoria comercial.",
   openGraph: { title: "Brenno Lima", images: ["/mg/brenno-avatar.jpg"] },
 };
 
@@ -22,7 +22,25 @@ export default function BrennoLinksPage() {
         </p>
 
         <section className="bio-block bio-genio">
-          <p className="mg-eyebrow">Quer vender produto digital?</p>
+          <p className="mg-eyebrow">Quer começar a vender hoje?</p>
+          <h2>Kit Produto Pronto</h2>
+          <p>
+            Um produto digital inteiro para você vender: página de vendas, anúncios escritos e direito de revenda. É
+            só colocar o seu link.
+          </p>
+          <a className="mg-cta" href={rastreado(OFERTA.kit, "instagram", "bio", "kit-produto-pronto", "botao-kit")}>
+            Quero o kit pronto
+            <Icon name="arrow" />
+          </a>
+        </section>
+
+        <a className="bio-link bio-youtube" href={rastreado(OFERTA.youtube, "instagram", "bio", "youtube", "botao-youtube")} target="_blank" rel="noopener noreferrer">
+          <Icon name="play" />
+          Aulas grátis no YouTube
+        </a>
+
+        <section className="bio-block bio-metodo">
+          <p className="mg-eyebrow">Quer criar os seus produtos?</p>
           <div className="bio-genio-head">
             <img src="/mg/capa.jpg" alt="Método Gênio" />
             <div>
@@ -34,7 +52,7 @@ export default function BrennoLinksPage() {
             Você escolhe o nicho e o painel entrega o produto, a página de vendas, os anúncios e os criativos. Sem
             ser especialista e sem aparecer.
           </p>
-          <a className="mg-cta" href={rastreado("/metodo-genio", "instagram", "bio", "metodo-genio", "botao-metodo-genio")}>
+          <a className="bio-btn-alt" href={rastreado("/metodo-genio", "instagram", "bio", "metodo-genio", "botao-metodo-genio")}>
             Conhecer o Método Gênio
             <Icon name="arrow" />
           </a>

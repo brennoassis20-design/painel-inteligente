@@ -846,6 +846,24 @@
   background: rgba(159, 233, 255, 0.05);
 }
 
+.bio-metodo {
+  border: 1px solid rgba(183, 155, 255, 0.32);
+  background: rgba(183, 155, 255, 0.06);
+}
+
+.bio-metodo .bio-btn-alt {
+  border-color: var(--pi-violet, #b79bff);
+  background: rgba(183, 155, 255, 0.1);
+}
+
+.bio-youtube {
+  margin-bottom: 18px;
+}
+
+.bio-youtube svg {
+  color: #ff4e45;
+}
+
 .bio-tags {
   display: flex;
   flex-wrap: wrap;

@@ -5,6 +5,8 @@ export const OFERTA = {
   preco: "297",
   gdm: "https://groupdigitalmedia.com.br/",
   painel: "https://painelinteligente.bagencymidia.site/",
+  kit: "https://kit.brennolimaoficial.com/",
+  youtube: "https://www.youtube.com/@Brennolimaoficial2",
   pixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID || "1134983832285410",
   // Originais em ~/Documents/Brenno Fotos.
   foto: "/mg/brenno.jpg" as string,
