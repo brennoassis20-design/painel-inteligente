@@ -8,8 +8,12 @@ export function studentKey(request: Request) {
   return /^sk-or-[\w-]{20,}$/.test(key) ? key : "";
 }
 
+export class SessionError extends Error {}
+
 export async function loadOwnProject(request: Request, projectId: unknown) {
-  const user = await getUserFromRequest(request);
+  const user = await getUserFromRequest(request).catch(() => {
+    throw new SessionError("Sessão inválida.");
+  });
   const profile = await syncProfileAccess(user);
   assertActiveProfile(profile);
   if (typeof projectId !== "string" || !projectId) return { user, project: null };

@@ -1,6 +1,6 @@
 import { AccessError, jsonError, supabaseRest } from "@/lib/panel-server";
 import { createPremiumEdition, premiumPhotos } from "@/lib/premium";
-import { loadOwnProject, openRouterMessage, studentKey } from "../shared";
+import { SessionError, loadOwnProject, openRouterMessage, studentKey } from "../shared";
 
 // A IA forte escreve a edição inteira (1 a 3 min). Fica salva no projeto: gerar o PDF de novo não cobra.
 export const runtime = "nodejs";
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     });
     return Response.json({ edition, photos: premiumPhotos(edition) });
   } catch (error) {
+    if (error instanceof SessionError) return jsonError("Entre de novo no painel.", 401);
     if (error instanceof AccessError) return jsonError("Acesso indisponível.", 403, { accessStatus: error.status });
     console.error("Edição premium falhou.", error instanceof Error ? error.message.slice(0, 300) : error);
     return jsonError(openRouterMessage(error) || "Não foi possível criar a edição. Tente de novo.", 500);

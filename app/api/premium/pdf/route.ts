@@ -2,7 +2,7 @@ import { AccessError, jsonError } from "@/lib/panel-server";
 import { premiumFontCss, renderHtmlPdf } from "@/lib/pdf-render";
 import { premiumFontFiles, premiumPhotos, renderPremiumHtml } from "@/lib/premium";
 import { readCachedImage } from "@/lib/storage";
-import { loadOwnProject } from "../shared";
+import { SessionError, loadOwnProject } from "../shared";
 
 // Monta o PDF da edição com as fotos já guardadas (não usa a chave: não gera nada novo).
 export const runtime = "nodejs";
@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "application/pdf", "Content-Length": String(pdf.byteLength), "Cache-Control": "no-store" },
     });
   } catch (error) {
+    if (error instanceof SessionError) return jsonError("Entre de novo no painel.", 401);
     if (error instanceof AccessError) return jsonError("Acesso indisponível.", 403, { accessStatus: error.status });
     console.error("PDF premium falhou.", error);
     return jsonError("Não foi possível montar o PDF.", 500);

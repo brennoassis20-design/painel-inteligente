@@ -40,7 +40,10 @@ export type PremiumPhoto = { id: string; prompt: string; aspect: string };
 const MAX_PAGES = 14;
 const MAX_PAGE_PHOTOS = 7;
 
-const str = (value: unknown, max = 400) => (typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : "");
+// Emojis e símbolos (⏱ ★ ✓ →) não existem nas fontes do PDF e viram quadradinho: saem do texto.
+const SYMBOLS = /[\u2190-\u2BFF\u{1F000}-\u{1FFFF}]|\uFE0F|\u200D/gu;
+const str = (value: unknown, max = 400) =>
+  typeof value === "string" ? value.replace(SYMBOLS, "").replace(/\s+/g, " ").trim().slice(0, max) : "";
 const strs = (value: unknown, count: number, max = 200) =>
   (Array.isArray(value) ? value : []).map((item) => str(item, max)).filter(Boolean).slice(0, count);
 const list = (value: unknown, count: number) => (Array.isArray(value) ? value : []).slice(0, count) as Record<string, unknown>[];
@@ -115,7 +118,8 @@ export function normalizeEdition(raw: unknown): PremiumEdition | null {
   const closing = (data?.closing || {}) as Record<string, unknown>;
   return {
     version: 1,
-    createdAt: new Date().toISOString(),
+    // A data é a identidade das fotos no Storage: edição já salva mantém a dela.
+    createdAt: typeof data.createdAt === "string" && !Number.isNaN(Date.parse(data.createdAt)) ? data.createdAt : new Date().toISOString(),
     cover: {
       tag: str(cover.tag, 40),
       title,
@@ -151,6 +155,7 @@ Regras de conteúdo:
 - Concreto e utilizável: quantidades, tempos, nomes, exemplos reais, frases prontas. Nada de texto genérico ou motivacional.
 - Pouco texto corrido: o comprador odeia ler. Prefira cartões, listas para marcar, tabelas e passos curtos.
 - Nunca use as palavras guia, ebook, e-book, apostila, livro, leitura, ler, páginas, capítulos, manual (nem em espanhol: guía, libro, lectura, leer, páginas, capítulos). Use método, plano, kit, cardápio, protocolo, roteiro, mapa, sistema.
+- Todo o texto no idioma pedido: nenhuma palavra em inglês (só as descrições de foto). Sem emojis nem símbolos.
 - Sem promessas de cura, renda garantida ou resultado médico; saúde e dinheiro com linguagem responsável.
 
 Estrutura (você escolhe as páginas que fazem sentido para o nicho, como faria um designer):
@@ -233,11 +238,11 @@ ${item.tip ? `<div class="dica">${esc(item.tip)}</div>` : ""}</div>`,
     case "tips":
       return `<div class="tips">${block.items.map((item) => `<div class="tip"><b>${esc(item.title)}</b><p>${esc(item.text)}</p></div>`).join("")}</div>`;
     case "swap":
-      return `${block.title ? `<h4>${esc(block.title)}</h4>` : ""}<table class="sw">${block.items.map((item) => `<tr><td class="from">${esc(item.from)}</td><td class="to">→ ${esc(item.to)}</td></tr>`).join("")}</table>`;
+      return `${block.title ? `<h4>${esc(block.title)}</h4>` : ""}<table class="sw">${block.items.map((item) => `<tr><td class="from">${esc(item.from)}</td><td class="to"><span class="ar"></span>${esc(item.to)}</td></tr>`).join("")}</table>`;
     case "tracker": {
-      const fields = block.fields.length ? block.fields : ["✓"];
+      const fields = block.fields.length ? block.fields : ["Feito"];
       return `${block.title ? `<h4>${esc(block.title)}</h4>` : ""}<div class="trk">${block.rows
-        .map((row) => `<div class="tr"><b>${esc(row)}</b>${fields.map((f) => (/feito|hecho|✓|ok/i.test(f) ? `<span class="fx"><span class="box"></span>${esc(f)}</span>` : `<span class="fl">${esc(f)}: <i></i></span>`)).join("")}</div>`)
+        .map((row) => `<div class="tr"><b>${esc(row)}</b>${fields.map((f) => (/feito|hecho|ok/i.test(f) ? `<span class="fx"><span class="box"></span>${esc(f)}</span>` : `<span class="fl">${esc(f)}: <i></i></span>`)).join("")}</div>`)
         .join("")}</div>`;
     }
     case "callout":
@@ -276,7 +281,7 @@ h4{font-size:12pt;font-weight:800;margin:6mm 0 2mm}
 .ing li{list-style:none;font-size:9.3pt;margin:1mm 0;padding-left:5mm;position:relative;line-height:1.3}.ing li:before{content:'';position:absolute;left:0;top:1.1mm;width:2.5mm;height:2.5mm;border:.4mm solid ${p.accent};border-radius:.6mm}
 .st li{font-size:9.3pt;margin:1mm 0 1mm 4.5mm;line-height:1.35}
 .dica{grid-column:1/-1;font-size:8.8pt;color:${p.deep};font-weight:700;border-top:.3mm dashed ${p.line};padding-top:2mm;margin-top:1mm}
-.dica:before{content:'★ ';color:${p.accent}}
+.dica:before{content:'';display:inline-block;width:2mm;height:2mm;border-radius:50%;background:${p.accent};margin-right:2mm;vertical-align:.3mm}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:4.5mm;margin-top:5mm}.cols.c1{grid-template-columns:1fr}
 .box-w{background:#fff;border-radius:5mm;padding:4.5mm 6mm;break-inside:avoid}
 .sec{font-size:15pt;color:${p.accent};margin-bottom:2mm}
@@ -293,7 +298,7 @@ h4{font-size:12pt;font-weight:800;margin:6mm 0 2mm}
 .tips{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:5mm}
 .tip{background:${p.soft};border-radius:4mm;padding:4mm 5mm}.tip b{font-size:10.5pt;color:${p.deep}}.tip p{font-size:9.2pt;margin-top:1mm;line-height:1.38}
 .sw{border-collapse:collapse;width:100%;margin-top:3mm;background:#fff;border-radius:5mm;overflow:hidden}
-.sw td{padding:2.8mm 4mm;border-bottom:.3mm solid ${p.line};font-size:10pt}.sw .from{color:${p.muted};text-decoration:line-through;width:42%}.sw .to{font-weight:800}
+.sw td{padding:2.8mm 4mm;border-bottom:.3mm solid ${p.line};font-size:10pt}.sw .from{color:${p.muted};text-decoration:line-through;width:42%}.sw .to{font-weight:800}.ar{display:inline-block;width:2mm;height:2mm;border:solid ${p.accent};border-width:.6mm .6mm 0 0;transform:rotate(45deg);margin-right:3mm;vertical-align:.2mm}
 .trk{margin-top:4mm}.tr{background:#fff;border-radius:4mm;padding:3.2mm 5mm;display:flex;align-items:center;gap:6mm;margin:2.2mm 0;font-size:9.5pt}
 .tr b{font-size:10.8pt;min-width:30mm}.fl{flex:1;color:${p.muted};display:flex;gap:2mm}.fl i{flex:1;border-bottom:.3mm solid ${p.line}}.fx{display:flex;align-items:center;color:${p.muted}}
 .call{margin-top:6mm;background:${p.deep};color:${p.paper};border-radius:5mm;padding:6mm 8mm}.call .k{font-size:19pt;color:${p.soft}}.call p{font-size:10pt;line-height:1.5;margin-top:2mm}
@@ -302,6 +307,7 @@ h4{font-size:12pt;font-weight:800;margin:6mm 0 2mm}
 .cv{position:absolute;left:14mm;right:14mm;top:158mm;background:${p.paper};border-radius:6mm;padding:9mm 10mm}
 .cv .k{font-size:50pt;margin-top:4mm}.cv .hl{color:${p.accent}}
 .cv .sub{font-size:12.5pt;font-weight:700;margin-top:4mm;line-height:1.35}
+.cv .bd .ok:before{content:'';display:inline-block;width:1.4mm;height:2.6mm;border:solid ${p.accent};border-width:0 .6mm .6mm 0;transform:rotate(45deg);margin:0 2.2mm .4mm .5mm}
 .cv .bd{display:flex;flex-wrap:wrap;gap:3mm 6mm;margin-top:5mm;font-size:9.5pt;font-weight:800;color:${p.accent}}
 .toc{margin-top:7mm;display:grid;gap:2.4mm}.toc div{display:flex;align-items:baseline;gap:3mm;background:#fff;border-radius:3.5mm;padding:3mm 5mm;font-size:10.5pt;font-weight:700}
 .toc span{font-family:B;font-size:15pt;color:${p.accent};min-width:9mm}.toc em{margin-left:auto;font-style:normal;color:${p.muted};font-size:9pt}`;
@@ -324,7 +330,7 @@ export function renderPremiumHtml(edition: PremiumEdition, product: DocumentProd
 
   pages.push(`<div class="pg cover">${images.capa ? `<img src="${images.capa}">` : `<div style="height:190mm;background:${palette.accent}"></div>`}
 <div class="cv">${cover.tag ? `<span class="tag">${esc(cover.tag)}</span>` : ""}<div class="k">${titleHtml}</div><div class="sub">${esc(cover.subtitle)}</div>
-<div class="bd">${cover.badges.map((b) => `<span>✓ ${esc(b)}</span>`).join("")}</div></div></div>`);
+<div class="bd">${cover.badges.map((b) => `<span class="ok">${esc(b)}</span>`).join("")}</div></div></div>`);
 
   // Página 2: o que tem dentro (as páginas de conteúdo começam na 3).
   pages.push(`<div class="pg"><div class="in"><span class="tag">${t.insideTag}</span><h2>${t.inside}</h2>${cover.subtitle ? `<div class="lead">${esc(cover.subtitle)}</div>` : ""}
