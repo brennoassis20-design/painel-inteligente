@@ -62,6 +62,8 @@ export type ProductResult = {
   videoScripts?: VideoScript[];
   // Só nos nichos de pack: estilo e prompts das artes que o ZIP gera (lib/pack.ts).
   pack?: ProductPack;
+  // Lâmpada de Ouro (lib/premium.ts): edição premium salva no projeto.
+  premium?: unknown;
 };
 
 export type AdCopy = { angle: string; primaryText: string; headline: string; description: string };
@@ -385,7 +387,7 @@ export function extractJsonObject(value: string) {
   return JSON.parse(body.slice(start, end + 1));
 }
 
-async function postAiRequest(apiKey: string, system: string, prompt: string, maxTokens: number, forceJson: boolean) {
+async function postAiRequest(apiKey: string, system: string, prompt: string, maxTokens: number, forceJson: boolean, model?: string) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -394,12 +396,13 @@ async function postAiRequest(apiKey: string, system: string, prompt: string, max
       "X-OpenRouter-Title": "Painel Inteligente",
     },
     body: JSON.stringify({
-      model: getAiModel(),
+      model: model || getAiModel(),
       temperature: 0.74,
       max_tokens: maxTokens,
       stream: true,
       // Sem raciocínio interno: ele consome o limite de saída e a resposta volta vazia.
-      reasoning: { enabled: false },
+      // Modelo escolhido (Lâmpada de Ouro, Sonnet) exige raciocínio: vai no mínimo.
+      reasoning: model ? { effort: "low" } : { enabled: false },
       ...(forceJson ? { response_format: { type: "json_object" } } : {}),
       messages: [
         {
@@ -414,14 +417,14 @@ async function postAiRequest(apiKey: string, system: string, prompt: string, max
   return response;
 }
 
-export async function requestAiJson(apiKey: string, system: string, prompt: string, maxTokens = 2000) {
-  let response = await postAiRequest(apiKey, system, prompt, maxTokens, true);
+export async function requestAiJson(apiKey: string, system: string, prompt: string, maxTokens = 2000, model?: string) {
+  let response = await postAiRequest(apiKey, system, prompt, maxTokens, true, model);
 
   if (!response.ok) {
     const errorBody = await response.text();
 
     if (/response_format|json_object/i.test(errorBody)) {
-      response = await postAiRequest(apiKey, system, prompt, maxTokens, false);
+      response = await postAiRequest(apiKey, system, prompt, maxTokens, false, model);
     } else {
       throw new Error(errorBody || "A chamada de IA falhou.");
     }

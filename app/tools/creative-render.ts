@@ -34,6 +34,8 @@ export type CreativeTheme = {
   price: string;
   brand: string;
   language?: ProductLanguage;
+  // Foto da Lâmpada de Ouro como fundo (texto sempre claro por cima).
+  photo?: HTMLImageElement | null;
 };
 
 export type CreativeCopy = {
@@ -703,8 +705,30 @@ function drawChrome(ctx: CanvasRenderingContext2D, spec: CreativeSpec, theme: Cr
 
 // ---------- Layouts ----------
 
+// Foto de fundo: corta para preencher, escurece embaixo e em cima para o texto ler bem.
+function drawPhoto(ctx: CanvasRenderingContext2D, W: number, H: number, photo: HTMLImageElement, palette: Palette, t: number) {
+  const zoom = Number.isFinite(t) ? 1.04 + Math.min(t, 8) * 0.006 : 1.04;
+  const scale = Math.max(W / photo.naturalWidth, H / photo.naturalHeight) * zoom;
+  const w = photo.naturalWidth * scale;
+  const h = photo.naturalHeight * scale;
+  ctx.drawImage(photo, (W - w) / 2, (H - h) / 2, w, h);
+  const shade = ctx.createLinearGradient(0, 0, 0, H);
+  shade.addColorStop(0, "rgba(0,0,0,0.72)");
+  shade.addColorStop(0.45, "rgba(0,0,0,0.42)");
+  shade.addColorStop(1, "rgba(0,0,0,0.82)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = rgba(palette.from, 0.18);
+  ctx.fillRect(0, 0, W, H);
+}
+
+// Paleta clara sobre foto vira versão escura (texto branco, destaque na cor média).
+function photoPalette(palette: Palette): Palette {
+  return isDark(palette) ? palette : { ...palette, from: "#141414", accent: palette.to, text: "#ffffff" };
+}
+
 export function renderCreative(ctx: CanvasRenderingContext2D, W: number, H: number, spec: CreativeSpec, theme: CreativeTheme, t = Infinity) {
-  const palette = theme.palette;
+  const palette = theme.photo ? photoPalette(theme.palette) : theme.palette;
   const c = colors(palette);
   const story = H / W > 1.6;
   const square = H / W < 1.1;
@@ -717,7 +741,8 @@ export function renderCreative(ctx: CanvasRenderingContext2D, W: number, H: numb
 
   ctx.save();
   ctx.clearRect(0, 0, W, H);
-  drawBackground(ctx, W, H, palette, t);
+  if (theme.photo) drawPhoto(ctx, W, H, theme.photo, palette, t);
+  else drawBackground(ctx, W, H, palette, t);
   ctx.textBaseline = "top";
 
   let y = safeTop;

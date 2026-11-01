@@ -105,7 +105,7 @@ export function packImagePrompt(pack: ProductPack, index: number) {
   return `${item.prompt}. Style: ${pack.style}. High detail, print ready. No text, no letters, no watermark, no logos, no brands, no copyrighted characters, no real people.`;
 }
 
-export async function generatePackImage(apiKey: string, prompt: string) {
+export async function generatePackImage(apiKey: string, prompt: string, aspectRatio = "1:1", model?: string) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -114,10 +114,10 @@ export async function generatePackImage(apiKey: string, prompt: string) {
       "X-OpenRouter-Title": "Painel Inteligente",
     },
     body: JSON.stringify({
-      model: process.env.PACK_IMAGE_MODEL?.trim() || defaultPackImageModel,
+      model: model || process.env.PACK_IMAGE_MODEL?.trim() || defaultPackImageModel,
       modalities: ["image", "text"],
       // Sem isso o modelo mistura imagens largas (1408x768) e quadradas no mesmo pack.
-      image_config: { aspect_ratio: "1:1" },
+      image_config: { aspect_ratio: aspectRatio },
       messages: [{ role: "user", content: prompt }],
     }),
   });

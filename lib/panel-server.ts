@@ -448,6 +448,59 @@ export async function listTrendOpportunities(market: Market = "br") {
   return market === "latam" ? [] : fallbackTrendProducts;
 }
 
+// Novidades do painel: o sino lê daqui. Sem a tabela (SQL ainda não rodado), o painel segue sem novidades.
+export type PanelUpdateKind = "melhoria" | "nichos" | "em_construcao";
+export type PanelUpdate = { id: string; kind: PanelUpdateKind; title: string; body: string; view: string | null; created_at: string };
+export const panelUpdateKinds: PanelUpdateKind[] = ["melhoria", "nichos", "em_construcao"];
+
+export async function listPanelUpdates() {
+  try {
+    return await supabaseRest<PanelUpdate[]>(
+      "/panel_updates?is_active=eq.true&select=id,kind,title,body,view,created_at&order=created_at.desc&limit=40",
+    );
+  } catch (error) {
+    console.warn("Novidades indisponiveis.", error);
+    return [];
+  }
+}
+
+export async function addPanelUpdate(update: { kind: PanelUpdateKind; title: string; body?: string; view?: string | null }) {
+  const [row] = await supabaseRest<PanelUpdate[]>("/panel_updates", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ kind: update.kind, title: update.title, body: update.body || "", view: update.view || null }),
+  });
+  return row;
+}
+
+export async function changePanelUpdate(id: string, changes: Partial<Pick<PanelUpdate, "kind" | "title" | "body" | "view">> & { is_active?: boolean; bump?: boolean }) {
+  const { bump, ...fields } = changes;
+  // "bump": item que saiu de "em construção" e virou melhoria volta para o topo e acende o sino de novo.
+  const body = bump ? { ...fields, created_at: new Date().toISOString() } : fields;
+  const [row] = await supabaseRest<PanelUpdate[]>(`/panel_updates?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(body),
+  });
+  return row;
+}
+
+// Coleta nova de nichos vira novidade sozinha (nunca derruba a coleta se falhar).
+async function announceTrendRefresh(market: Market, titles: string[]) {
+  const where = market === "latam" ? "Nichos América Latina" : "Nichos em alta";
+  const top = titles.slice(0, 3).join(", ");
+  try {
+    await addPanelUpdate({
+      kind: "nichos",
+      title: `${where} atualizados: ${titles.length} nichos`,
+      body: `Lista nova com anúncios ativos há mais de 30 dias.${top ? ` Destaques: ${top}.` : ""}`,
+      view: market === "latam" ? "radarLatam" : "radar",
+    });
+  } catch (error) {
+    console.warn("Novidade da coleta nao gravada.", error);
+  }
+}
+
 export async function refreshTrendOpportunities(force = false, market: Market = "br") {
   // A Vercel chama todo dia; cada mercado só coleta nos seus dias (ver isCollectionDay).
   if (!force && !isCollectionDay(market)) {
@@ -492,6 +545,7 @@ export async function refreshTrendOpportunities(force = false, market: Market = 
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({ is_active: false }),
     });
+    await announceTrendRefresh(market, savedRows.map((row) => row.title));
     return { updated: savedRows.length, skipped: false, market, stats, opportunities: savedRows.map(mapTrendRowToProduct) };
   }
 

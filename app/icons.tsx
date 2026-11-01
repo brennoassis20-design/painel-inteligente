@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export type IconName = "home" | "spark" | "trend" | "chat" | "doc" | "folder" | "play" | "external" | "arrow" | "plus" | "mail" | "lock" | "shield" | "logout" | "menu" | "download" | "check" | "star" | "search" | "target" | "close" | "calendar" | "map" | "steps" | "list" | "page" | "code" | "copy" | "calc" | "rocket" | "cube" | "bot" | "send" | "image";
+export type IconName = "home" | "spark" | "trend" | "chat" | "doc" | "folder" | "play" | "external" | "arrow" | "plus" | "mail" | "lock" | "shield" | "logout" | "menu" | "download" | "check" | "star" | "search" | "target" | "close" | "calendar" | "map" | "steps" | "list" | "page" | "code" | "copy" | "calc" | "rocket" | "cube" | "bot" | "send" | "image" | "bell" | "key";
 
 const iconPaths: Record<IconName, ReactNode> = {
   home: <path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />,
@@ -60,6 +60,18 @@ const iconPaths: Record<IconName, ReactNode> = {
   menu: <path d="M4 7h16M4 12h16M4 17h10" />,
   download: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
   check: <path d="m5 12 5 5 9-10" />,
+  bell: (
+    <>
+      <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
+    </>
+  ),
+  key: (
+    <>
+      <circle cx="8" cy="15" r="4" />
+      <path d="m11 12 8-8M16 7l3 3M14 9l2 2" />
+    </>
+  ),
   star: <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z" fill="currentColor" stroke="none" />,
   search: (
     <>

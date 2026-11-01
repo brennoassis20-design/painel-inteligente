@@ -2,49 +2,18 @@ import {
   AccessError,
   assertActiveProfile,
   getServerAiKey,
-  getSupabaseConfig,
   getUserFromRequest,
   jsonError,
   supabaseRest,
   syncProfileAccess,
 } from "@/lib/panel-server";
-import { PACK_STORAGE_BUCKET, generatePackImage, normalizePack, packImageExtensions, packImagePrompt } from "@/lib/pack";
+import { generatePackImage, normalizePack, packImagePrompt } from "@/lib/pack";
+import { readCachedImage, saveCachedImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Gera UMA arte do pack por chamada (o ZIP chama de 4 em 4). O prompt vem do projeto salvo, nunca do navegador,
-// e a arte fica guardada no Storage: baixar o pacote de novo não gera (nem cobra) outra vez.
-function storageHeaders(serviceKey: string, extra: Record<string, string> = {}) {
-  return { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, ...extra };
-}
-
-async function readCached(url: string, serviceKey: string, path: string) {
-  const response = await fetch(`${url}/storage/v1/object/${PACK_STORAGE_BUCKET}/${path}`, { headers: storageHeaders(serviceKey) });
-  const type = response.headers.get("content-type") || "";
-  return response.ok && packImageExtensions[type] ? { bytes: Buffer.from(await response.arrayBuffer()), type } : null;
-}
-
-async function saveCached(url: string, serviceKey: string, path: string, image: { bytes: Buffer; type: string }) {
-  const upload = () =>
-    fetch(`${url}/storage/v1/object/${PACK_STORAGE_BUCKET}/${path}`, {
-      method: "POST",
-      headers: storageHeaders(serviceKey, { "Content-Type": image.type, "x-upsert": "true" }),
-      body: new Uint8Array(image.bytes),
-    });
-  let response = await upload();
-  if (!response.ok && /bucket not found/i.test(await response.text())) {
-    // Primeiro pack do painel: cria o bucket privado e tenta de novo.
-    await fetch(`${url}/storage/v1/bucket`, {
-      method: "POST",
-      headers: storageHeaders(serviceKey, { "Content-Type": "application/json" }),
-      body: JSON.stringify({ id: PACK_STORAGE_BUCKET, name: PACK_STORAGE_BUCKET, public: false }),
-    });
-    response = await upload();
-  }
-  if (!response.ok) console.warn("Arte do pack não foi guardada.", path, response.status);
-}
-
+// Gera UMA arte do pack por chamada (o ZIP chama de 4 em 4). O prompt vem do projeto salvo, nunca do navegador.
 export async function POST(request: Request) {
   try {
     const user = await getUserFromRequest(request);
@@ -61,15 +30,14 @@ export async function POST(request: Request) {
     const position = index as number;
     if (!pack || position < 0 || position >= pack.items.length) return jsonError("Arte não encontrada neste projeto.", 404);
 
-    const { url, serviceKey } = getSupabaseConfig();
     // Sem extensão no Storage: o tipo (PNG ou JPEG) fica no content-type do objeto.
     const path = `${user.id}/${project.id}/${position}`;
-    let image = await readCached(url, serviceKey, path);
+    let image = await readCachedImage(path);
     if (!image) {
       const apiKey = getServerAiKey();
       if (!apiKey) return jsonError("Chave de IA não configurada.", 500);
       image = await generatePackImage(apiKey, packImagePrompt(pack, position));
-      await saveCached(url, serviceKey, path, image);
+      await saveCachedImage(path, image);
     }
 
     return new Response(new Uint8Array(image.bytes), {

@@ -1,11 +1,13 @@
 "use client";
 
-import { CSSProperties, FormEvent, useEffect, useId, useMemo, useState } from "react";
+import { CSSProperties, FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Icon, IconName } from "./icons";
 import { ImageCreatives } from "./tools/ImageCreatives";
 import type { CreativeCopy } from "./tools/creative-render";
 import { LaunchChecklist } from "./tools/LaunchChecklist";
+import { GoldLamp } from "./tools/GoldLamp";
 import { MentorChat } from "./tools/MentorChat";
+import { PanelUpdates, type PanelUpdate } from "./tools/PanelUpdates";
 import { ProductMockup } from "./tools/ProductMockup";
 import { ProfitCalculator } from "./tools/ProfitCalculator";
 import { SalesPageSetup, readOferta } from "./tools/SalesPageSetup";
@@ -16,7 +18,7 @@ import type { AdCopy as AiAdCopy, VideoScript } from "@/lib/product-engine";
 import { packImageExtensions, packPromptsText, type ProductPack } from "@/lib/pack";
 
 type AccessStatus = "active" | "pending" | "refunded" | "expired" | "blocked";
-type ActiveView = "inicio" | "radar" | "gerador" | "radarLatam" | "geradorLatam" | "produto" | "criativos" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor";
+type ActiveView = "inicio" | "radar" | "gerador" | "radarLatam" | "geradorLatam" | "produto" | "criativos" | "copy" | "arquivos" | "calculadora" | "lancamento" | "mockup" | "mentor" | "ouro";
 
 // Os campos opcionais (pontos, dica, tabela, fichas...) alimentam o PDF premium.
 type ProductContentBlock = DocumentBlock;
@@ -117,6 +119,7 @@ const menuGroups: { title?: string; items: { id: ActiveView; label: string; icon
       { id: "gerador", label: "Fazer o pedido", icon: "spark" },
       { id: "radar", label: "Nichos em alta", icon: "trend" },
       { id: "criativos", label: "Criativos prontos", icon: "image" },
+      { id: "ouro", label: "Lâmpada de Ouro", icon: "star" },
       { id: "copy", label: "Copy de vendas", icon: "chat" },
     ],
   },
@@ -158,6 +161,7 @@ const viewLabels: Record<ActiveView, string> = {
   calculadora: "Calculadora de lucro",
   lancamento: "Checklist de lançamento",
   mentor: "Mentor",
+  ouro: "Lâmpada de Ouro",
 };
 
 const homeTools: { id: ActiveView; label: string; text: string; icon: IconName; color: string }[] = [
@@ -1996,6 +2000,8 @@ export default function Home() {
   const [trendCategory, setTrendCategory] = useState("Todos");
   const [trendOpportunities, setTrendOpportunities] = useState<TrendProduct[]>(trendProducts);
   const [trendOpportunitiesLatam, setTrendOpportunitiesLatam] = useState<TrendProduct[]>([]);
+  const [panelUpdates, setPanelUpdates] = useState<PanelUpdate[]>([]);
+  const [goldPhotos, setGoldPhotos] = useState<Record<string, string[]>>({});
   const [selectedTrendProduct, setSelectedTrendProduct] = useState<TrendProduct | null>(null);
   const [productBrief, setProductBrief] = useState("");
   const [studentProductInfo, setStudentProductInfo] = useState("");
@@ -2112,6 +2118,28 @@ export default function Home() {
     if (lastPackageName) saveTrail({ ...readTrail(), pacote: true });
   }, [lastPackageName]);
 
+  // Criativos de um projeto com Lâmpada de Ouro: busca as fotos já guardadas (sem chave, sem custo).
+  const currentHasGold = Boolean((savedProjects.find((project) => project.id === currentProjectId)?.payload as { premium?: unknown })?.premium);
+  const goldRequested = useRef(new Set<string>());
+  useEffect(() => {
+    if (activeView !== "criativos" || !currentProjectId || !currentHasGold || goldPhotos[currentProjectId] || !sessionToken) return;
+    if (goldRequested.current.has(currentProjectId)) return;
+    const projectId = currentProjectId;
+    goldRequested.current.add(projectId);
+    Promise.all(
+      ["criativo-1", "criativo-2", "criativo-3", "capa"].map((photoId) =>
+        fetch("/api/premium/image", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${sessionToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId, photoId }),
+        })
+          .then((response) => (response.ok ? response.blob() : null))
+          .then((blob) => (blob ? URL.createObjectURL(blob) : ""))
+          .catch(() => ""),
+      ),
+    ).then((urls) => setGoldPhotos((current) => ({ ...current, [projectId]: urls.filter(Boolean) })));
+  }, [activeView, currentProjectId, currentHasGold, goldPhotos, sessionToken]);
+
   async function authenticatedJson(path: string, init: RequestInit = {}) {
     const response = await fetch(path, {
       ...init,
@@ -2153,6 +2181,9 @@ export default function Home() {
     }
     if (Array.isArray(data.trendsLatam)) {
       setTrendOpportunitiesLatam(data.trendsLatam);
+    }
+    if (Array.isArray(data.updates)) {
+      setPanelUpdates(data.updates);
     }
     setIsLoggedIn(true);
 
@@ -2675,6 +2706,7 @@ export default function Home() {
             Painel / <b>{viewLabels[activeView]}</b>
           </p>
           <div className="pi-grow" />
+          <PanelUpdates updates={panelUpdates} email={email} onGo={(view) => view in viewLabels && goTo(view as ActiveView)} />
           <span className={`pi-pill pi-live ${canAccess ? "" : "inactive"}`}>
             <span className="pi-dot" />
             {canAccess ? "Ativo" : statusCopy.label}
@@ -2871,6 +2903,7 @@ export default function Home() {
                 copy={buildCreativeCopy(result, languageOf(result) === "es" ? "" : displayText(productType))}
                 captions={buildAdCopies(result).map((ad) => ad.primaryText)}
                 projectKey={currentProjectId}
+                photos={goldPhotos[currentProjectId] || []}
                 makeZip={buildZip}
                 onCopy={copyText}
               />
@@ -2935,6 +2968,29 @@ export default function Home() {
               request={authenticatedJson}
               active={activeView === "mentor"}
               context={currentProjectId && result ? { title: result.title, promise: result.promise, niche, audience } : {}}
+            />
+          </section>
+        )}
+
+        {activeView === "ouro" && canAccess && (
+          <section className="pi-view view-panel">
+            <header className="pi-view-head" style={{ "--c": "var(--pi-amber)" } as CSSProperties}>
+              <span className="pi-ico"><Icon name="star" /></span>
+              <div>
+                <p className="pi-kicker">Edição premium</p>
+                <h2>Lâmpada de Ouro</h2>
+                <p>Seu produto reescrito por uma IA mais forte, com fotos reais e diagramação de designer. As fotos também viram fundo dos seus criativos.</p>
+              </div>
+            </header>
+            <GoldLamp
+              token={sessionToken}
+              projects={savedProjects.map((project) => ({ id: project.id, title: project.title, premium: Boolean((project.payload as { premium?: unknown })?.premium) }))}
+              currentProjectId={currentProjectId}
+              onPhotos={(projectId, urls) => {
+                setGoldPhotos((current) => ({ ...current, [projectId]: urls }));
+                // A lista de projetos passa a saber que este já tem edição de ouro.
+                setSavedProjects((projects) => projects.map((project) => (project.id === projectId ? { ...project, payload: { ...project.payload, premium: true } as ProductResult } : project)));
+              }}
             />
           </section>
         )}

@@ -183,3 +183,19 @@ with check (false);
 -- Produtos em dólar (26/10/2026): nichos do Brasil e da América Latina na mesma tabela.
 alter table public.trend_opportunities add column if not exists market text not null default 'br' check (market in ('br', 'latam'));
 create index if not exists trend_opportunities_market_active_idx on public.trend_opportunities (market, is_active);
+
+-- Novidades do painel (01/11/2026): melhorias publicadas, nichos atualizados e o que está em construção.
+-- O aluno vê pelo sino; o "visto" fica no navegador. Só o servidor lê e grava.
+create table if not exists public.panel_updates (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('melhoria', 'nichos', 'em_construcao')),
+  title text not null,
+  body text not null default '',
+  view text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists panel_updates_active_created_idx on public.panel_updates (is_active, created_at desc);
+alter table public.panel_updates enable row level security;
+revoke all on table public.panel_updates from anon, authenticated;

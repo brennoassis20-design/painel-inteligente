@@ -118,3 +118,26 @@ export async function renderProductPdf(product: DocumentProduct) {
     await browser.close();
   }
 }
+
+// Lâmpada de Ouro: fontes próprias da edição premium (Manrope + Barlow Condensed) e impressão depois do ajuste de página.
+export async function premiumFontCss(files: { family: string; file: string; weight: string }[]) {
+  const faces = await Promise.all(
+    files.map(async (font) => {
+      const data = await readFile(path.join(FONT_DIR, font.file));
+      return `@font-face{font-family:${font.family};font-weight:${font.weight};font-display:block;src:url(data:font/woff2;base64,${data.toString("base64")}) format("woff2")}`;
+    }),
+  );
+  return faces.join("\n");
+}
+
+export async function renderHtmlPdf(html: string) {
+  const browser = await launchBrowser();
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "load", timeout: 60000 });
+    await page.evaluate(() => (window as unknown as { __ready?: Promise<unknown> }).__ready);
+    return new Uint8Array(await page.pdf({ preferCSSPageSize: true, printBackground: true, tagged: true }));
+  } finally {
+    await browser.close();
+  }
+}

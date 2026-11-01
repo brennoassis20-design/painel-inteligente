@@ -241,6 +241,32 @@ export const manualModules: ManualModule[] = [
         tips: ["Vídeo é opcional. As imagens com bons textos já bastam para começar."],
         tasks: ["Copiar 3 textos de anúncio"],
       },
+      {
+        id: "aula-4-3",
+        title: "4.3 Lâmpada de Ouro: produto e criativos de nível profissional",
+        summary: "Uma IA mais forte reescreve o seu produto entregando tudo o que o título promete, com fotos reais e diagramação de designer. As mesmas fotos viram fundo dos seus criativos.",
+        steps: [
+          "Crie a conta grátis em openrouter.ai (entrar com o Google)",
+          "Em Credits, coloque crédito: US$ 5 rendem cerca de 10 produtos (é preciso ter pelo menos US$ 1 de saldo para gerar fotos)",
+          "Em Keys, clique em Create Key, dê um nome (ex.: Painel) e copie a chave inteira (começa com sk-or-)",
+          "No painel, abra Criar → Lâmpada de Ouro, cole a chave e clique em Salvar e testar",
+          "Escolha o produto e clique em Criar edição de ouro: escreve (1 a 3 min), gera as fotos e baixa o PDF",
+          "Abra Criativos prontos com o mesmo produto e deixe ligado Fotos da Lâmpada de Ouro no fundo",
+        ],
+        tips: [
+          "A chave fica só no seu navegador; o painel não guarda. Em outro computador, cole de novo.",
+          "Baixar a edição de novo não cobra. Só Refazer do zero gasta crédito outra vez.",
+          "Não gasta pedido do mês: use nos produtos que você vai anunciar.",
+          "Nunca mande a sua chave para ninguém. Se vazar, apague em Keys e crie outra.",
+        ],
+        links: [
+          { label: "Criar conta na OpenRouter", href: "https://openrouter.ai" },
+          { label: "Colocar crédito", href: "https://openrouter.ai/settings/credits" },
+          { label: "Criar a chave", href: "https://openrouter.ai/settings/keys" },
+          { label: "Abrir a Lâmpada de Ouro", href: PAINEL },
+        ],
+        tasks: ["Criar a chave e testar no painel", "Gerar a edição de ouro do produto que vai anunciar", "Baixar os criativos com as fotos"],
+      },
     ],
   },
   {

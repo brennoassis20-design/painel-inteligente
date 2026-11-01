@@ -157,12 +157,14 @@ export function ImageCreatives({
   copy,
   captions,
   projectKey,
+  photos = [],
   makeZip,
   onCopy,
 }: {
   copy: CreativeCopy;
   captions: string[];
   projectKey: string;
+  photos?: string[];
   makeZip: (files: { name: string; data: Uint8Array }[]) => Blob;
   onCopy: (label: string, text: string) => void;
 }) {
@@ -173,6 +175,27 @@ export function ImageCreatives({
   const [duration, setDuration] = useState(3.5);
   const [paletteId, setPaletteId] = useState(() => suggestPalette(`${copy.title} ${copy.subtitle}`));
   const [mixColors, setMixColors] = useState(true);
+  const [usePhotos, setUsePhotos] = useState(true);
+  const [photoImages, setPhotoImages] = useState<HTMLImageElement[]>([]);
+
+  // Fotos da Lâmpada de Ouro do projeto aberto: carregadas uma vez e usadas como fundo.
+  useEffect(() => {
+    let alive = true;
+    Promise.all(
+      photos.map(
+        (url) =>
+          new Promise<HTMLImageElement | null>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+            img.src = url;
+          }),
+      ),
+    ).then((list) => alive && setPhotoImages(list.filter((img): img is HTMLImageElement => Boolean(img))));
+    return () => {
+      alive = false;
+    };
+  }, [photos]);
   const [mock, setMock] = useState<MockChoice>("livro");
   const [price, setPrice] = useState("");
   const [brand, setBrand] = useState("");
@@ -226,8 +249,11 @@ export function ImageCreatives({
     return map;
   }, [fontsReady, mock, palette, variationPalettes, copy.title, copy.subtitle, copy.label, brand]);
 
+  // Cada variação pega uma foto diferente (pela posição da cor); carrossel e vídeo usam a primeira.
+  const photoFor = (item: Palette) =>
+    usePhotos && photoImages.length ? photoImages[Math.max(0, variationPalettes.indexOf(item)) % photoImages.length] : null;
   const themeFor = (item: Palette): CreativeTheme | null =>
-    fontsReady ? { palette: item, sprite: sprites.get(item.id) || null, price, brand, language: copy.language } : null;
+    fontsReady ? { palette: item, sprite: sprites.get(item.id) || null, price, brand, language: copy.language, photo: photoFor(item) } : null;
 
   const images = useMemo(() => applyEdits(buildImageCreatives(copy), edits), [copy, edits]);
   const slides = useMemo(() => applyEdits(buildCarousel(copy), edits), [copy, edits]);
@@ -447,6 +473,12 @@ export function ImageCreatives({
             <label className="pi-cr-check">
               <input type="checkbox" checked={mixColors} onChange={(event) => setMixColors(event.target.checked)} />
               Uma cor diferente em cada variação (bom para teste A/B)
+            </label>
+          )}
+          {photoImages.length > 0 && (
+            <label className="pi-cr-check">
+              <input type="checkbox" checked={usePhotos} onChange={(event) => setUsePhotos(event.target.checked)} />
+              Fotos da Lâmpada de Ouro no fundo
             </label>
           )}
           <span className="pi-mock-cap">Mockup do produto</span>
