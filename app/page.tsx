@@ -2,7 +2,7 @@
 
 import { CSSProperties, FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Icon, IconName } from "./icons";
-import { ImageCreatives } from "./tools/ImageCreatives";
+import { ImageCreatives, type GoldKit } from "./tools/ImageCreatives";
 import type { CreativeCopy } from "./tools/creative-render";
 import { LaunchChecklist } from "./tools/LaunchChecklist";
 import { GoldLamp } from "./tools/GoldLamp";
@@ -830,7 +830,8 @@ function buildCreativeCopy(product: ProductResult, label: string): CreativeCopy 
     subtitle: product.subtitle,
     promise: product.promise,
     pain: inferBuyerPain(product),
-    label,
+    // Etiqueta da arte nunca com "guia", "manual" etc. (regra sem leitura).
+    label: withoutReadingWords(label),
     modules: product.modules,
     bullets: product.copyBlocks.bullets,
     language: languageOf(product),
@@ -2001,7 +2002,7 @@ export default function Home() {
   const [trendOpportunities, setTrendOpportunities] = useState<TrendProduct[]>(trendProducts);
   const [trendOpportunitiesLatam, setTrendOpportunitiesLatam] = useState<TrendProduct[]>([]);
   const [panelUpdates, setPanelUpdates] = useState<PanelUpdate[]>([]);
-  const [goldPhotos, setGoldPhotos] = useState<Record<string, string[]>>({});
+  const [goldKits, setGoldKits] = useState<Record<string, GoldKit>>({});
   const [selectedTrendProduct, setSelectedTrendProduct] = useState<TrendProduct | null>(null);
   const [productBrief, setProductBrief] = useState("");
   const [studentProductInfo, setStudentProductInfo] = useState("");
@@ -2118,27 +2119,28 @@ export default function Home() {
     if (lastPackageName) saveTrail({ ...readTrail(), pacote: true });
   }, [lastPackageName]);
 
-  // Criativos de um projeto com Lâmpada de Ouro: busca as fotos já guardadas (sem chave, sem custo).
-  const currentHasGold = Boolean((savedProjects.find((project) => project.id === currentProjectId)?.payload as { premium?: unknown })?.premium);
+  // Criativos de um projeto com Lâmpada de Ouro: anúncios salvos na edição + fotos já guardadas (sem chave, sem custo).
+  const currentGold = (savedProjects.find((project) => project.id === currentProjectId)?.payload as { premium?: { ads?: GoldKit["ads"] } } | undefined)?.premium;
   const goldRequested = useRef(new Set<string>());
   useEffect(() => {
-    if (activeView !== "criativos" || !currentProjectId || !currentHasGold || goldPhotos[currentProjectId] || !sessionToken) return;
+    const ads = typeof currentGold === "object" ? currentGold.ads : undefined;
+    if (activeView !== "criativos" || !currentProjectId || !ads?.length || goldKits[currentProjectId] || !sessionToken) return;
     if (goldRequested.current.has(currentProjectId)) return;
     const projectId = currentProjectId;
     goldRequested.current.add(projectId);
     Promise.all(
-      ["criativo-1", "criativo-2", "criativo-3", "capa"].map((photoId) =>
+      [...new Set(ads.map((ad) => ad.photo))].map((photoId) =>
         fetch("/api/premium/image", {
           method: "POST",
           headers: { Authorization: `Bearer ${sessionToken}`, "Content-Type": "application/json" },
           body: JSON.stringify({ projectId, photoId }),
         })
           .then((response) => (response.ok ? response.blob() : null))
-          .then((blob) => (blob ? URL.createObjectURL(blob) : ""))
-          .catch(() => ""),
+          .then((blob): [string, string] => [photoId, blob ? URL.createObjectURL(blob) : ""])
+          .catch((): [string, string] => [photoId, ""]),
       ),
-    ).then((urls) => setGoldPhotos((current) => ({ ...current, [projectId]: urls.filter(Boolean) })));
-  }, [activeView, currentProjectId, currentHasGold, goldPhotos, sessionToken]);
+    ).then((list) => setGoldKits((current) => ({ ...current, [projectId]: { photos: Object.fromEntries(list.filter(([, url]) => url)), ads } })));
+  }, [activeView, currentProjectId, currentGold, goldKits, sessionToken]);
 
   async function authenticatedJson(path: string, init: RequestInit = {}) {
     const response = await fetch(path, {
@@ -2903,7 +2905,7 @@ export default function Home() {
                 copy={buildCreativeCopy(result, languageOf(result) === "es" ? "" : displayText(productType))}
                 captions={buildAdCopies(result).map((ad) => ad.primaryText)}
                 projectKey={currentProjectId}
-                photos={goldPhotos[currentProjectId] || []}
+                gold={goldKits[currentProjectId]}
                 makeZip={buildZip}
                 onCopy={copyText}
               />
@@ -2986,10 +2988,12 @@ export default function Home() {
               token={sessionToken}
               projects={savedProjects.map((project) => ({ id: project.id, title: project.title, premium: Boolean((project.payload as { premium?: unknown })?.premium) }))}
               currentProjectId={currentProjectId}
-              onPhotos={(projectId, urls) => {
-                setGoldPhotos((current) => ({ ...current, [projectId]: urls }));
+              onKit={(projectId, kit) => {
+                setGoldKits((current) => ({ ...current, [projectId]: kit }));
                 // A lista de projetos passa a saber que este já tem edição de ouro.
-                setSavedProjects((projects) => projects.map((project) => (project.id === projectId ? { ...project, payload: { ...project.payload, premium: true } as ProductResult } : project)));
+                setSavedProjects((projects) =>
+                  projects.map((project) => (project.id === projectId ? { ...project, payload: { ...project.payload, premium: (project.payload as { premium?: unknown }).premium || true } as ProductResult } : project)),
+                );
               }}
             />
           </section>

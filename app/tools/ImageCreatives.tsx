@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { renderGoldCreative, type GoldAd } from "./gold-render";
+
+export type GoldKit = { photos: Record<string, string>; ads: GoldAd[] };
 import { Icon } from "../icons";
 import { fontFamily, palettes, slug, type Palette, type Shape } from "./canvas-kit";
 import {
@@ -110,6 +113,31 @@ function CreativeCanvas({ spec, theme, format, scale = 0.5 }: { spec: CreativeSp
   return <canvas ref={ref} style={{ aspectRatio: `${size.w} / ${size.h}` }} />;
 }
 
+function renderGoldToBlob(ad: GoldAd, photo: HTMLImageElement | null, index: number, format: FormatId, price: string, spanish: boolean) {
+  const size = formats.find((item) => item.id === format)!;
+  const canvas = document.createElement("canvas");
+  canvas.width = size.w;
+  canvas.height = size.h;
+  renderGoldCreative(canvas.getContext("2d")!, size.w, size.h, ad, photo, index, price, spanish);
+  return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("png"))), "image/png"));
+}
+
+function GoldCanvas({ ad, photo, index, format, price, spanish, ready }: { ad: GoldAd; photo: HTMLImageElement | null; index: number; format: FormatId; price: string; spanish: boolean; ready: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const size = formats.find((item) => item.id === format)!;
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas || !ready) return;
+    const scale = 0.5;
+    canvas.width = Math.round(size.w * scale);
+    canvas.height = Math.round(size.h * scale);
+    const ctx = canvas.getContext("2d")!;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    renderGoldCreative(ctx, size.w, size.h, ad, photo, index, price, spanish);
+  }, [ad, photo, index, size, price, spanish, ready]);
+  return <canvas ref={ref} style={{ aspectRatio: `${size.w} / ${size.h}` }} />;
+}
+
 function SpecEditor({ spec, onChange, onReset }: { spec: CreativeSpec; onChange: (patch: Edits[string]) => void; onReset: () => void }) {
   const list = spec.layout === "lista" || spec.layout === "antesdepois" || spec.layout === "oferta";
   return (
@@ -157,14 +185,14 @@ export function ImageCreatives({
   copy,
   captions,
   projectKey,
-  photos = [],
+  gold,
   makeZip,
   onCopy,
 }: {
   copy: CreativeCopy;
   captions: string[];
   projectKey: string;
-  photos?: string[];
+  gold?: GoldKit;
   makeZip: (files: { name: string; data: Uint8Array }[]) => Blob;
   onCopy: (label: string, text: string) => void;
 }) {
@@ -175,28 +203,29 @@ export function ImageCreatives({
   const [duration, setDuration] = useState(3.5);
   const [paletteId, setPaletteId] = useState(() => suggestPalette(`${copy.title} ${copy.subtitle}`));
   const [mixColors, setMixColors] = useState(true);
-  const [usePhotos, setUsePhotos] = useState(true);
-  const [photoImages, setPhotoImages] = useState<HTMLImageElement[]>([]);
+  const [useGold, setUseGold] = useState(true);
+  const [goldImages, setGoldImages] = useState<Record<string, HTMLImageElement>>({});
 
-  // Fotos da Lâmpada de Ouro do projeto aberto: carregadas uma vez e usadas como fundo.
+  // Fotos da Lâmpada de Ouro do projeto aberto: carregadas uma vez para desenhar os criativos de ouro.
   useEffect(() => {
     let alive = true;
+    const entries = Object.entries(gold?.photos || {});
     Promise.all(
-      photos.map(
-        (url) =>
-          new Promise<HTMLImageElement | null>((resolve) => {
+      entries.map(
+        ([id, url]) =>
+          new Promise<[string, HTMLImageElement | null]>((resolve) => {
             const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => resolve(null);
+            img.onload = () => resolve([id, img]);
+            img.onerror = () => resolve([id, null]);
             img.src = url;
           }),
       ),
-    ).then((list) => alive && setPhotoImages(list.filter((img): img is HTMLImageElement => Boolean(img))));
+    ).then((list) => alive && setGoldImages(Object.fromEntries(list.filter((item): item is [string, HTMLImageElement] => Boolean(item[1])))));
     return () => {
       alive = false;
     };
-  }, [photos]);
-  const [mock, setMock] = useState<MockChoice>("livro");
+  }, [gold]);
+  const [mock, setMock] = useState<MockChoice>("nenhum");
   const [price, setPrice] = useState("");
   const [brand, setBrand] = useState("");
   const [fontsReady, setFontsReady] = useState(false);
@@ -249,11 +278,16 @@ export function ImageCreatives({
     return map;
   }, [fontsReady, mock, palette, variationPalettes, copy.title, copy.subtitle, copy.label, brand]);
 
-  // Cada variação pega uma foto diferente (pela posição da cor); carrossel e vídeo usam a primeira.
-  const photoFor = (item: Palette) =>
-    usePhotos && photoImages.length ? photoImages[Math.max(0, variationPalettes.indexOf(item)) % photoImages.length] : null;
   const themeFor = (item: Palette): CreativeTheme | null =>
-    fontsReady ? { palette: item, sprite: sprites.get(item.id) || null, price, brand, language: copy.language, photo: photoFor(item) } : null;
+    fontsReady ? { palette: item, sprite: sprites.get(item.id) || null, price, brand, language: copy.language } : null;
+
+  // Criativos de ouro: textos da IA (editáveis) + foto da edição.
+  const goldAds: GoldAd[] = useMemo(
+    () => (gold?.ads || []).map((ad, index) => ({ ...ad, ...(edits[`ouro-${index}`] as Partial<GoldAd> | undefined) })),
+    [gold, edits],
+  );
+  const goldOn = useGold && goldAds.length > 0;
+  const spanish = copy.language === "es";
 
   const images = useMemo(() => applyEdits(buildImageCreatives(copy), edits), [copy, edits]);
   const slides = useMemo(() => applyEdits(buildCarousel(copy), edits), [copy, edits]);
@@ -285,6 +319,26 @@ export function ImageCreatives({
     const theme = themeFor(item);
     if (!theme) return;
     saveBlob(await renderToBlob(spec, theme, fmt), name);
+  }
+
+  async function downloadGoldZip() {
+    setBusy("ouro");
+    try {
+      const files: { name: string; data: Uint8Array }[] = [];
+      for (const fmt of formats) {
+        for (const [index, ad] of goldAds.entries()) {
+          const blob = await renderGoldToBlob(ad, goldImages[ad.photo] || null, index, fmt.id, price, spanish);
+          files.push({ name: `criativos-${fileBase}/${fmt.id}/${String(index + 1).padStart(2, "0")}-${slug(ad.angle || "anuncio")}.png`, data: new Uint8Array(await blob.arrayBuffer()) });
+        }
+      }
+      files.push({
+        name: `criativos-${fileBase}/legendas.txt`,
+        data: new TextEncoder().encode(goldAds.map((ad, index) => `${index + 1}. ${ad.angle}\n\n${ad.caption}`).join("\n\n---\n\n")),
+      });
+      saveBlob(makeZip(files), `criativos-${fileBase}.zip`);
+    } finally {
+      setBusy("");
+    }
   }
 
   async function downloadZip(kind: "tudo" | "carrossel") {
@@ -469,16 +523,73 @@ export function ImageCreatives({
               />
             ))}
           </div>
-          {tab === "imagens" && (
+          {tab === "imagens" && goldOn && (
+            <>
+              <div className="pi-cr-bar">
+                <p>
+                  {goldAds.length} anúncios da <b>Lâmpada de Ouro</b>, com as fotos do seu produto. Preencha o <b>preço</b> ao lado para aparecer na arte.
+                </p>
+                <button type="button" className="pi-btn-grad" disabled={!fontsReady || busy !== ""} onClick={downloadGoldZip}>
+                  <Icon name="download" />
+                  {busy === "ouro" ? "Preparando..." : "Baixar tudo (ZIP)"}
+                </button>
+              </div>
+              <div className={`pi-cr-grid ${format}`}>
+                {goldAds.map((ad, index) => (
+                  <article className={`pi-cr-card ${editing === `ouro-${index}` ? "on" : ""}`} key={`ouro-${index}`}>
+                    <GoldCanvas ad={ad} photo={goldImages[ad.photo] || null} index={index} format={format} price={price} spanish={spanish} ready={fontsReady} />
+                    <div className="pi-cr-meta">
+                      <span>Anúncio {String(index + 1).padStart(2, "0")}</span>
+                      <strong>{ad.angle}</strong>
+                    </div>
+                    {editing === `ouro-${index}` && (
+                      <div className="pi-cr-edit">
+                        <label className="pi-label">
+                          Frase do topo
+                          <input value={ad.headline} onChange={(event) => patchSpec(`ouro-${index}`, { headline: event.target.value })} />
+                        </label>
+                        <label className="pi-label">
+                          Linha de apoio
+                          <input value={ad.support} onChange={(event) => patchSpec(`ouro-${index}`, { support: event.target.value })} />
+                        </label>
+                        <button type="button" className="pi-btn-soft" onClick={() => resetSpec(`ouro-${index}`)}>
+                          Voltar ao texto original
+                        </button>
+                      </div>
+                    )}
+                    <div className="pi-cr-actions">
+                      <button
+                        type="button"
+                        className="pi-btn-soft"
+                        onClick={async () => saveBlob(await renderGoldToBlob(ad, goldImages[ad.photo] || null, index, format, price, spanish), `${fileBase}-${format}-${slug(ad.angle || "anuncio")}.png`)}
+                      >
+                        <Icon name="download" />
+                        PNG
+                      </button>
+                      <button type="button" className="pi-btn-soft" onClick={() => setEditing(editing === `ouro-${index}` ? "" : `ouro-${index}`)}>
+                        Editar texto
+                      </button>
+                      <button type="button" className="pi-icon-btn" aria-label="Copiar legenda" title="Copiar legenda" onClick={() => onCopy("Legenda copiada", ad.caption)}>
+                        <Icon name="copy" />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <p className="pi-mock-tip">O ZIP traz os anúncios em feed, quadrado e story, com as legendas. Suba todos no mesmo conjunto e deixe o Meta mostrar o que vende mais.</p>
+            </>
+          )}
+
+          {tab === "imagens" && !goldOn && (
             <label className="pi-cr-check">
               <input type="checkbox" checked={mixColors} onChange={(event) => setMixColors(event.target.checked)} />
               Uma cor diferente em cada variação (bom para teste A/B)
             </label>
           )}
-          {photoImages.length > 0 && (
+          {(gold?.ads?.length || 0) > 0 && (
             <label className="pi-cr-check">
-              <input type="checkbox" checked={usePhotos} onChange={(event) => setUsePhotos(event.target.checked)} />
-              Fotos da Lâmpada de Ouro no fundo
+              <input type="checkbox" checked={useGold} onChange={(event) => setUseGold(event.target.checked)} />
+              Criativos da Lâmpada de Ouro (fotos reais)
             </label>
           )}
           <span className="pi-mock-cap">Mockup do produto</span>

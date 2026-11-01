@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "../icons";
+import type { GoldKit } from "./ImageCreatives";
 
 // Lâmpada de Ouro: edição premium do produto (IA forte + fotos reais por IA + diagramação de designer)
 // e fotos para os criativos. Roda com a chave OpenRouter do próprio aluno, guardada só neste navegador.
@@ -9,7 +10,7 @@ const KEY_STORAGE = "pi-openrouter-key";
 const BATCH = 3;
 
 type Photo = { id: string; prompt: string; aspect: string };
-type Step = "idle" | "writing" | "photos" | "pdf" | "done" | "error";
+type Step = "idle" | "writing" | "photos" | "ads" | "pdf" | "done" | "error";
 
 export function readStudentKey() {
   return typeof window === "undefined" ? "" : window.localStorage.getItem(KEY_STORAGE) || "";
@@ -19,12 +20,12 @@ export function GoldLamp({
   token,
   projects,
   currentProjectId,
-  onPhotos,
+  onKit,
 }: {
   token: string;
   projects: { id: string; title: string; premium?: boolean }[];
   currentProjectId: string;
-  onPhotos: (projectId: string, urls: string[]) => void;
+  onKit: (projectId: string, kit: GoldKit) => void;
 }) {
   const [key, setKey] = useState("");
   const [draft, setDraft] = useState("");
@@ -50,7 +51,7 @@ export function GoldLamp({
   }, [currentProjectId, projectId]);
 
   const project = projects.find((item) => item.id === projectId);
-  const busy = step === "writing" || step === "photos" || step === "pdf";
+  const busy = step === "writing" || step === "photos" || step === "ads" || step === "pdf";
 
   const headers = (withKey = true): HeadersInit => ({
     Authorization: `Bearer ${token}`,
@@ -117,9 +118,16 @@ export function GoldLamp({
           }),
         );
       }
-      const creativeUrls = photos.filter((photo) => photo.id.startsWith("criativo") || photo.id === "capa").map((photo) => urls[photo.id]).filter(Boolean);
       setThumbs(Object.values(urls).slice(0, 8));
-      onPhotos(projectId, creativeUrls);
+
+      // Anúncios de ouro (centavos): se falhar, o PDF sai do mesmo jeito.
+      setStep("ads");
+      try {
+        const { ads } = await (await post("/api/premium/ads", { projectId })).json();
+        onKit(projectId, { photos: urls, ads });
+      } catch {
+        onKit(projectId, { photos: urls, ads: [] });
+      }
 
       setStep("pdf");
       const pdf = await (await post("/api/premium/pdf", { projectId }, false)).blob();
@@ -140,6 +148,7 @@ export function GoldLamp({
     idle: "",
     writing: "Escrevendo a edição completa (1 a 3 minutos)…",
     photos: `Gerando as fotos (${progress.done} de ${progress.total})…`,
+    ads: "Escrevendo os anúncios…",
     pdf: "Diagramando o PDF…",
     done: "Pronto! O PDF foi baixado.",
     error: message,
@@ -242,7 +251,7 @@ export function GoldLamp({
             ))}
           </div>
         )}
-        {step === "done" && <p className="gold-note">As fotos também foram para os Criativos prontos: lá, ligue “Fotos da Lâmpada de Ouro”.</p>}
+        {step === "done" && <p className="gold-note">Seus anúncios com as fotos já estão em Criativos prontos (mesmo produto).</p>}
       </section>
     </div>
   );

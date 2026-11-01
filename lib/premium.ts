@@ -32,7 +32,11 @@ export type PremiumEdition = {
   pages: PremiumPage[];
   creativePhotos: string[];
   closing: { title: string; text: string };
+  // Anúncios da Lâmpada de Ouro (rota /api/premium/ads): falam com o comprador final.
+  ads?: PremiumAd[];
 };
+
+export type PremiumAd = { angle: string; headline: string; support: string; photo: string; caption: string };
 
 // Fotos: capa (vertical), faixa do topo das páginas (larga) e fundos dos criativos (4:5).
 export type PremiumPhoto = { id: string; prompt: string; aspect: string };
@@ -131,7 +135,45 @@ export function normalizeEdition(raw: unknown): PremiumEdition | null {
     pages,
     creativePhotos: strs(data?.creativePhotos, 3, 400),
     closing: { title: str(closing.title, 70), text: str(closing.text, 500) },
+    ads: normalizeAds(data?.ads),
   };
+}
+
+function normalizeAds(raw: unknown) {
+  const ads = list(raw, 6)
+    .map((ad) => ({ angle: str(ad.angle, 40), headline: str(ad.headline, 60), support: str(ad.support, 110), photo: str(ad.photo, 30), caption: str(ad.caption, 900) }))
+    .filter((ad) => ad.headline);
+  return ads.length >= 3 ? ads : undefined;
+}
+
+const ADS_SYSTEM = `Você é copywriter de resposta direta para anúncios de imagem no Instagram e Facebook (produto digital de R$ 9,90 a R$ 47).
+Escreva 6 anúncios para vender o produto ao COMPRADOR FINAL (a pessoa que tem o problema), nunca para quem quer vender o produto.
+Formato aprovado: frase grande em caixa alta no topo, uma linha de apoio, a foto do resultado e o preço embaixo.
+Regras:
+- headline: 2 a 6 palavras, pergunta de dor ou promessa concreta com número (ex.: "Enjoou do pão de manhã?", "14 marmitas em 2 horas", "Seu cardápio da semana pronto").
+- support: até 12 palavras, concreto (o que recebe, tempo, quantidade). Sem exagero nem promessa de cura.
+- angle: nome curto do ângulo (Dor, Resultado, Quantidade, Facilidade, Rotina, Oferta).
+- photo: escolha UM id da lista de fotos que combine com a frase.
+- caption: legenda do anúncio, 3 a 5 linhas curtas, termina com chamada para clicar. Sem preço na legenda.
+- Nunca use guia, ebook, apostila, livro, leitura, ler, páginas, capítulos, manual (nem em espanhol). Sem emojis.
+Responda só com o JSON: {"ads":[{"angle","headline","support","photo","caption"}]}`;
+
+export async function createPremiumAds(apiKey: string, edition: PremiumEdition, product: ProductResult) {
+  const spanish = languageOf(product) === "es";
+  const photos = premiumPhotos(edition).map((photo) => `${photo.id}: ${photo.prompt}`).join("\n");
+  const prompt = `Produto: ${edition.cover.title}
+Promessa: ${edition.cover.subtitle}
+Destaques: ${edition.cover.badges.join(" · ")}
+O que tem dentro: ${edition.pages.map((page) => page.title).join(" · ")}
+Fotos disponíveis (id: descrição):
+${photos}
+
+Idioma: ${spanish ? "espanhol neutro da América Latina" : "português do Brasil"}.`;
+  const ads = normalizeAds(((await requestAiJson(apiKey, ADS_SYSTEM, prompt, 3000, premiumModel())) as { ads?: unknown }).ads);
+  if (!ads) throw new Error("A IA não devolveu os anúncios. Tente de novo.");
+  const ids = new Set(premiumPhotos(edition).map((photo) => photo.id));
+  // Foto inexistente → usa as de anúncio em rodízio.
+  return ads.map((ad, index) => (ids.has(ad.photo) ? ad : { ...ad, photo: edition.creativePhotos.length ? `criativo-${(index % edition.creativePhotos.length) + 1}` : "capa" }));
 }
 
 export function premiumPhotos(edition: PremiumEdition): PremiumPhoto[] {
