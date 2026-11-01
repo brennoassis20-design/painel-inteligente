@@ -7,7 +7,7 @@ import type { CreativeCopy } from "./tools/creative-render";
 import { LaunchChecklist } from "./tools/LaunchChecklist";
 import { GoldLamp } from "./tools/GoldLamp";
 import { MentorChat } from "./tools/MentorChat";
-import { PanelUpdates, type PanelUpdate } from "./tools/PanelUpdates";
+import { OPEN_SUGGEST_EVENT, PanelUpdates, type PanelUpdate } from "./tools/PanelUpdates";
 import { ProductMockup } from "./tools/ProductMockup";
 import { ProfitCalculator } from "./tools/ProfitCalculator";
 import { SalesPageSetup, readOferta } from "./tools/SalesPageSetup";
@@ -2646,6 +2646,16 @@ export default function Home() {
                 <Icon name="external" />
               </span>
             </a>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                window.dispatchEvent(new Event(OPEN_SUGGEST_EVENT));
+              }}
+            >
+              <Icon name="spark" />
+              Sugerir melhoria
+            </button>
             <a href="/manual" target="_blank" rel="noreferrer">
               <Icon name="list" />
               Manual das aulas
@@ -2708,7 +2718,7 @@ export default function Home() {
             Painel / <b>{viewLabels[activeView]}</b>
           </p>
           <div className="pi-grow" />
-          <PanelUpdates updates={panelUpdates} email={email} onGo={(view) => view in viewLabels && goTo(view as ActiveView)} />
+          <PanelUpdates updates={panelUpdates} email={email} token={sessionToken} onGo={(view) => view in viewLabels && goTo(view as ActiveView)} />
           <span className={`pi-pill pi-live ${canAccess ? "" : "inactive"}`}>
             <span className="pi-dot" />
             {canAccess ? "Ativo" : statusCopy.label}

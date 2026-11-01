@@ -4531,3 +4531,20 @@ a.pi-pill:hover {
 .gold-again svg { width: 16px; height: 16px; }
 .gold-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .gold-thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
+
+/* Sugerir melhoria (gaveta do sino) */
+.pi-upd-suggest-btn { margin: 0 22px 12px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px dashed rgba(159, 233, 255, 0.4); background: rgba(159, 233, 255, 0.05); color: var(--pi-cyan); border-radius: 12px; padding: 10px; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.pi-upd-suggest-btn.on { border-style: solid; background: rgba(159, 233, 255, 0.1); }
+.pi-upd-suggest-btn svg { width: 16px; height: 16px; }
+.pi-sug { padding: 0 22px; display: grid; gap: 10px; }
+.pi-sug .pi-upd-note { margin: 0; }
+.pi-sug textarea { width: 100%; resize: vertical; border: 1px solid var(--pi-line); background: rgba(0, 0, 0, 0.25); color: var(--pi-text); border-radius: 12px; padding: 12px; font: inherit; font-size: 14px; line-height: 1.5; }
+.pi-sug-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--pi-dim); }
+.pi-sug-row button { border: 0; border-radius: 999px; padding: 9px 18px; background: var(--pi-grad); color: var(--pi-ink); font: inherit; font-weight: 800; font-size: 13px; cursor: pointer; }
+.pi-sug-row button:disabled { opacity: 0.45; cursor: default; }
+.pi-sug-note { margin: 0; font-size: 13px; color: var(--pi-green); }
+.pi-sug-title { margin: 8px 0 0; font-size: 13px; color: var(--pi-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.pi-upd li .pi-sug-text { color: var(--pi-text); }
+.s-aprovada .pi-upd-tag { background: rgba(255, 200, 121, 0.13); color: var(--pi-amber); }
+.s-feita .pi-upd-tag { background: rgba(78, 240, 166, 0.13); color: var(--pi-green); }
+.s-avaliada .pi-upd-tag { background: rgba(255, 255, 255, 0.08); color: var(--pi-muted); }

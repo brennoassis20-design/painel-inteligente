@@ -199,3 +199,20 @@ create table if not exists public.panel_updates (
 create index if not exists panel_updates_active_created_idx on public.panel_updates (is_active, created_at desc);
 alter table public.panel_updates enable row level security;
 revoke all on table public.panel_updates from anon, authenticated;
+
+-- Sugestões de melhoria dos alunos (01/11/2026): até 5 por mês por aluno. Claude avalia e leva ao Brenno só as que fazem sentido.
+create table if not exists public.panel_suggestions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  email text not null,
+  text text not null,
+  month_key text not null,
+  status text not null default 'recebida' check (status in ('recebida', 'aprovada', 'feita', 'avaliada')),
+  note text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists panel_suggestions_user_month_idx on public.panel_suggestions (user_id, month_key);
+create index if not exists panel_suggestions_status_idx on public.panel_suggestions (status, created_at desc);
+alter table public.panel_suggestions enable row level security;
+revoke all on table public.panel_suggestions from anon, authenticated;
