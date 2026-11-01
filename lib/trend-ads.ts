@@ -211,7 +211,21 @@ const CATEGORIES = [
   "Beleza e estética",
 ];
 
+// Em lotes: com 180 anunciantes de uma vez a resposta passava do limite de saída e o JSON chegava cortado.
+const CLASSIFY_BATCH = 45;
+
 async function classifyAdvertisers(advertisers: Advertiser[], aiKey: string, market: Market) {
+  const batches: Advertiser[][] = [];
+  for (let i = 0; i < advertisers.length; i += CLASSIFY_BATCH) batches.push(advertisers.slice(i, i + CLASSIFY_BATCH));
+  const results = await Promise.allSettled(batches.map((batch) => classifyBatch(batch, aiKey, market)));
+  const items = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  if (!results.some((r) => r.status === "fulfilled")) {
+    throw (results[0] as PromiseRejectedResult).reason;
+  }
+  return items;
+}
+
+async function classifyBatch(advertisers: Advertiser[], aiKey: string, market: Market) {
   const latam = market === "latam";
   const lines = advertisers.map((a) => `${a.id} | ${a.name} | ${a.title} | ${a.text}`).join("\n");
   const data = await requestAiJson(
