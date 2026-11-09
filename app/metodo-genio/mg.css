@@ -1594,3 +1594,24 @@
 .mg2-bonus-sec p {
   margin: 0 0 12px;
 }
+
+.mg-demo-cap {
+  margin: 0;
+  color: var(--pi-dim);
+  font-size: 13px;
+  text-align: center;
+}
+
+.mg2 .mg2-fotos {
+  grid-template-columns: 1fr 1.4fr;
+}
+
+.mg2 .mg2-fotos img {
+  height: 280px;
+}
+
+@media (max-width: 860px) {
+  .mg2 .mg2-fotos img {
+    height: 200px;
+  }
+}

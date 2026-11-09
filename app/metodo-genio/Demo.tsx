@@ -57,7 +57,8 @@ export function Demo() {
       </div>
       <div className={`mg-demo-done${pronto ? " is-on" : ""}`} aria-hidden={!pronto}>
         <p className="mg-demo-ok">Produto pronto ✅</p>
-        <img src="/mg/produto-criado.jpg" alt="Tela real do Painel: produto criado, com capa, promessa e botão para baixar o pacote" />
+        <img src="/mg/produto-ouro-marmitas.jpg" alt="Produto pronto na edição Lâmpada de Ouro: capa com foto e páginas por dentro" />
+        <p className="mg-demo-cap">14 Marmitas em 2 Horas · edição Lâmpada de Ouro</p>
       </div>
     </div>
   );

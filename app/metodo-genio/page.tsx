@@ -87,8 +87,8 @@ const fases = [
 
 const galeria = [
   { src: "/mg/inicio.jpg", t: "Faça o pedido em um campo só" },
-  { src: "/mg/criativos.jpg", t: "Criativos prontos" },
-  { src: "/mg/mockup.jpg", t: "Mockup 3D" },
+  { src: "/mg/criativos-ouro.jpg", t: "Criativos de ouro prontos" },
+  { src: "/mg/produto-ouro-cafe.jpg", t: "Lâmpada de Ouro: a edição premium do produto" },
   { src: "/mg/calculadora.jpg", t: "Calculadora de lucro" },
   { src: "/mg/mentor.jpg", t: "Mentor 24 horas" },
   { src: "/mg/checklist.jpg", t: "Checklist de lançamento" },
@@ -300,9 +300,9 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
                   <li><Icon name="check" /> os criativos, em vários ângulos, nos formatos de feed e story.</li>
                 </ul>
                 <div className="mg-ads">
-                  <figure><img src="/mg/feed1.jpg" alt="Criativo gerado pelo painel" loading="lazy" /></figure>
-                  <figure><img src="/mg/feed2.jpg" alt="Criativo com oferta gerado pelo painel" loading="lazy" /></figure>
-                  <p>Criativos gerados pelo painel, sem designer e sem aparecer.</p>
+                  <figure><img src="/mg/criativo-ouro1.jpg" alt="Criativo de ouro gerado pelo painel" loading="lazy" /></figure>
+                  <figure><img src="/mg/criativo-ouro2.jpg" alt="Criativo de ouro com oferta gerado pelo painel" loading="lazy" /></figure>
+                  <p>Criativos de ouro gerados pelo painel, com fotos, sem designer e sem aparecer.</p>
                 </div>
               </div>
             </li>
@@ -520,9 +520,8 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
         <div className="mg-wrap mg-narrow mg2-letter">
           <h2>Opa! Muito prazer!</h2>
           <div className="mg2-fotos">
-            <figure><img src="/mg/hist-bombom.jpg" alt="Brenno vendendo bombom no ponto de ônibus" loading="lazy" /><figcaption>Vendendo bombom no ponto de ônibus</figcaption></figure>
-            <figure><img src="/mg/hist-exercito.jpg" alt="Brenno no exército" loading="lazy" /><figcaption>No exército, R$ 642 por mês</figcaption></figure>
-            <figure><img src="/mg/brenno-familia.jpg" alt="Brenno com a esposa Aline e a filha" loading="lazy" /><figcaption>Hoje, com a Aline e a nossa filha</figcaption></figure>
+            <figure><img src="/mg/brenno.jpg" alt="Brenno Lima" loading="lazy" /></figure>
+            <figure><img src="/mg/brenno-familia.jpg" alt="Brenno com a esposa Aline e a filha" loading="lazy" /><figcaption>Com a Aline e a nossa filha</figcaption></figure>
           </div>
           <p>Eu sou o Brenno Lima. Nasci em Juiz de Fora, num bairro simples. Com 11 anos eu já vendia doce no ponto de ônibus.</p>
           <p>
