@@ -11,15 +11,67 @@ import "./mg.css";
 // Página v2 (08/11/2026): carta longa no molde da página do Pacote 27, sem botão na primeira dobra.
 // Copy: cofre, Projetos/Página de vendas Método Gênio v2 (copy).md
 
+const SITE = "https://genio.brennolimaoficial.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE),
   title: "Método Gênio | Faça o pedido. Seu produto sai pronto.",
   description:
     "Escolha um nicho que já vende e o Painel Inteligente entrega o produto digital, a página de vendas e os anúncios prontos para vender com o seu nome.",
+  // Os links com ?utm= dos anúncios contam como esta mesma página.
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Método Gênio",
+    type: "website",
+    url: SITE,
+    locale: "pt_BR",
+    siteName: "Método Gênio",
+    title: "Método Gênio | Faça o pedido. Seu produto sai pronto.",
+    description: "Você faz o pedido. O gênio entrega o produto, a página de vendas e os anúncios prontos.",
+    images: [{ url: "/mg/capa.jpg", width: 1400, height: 1400, alt: "Método Gênio" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Método Gênio | Faça o pedido. Seu produto sai pronto.",
     description: "Você faz o pedido. O gênio entrega o produto, a página de vendas e os anúncios prontos.",
     images: ["/mg/capa.jpg"],
   },
+};
+
+// Dados estruturados (Google e buscas com IA): produto, preço, garantia e quem vende.
+const schema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": `${SITE}/#brenno`,
+      name: "Brenno Lima",
+      image: `${SITE}/mg/brenno.jpg`,
+      sameAs: [OFERTA.youtube, "https://www.instagram.com/brennolimaoficial/"],
+    },
+    {
+      "@type": "Product",
+      "@id": `${SITE}/#produto`,
+      name: "Método Gênio + Painel Inteligente",
+      description:
+        "Escolha um nicho que já vende e o Painel Inteligente entrega o produto digital, a página de vendas e os anúncios prontos para vender com o seu nome.",
+      image: `${SITE}/mg/capa.jpg`,
+      brand: { "@type": "Brand", name: "Método Gênio" },
+      offers: {
+        "@type": "Offer",
+        url: SITE,
+        price: OFERTA.preco,
+        priceCurrency: "BRL",
+        availability: "https://schema.org/InStock",
+        seller: { "@id": `${SITE}/#brenno` },
+        hasMerchantReturnPolicy: {
+          "@type": "MerchantReturnPolicy",
+          applicableCountry: "BR",
+          returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+          merchantReturnDays: 90,
+        },
+      },
+    },
+  ],
 };
 
 const pixelId = OFERTA.pixelId;
@@ -86,12 +138,12 @@ const fases = [
 ];
 
 const galeria = [
-  { src: "/mg/inicio.jpg", t: "Faça o pedido em um campo só" },
-  { src: "/mg/criativos-ouro.jpg", t: "Criativos de ouro prontos" },
-  { src: "/mg/produto-ouro-cafe.jpg", t: "Lâmpada de Ouro: a edição premium do produto" },
-  { src: "/mg/calculadora.jpg", t: "Calculadora de lucro" },
-  { src: "/mg/mentor.jpg", t: "Mentor 24 horas" },
-  { src: "/mg/checklist.jpg", t: "Checklist de lançamento" },
+  { src: "/mg/inicio.webp", w: 1100, h: 883, t: "Faça o pedido em um campo só" },
+  { src: "/mg/criativos-ouro.webp", w: 1100, h: 1101, t: "Criativos de ouro prontos" },
+  { src: "/mg/produto-ouro-cafe.webp", w: 1100, h: 640, t: "Lâmpada de Ouro: a edição premium do produto" },
+  { src: "/mg/calculadora.webp", w: 1100, h: 852, t: "Calculadora de lucro" },
+  { src: "/mg/mentor.webp", w: 1100, h: 702, t: "Mentor 24 horas" },
+  { src: "/mg/checklist.webp", w: 1100, h: 1227, t: "Checklist de lançamento" },
 ];
 
 const pilha = [
@@ -188,6 +240,10 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
         </Script>
       )}
       <Rastreio valor={OFERTA.preco} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }}
+      />
       <div className="mg-bg" aria-hidden="true" />
 
       <div className="mg-bar">⚡ Faça o pedido. Seu produto digital sai pronto.</div>
@@ -273,7 +329,7 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
                   dinheiro.
                 </p>
                 <figure>
-                  <img src="/mg/nichos.jpg" alt="Tela Nichos em alta: anunciantes ativos e há quantos dias o anúncio mais antigo está no ar" loading="lazy" />
+                  <img src="/mg/nichos.webp" width={730} height={529} alt="Tela Nichos em alta: anunciantes ativos e há quantos dias o anúncio mais antigo está no ar" loading="lazy" />
                   <figcaption>Tela real dos Nichos em alta</figcaption>
                 </figure>
               </div>
@@ -284,7 +340,7 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
                 <strong>Faça o pedido.</strong>
                 <p>Diga para quem é e que tipo de produto você quer. Um campo só, como mandar uma mensagem no WhatsApp.</p>
                 <figure>
-                  <img src="/mg/inicio.jpg" alt="Tela inicial do Painel: O que vamos criar hoje?" loading="lazy" />
+                  <img src="/mg/inicio.webp" width={1100} height={883} alt="Tela inicial do Painel: O que vamos criar hoje?" loading="lazy" />
                 </figure>
               </div>
             </li>
@@ -300,8 +356,8 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
                   <li><Icon name="check" /> os criativos, em vários ângulos, nos formatos de feed e story.</li>
                 </ul>
                 <div className="mg-ads">
-                  <figure><img src="/mg/criativo-ouro1.jpg" alt="Criativo de ouro gerado pelo painel" loading="lazy" /></figure>
-                  <figure><img src="/mg/criativo-ouro2.jpg" alt="Criativo de ouro com oferta gerado pelo painel" loading="lazy" /></figure>
+                  <figure><img src="/mg/criativo-ouro1.webp" width={540} height={674} alt="Criativo de ouro gerado pelo painel" loading="lazy" /></figure>
+                  <figure><img src="/mg/criativo-ouro2.webp" width={540} height={674} alt="Criativo de ouro com oferta gerado pelo painel" loading="lazy" /></figure>
                   <p>Criativos de ouro gerados pelo painel, com fotos, sem designer e sem aparecer.</p>
                 </div>
               </div>
@@ -382,9 +438,9 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
           </p>
           <p className="mg-lead">Olha o que os alunos do TAE mandaram, fazendo tudo na mão:</p>
           <div className="mg2-alunos">
-            <img src="/mg/aluna-andreia.jpg" alt="Mensagem da aluna Andreia com print de venda" loading="lazy" />
-            <img src="/mg/aluna-carla.jpg" alt="Mensagem da aluna Carla com print de venda" loading="lazy" />
-            <img src="/mg/aluno-david.jpg" alt="Mensagem do aluno David" loading="lazy" />
+            <img src="/mg/aluna-andreia.webp" width={583} height={1024} alt="Mensagem da aluna Andreia com print de venda" loading="lazy" />
+            <img src="/mg/aluna-carla.webp" width={600} height={938} alt="Mensagem da aluna Carla com print de venda" loading="lazy" />
+            <img src="/mg/aluno-david.webp" width={600} height={261} alt="Mensagem do aluno David" loading="lazy" />
           </div>
           <p className="mg-lead"><strong>Agora imagina com o painel fazendo a parte pesada.</strong></p>
         </div>
@@ -416,7 +472,7 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
           <div className="mg-gallery">
             {galeria.map((g) => (
               <figure key={g.src}>
-                <img src={g.src} alt={g.t} loading="lazy" />
+                <img src={g.src} width={g.w} height={g.h} alt={g.t} loading="lazy" />
                 <figcaption>{g.t}</figcaption>
               </figure>
             ))}
@@ -453,7 +509,7 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
             São 60 produtos no ano por R$ {OFERTA.preco}: <strong>menos de R$ 5 por produto.</strong> Uma venda de R$ 9,90 já paga dois.
           </p>
           <div className="mg-offer">
-            <img className="mg-offer-cover" src="/mg/capa.jpg" alt="Método Gênio" />
+            <img className="mg-offer-cover" src="/mg/capa.webp" width={1100} height={1100} alt="Método Gênio" />
             <h2>Método Gênio + Painel Inteligente</h2>
             <ul>
               {oferta.map((o) => (
@@ -471,7 +527,7 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
       {/* 11 · bônus */}
       <section className="mg-sec">
         <div className="mg-wrap mg-narrow mg2-bonus-sec">
-          <img src="/mg/pacote7.jpg" alt="Os 7 produtos prontos com direito de revenda" loading="lazy" />
+          <img src="/mg/pacote7.webp" width={900} height={967} alt="Os 7 produtos prontos com direito de revenda" loading="lazy" />
           <div>
             <p className="mg-eyebrow">🎁 E tem um presente</p>
             <h2>Os 7 produtos prontos, com direito de revenda</h2>
@@ -520,8 +576,8 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
         <div className="mg-wrap mg-narrow mg2-letter">
           <h2>Opa! Muito prazer!</h2>
           <div className="mg2-fotos">
-            <figure><img src="/mg/brenno.jpg" alt="Brenno Lima" loading="lazy" /></figure>
-            <figure><img src="/mg/brenno-familia.jpg" alt="Brenno com a esposa Aline e a filha" loading="lazy" /><figcaption>Com a Aline e a nossa filha</figcaption></figure>
+            <figure><img src="/mg/brenno.webp" width={880} height={1100} alt="Brenno Lima" loading="lazy" /></figure>
+            <figure><img src="/mg/brenno-familia.webp" width={500} height={500} alt="Brenno com a esposa Aline e a filha" loading="lazy" /><figcaption>Com a Aline e a nossa filha</figcaption></figure>
           </div>
           <p>Eu sou o Brenno Lima. Nasci em Juiz de Fora, num bairro simples. Com 11 anos eu já vendia doce no ponto de ônibus.</p>
           <p>

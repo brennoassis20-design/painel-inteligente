@@ -17,6 +17,8 @@
 .mg img {
   display: block;
   max-width: 100%;
+  /* width/height no HTML reservam o espaço (sem pulo ao carregar); a altura segue a largura real */
+  height: auto;
 }
 
 .mg a {
@@ -1388,7 +1390,8 @@
 
 .mg2-alunos {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0,…): a largura declarada da imagem não alarga a coluna */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   margin: 18px 0;
   align-items: start;

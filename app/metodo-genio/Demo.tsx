@@ -39,7 +39,7 @@ export function Demo() {
   return (
     <div className="mg-demo" aria-label="Demonstração: o Painel criando um produto até 100% e o produto pronto">
       <div className={`mg-demo-load${pronto ? " is-off" : ""}`} aria-hidden={pronto}>
-        <img className="mg-demo-lamp" src="/mg/lampada.png" alt="" />
+        <img className="mg-demo-lamp" src="/mg/lampada.png" width={158} height={158} alt="" />
         <p className="mg-demo-k">Pedido em andamento</p>
         <p className="mg-demo-t">Seu produto está sendo criado</p>
         <div className="mg-demo-bar">
@@ -57,7 +57,7 @@ export function Demo() {
       </div>
       <div className={`mg-demo-done${pronto ? " is-on" : ""}`} aria-hidden={!pronto}>
         <p className="mg-demo-ok">Produto pronto ✅</p>
-        <img src="/mg/produto-ouro-marmitas.jpg" alt="Produto pronto na edição Lâmpada de Ouro: capa com foto e páginas por dentro" />
+        <img src="/mg/produto-ouro-marmitas.webp" width={1100} height={640} alt="Produto pronto na edição Lâmpada de Ouro: capa com foto e páginas por dentro" />
         <p className="mg-demo-cap">14 Marmitas em 2 Horas · edição Lâmpada de Ouro</p>
       </div>
     </div>
