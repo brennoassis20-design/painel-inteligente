@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-const CHAVES = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "utm_id", "fbclid", "gclid", "src", "sck"];
+const CHAVES = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "utm_id", "fbclid", "gclid", "src", "sck", "coupon"];
 const GUARDA = "mg-origem";
 
 type Origem = Record<string, string>;
@@ -35,9 +35,17 @@ function lerOrigem(): Origem {
 
 // Repassa a origem da visita (UTMs do anúncio, da bio, do login...) para todos os
 // botões de checkout, e marca em sck qual botão foi clicado.
+// Cupons de campanha que mostram uma faixa no topo enquanto valem.
+const PRESENTES: Record<string, { texto: string; ate: string }> = {
+  PRESENTE: { texto: "🎁 Seu presente está ativo: R$ 100 de desconto já aplicado no pagamento. Só hoje, até 23h59.", ate: "2026-11-09T23:59:59-03:00" },
+};
+
 export function Rastreio({ valor }: { valor: string }) {
+  const [faixa, setFaixa] = useState("");
   useEffect(() => {
     const origem = lerOrigem();
+    const presente = PRESENTES[(origem.coupon || "").toUpperCase()];
+    if (presente && Date.now() < new Date(presente.ate).getTime()) setFaixa(presente.texto);
     const fonte = origem.utm_source || (document.referrer ? new URL(document.referrer).hostname : "direto");
 
     document.querySelectorAll<HTMLAnchorElement>("a[data-checkout]").forEach((link) => {
@@ -47,7 +55,7 @@ export function Rastreio({ valor }: { valor: string }) {
       url.searchParams.set("utm_medium", origem.utm_medium || "pagina-vendas");
       url.searchParams.set("utm_campaign", origem.utm_campaign || "metodo-genio");
       url.searchParams.set("utm_content", origem.utm_content || botao);
-      ["utm_term", "utm_id", "fbclid", "gclid"].forEach((chave) => {
+      ["utm_term", "utm_id", "fbclid", "gclid", "coupon"].forEach((chave) => {
         if (origem[chave]) url.searchParams.set(chave, origem[chave]);
       });
       url.searchParams.set("src", origem.src || fonte);
@@ -63,5 +71,24 @@ export function Rastreio({ valor }: { valor: string }) {
     return () => document.removeEventListener("click", clique);
   }, [valor]);
 
-  return null;
+  if (!faixa) return null;
+  return (
+    <div
+      role="status"
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+        padding: "10px 16px",
+        textAlign: "center",
+        fontWeight: 600,
+        fontSize: 14,
+        lineHeight: 1.4,
+        color: "#fff",
+        background: "linear-gradient(90deg, #16a34a, #15803d)",
+      }}
+    >
+      {faixa}
+    </div>
+  );
 }
