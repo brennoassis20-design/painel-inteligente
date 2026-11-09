@@ -6,7 +6,7 @@ import "../metodo-genio/mg.css";
 
 export const metadata: Metadata = {
   title: "Brenno Lima | Links",
-  description: "Kit Produto Pronto, aulas no YouTube, Método Gênio e serviços da GDM: tráfego pago, assessoria e consultoria comercial.",
+  description: "7 produtos prontos para revender, aulas no YouTube, Método Gênio e serviços da GDM: tráfego pago, assessoria e consultoria comercial.",
   openGraph: { title: "Brenno Lima", images: ["/mg/brenno-avatar.jpg"] },
 };
 
@@ -23,13 +23,13 @@ export default function BrennoLinksPage() {
 
         <section className="bio-block bio-genio">
           <p className="mg-eyebrow">Quer começar a vender hoje?</p>
-          <h2>Kit Produto Pronto</h2>
+          <h2>7 produtos prontos para revender</h2>
           <p>
-            Um produto digital inteiro para você vender: página de vendas, anúncios escritos e direito de revenda. É
-            só colocar o seu link.
+            7 produtos digitais prontos, com página de vendas, anúncios escritos e direito de revenda. É só colocar o
+            seu link e começar a vender.
           </p>
-          <a className="mg-cta" href={rastreado(OFERTA.kit, "instagram", "bio", "kit-produto-pronto", "botao-kit")}>
-            Quero o kit pronto
+          <a className="mg-cta" href={rastreado(OFERTA.pacote, "instagram", "bio", "pacote-7-produtos", "botao-pacote")}>
+            Quero os 7 produtos
             <Icon name="arrow" />
           </a>
         </section>

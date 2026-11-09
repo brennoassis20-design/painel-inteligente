@@ -6,6 +6,7 @@ export const OFERTA = {
   gdm: "https://groupdigitalmedia.com.br/",
   painel: "https://painelinteligente.bagencymidia.site/",
   kit: "https://kit.brennolimaoficial.com/",
+  pacote: "https://produtos.kitsepromocoes.site/?pg=N",
   youtube: "https://www.youtube.com/@Brennolimaoficial2",
   pixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID || "1134983832285410",
   // Originais em ~/Documents/Brenno Fotos.
