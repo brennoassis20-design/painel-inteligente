@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
           has: [{ type: "host", value: "genio.brennolimaoficial.com" }],
           destination: "/metodo-genio",
         },
+        {
+          source: "/vsl",
+          has: [{ type: "host", value: "genio.brennolimaoficial.com" }],
+          destination: "/metodo-genio/vsl",
+        },
       ],
     };
   },

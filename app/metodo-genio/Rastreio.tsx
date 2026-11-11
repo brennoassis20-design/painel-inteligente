@@ -40,7 +40,7 @@ const PRESENTES: Record<string, { texto: string; ate: string }> = {
   PRESENTE: { texto: "🎁 Seu presente está ativo: R$ 100 de desconto já aplicado no pagamento. Só hoje, até 23h59.", ate: "2026-11-09T23:59:59-03:00" },
 };
 
-export function Rastreio({ valor }: { valor: string }) {
+export function Rastreio({ valor, prefixo = "pagina-vendas" }: { valor: string; prefixo?: string }) {
   const [faixa, setFaixa] = useState("");
   useEffect(() => {
     const origem = lerOrigem();
@@ -52,14 +52,14 @@ export function Rastreio({ valor }: { valor: string }) {
       const botao = link.dataset.checkout || "botao";
       const url = new URL(link.href);
       url.searchParams.set("utm_source", fonte);
-      url.searchParams.set("utm_medium", origem.utm_medium || "pagina-vendas");
+      url.searchParams.set("utm_medium", origem.utm_medium || prefixo);
       url.searchParams.set("utm_campaign", origem.utm_campaign || "metodo-genio");
       url.searchParams.set("utm_content", origem.utm_content || botao);
       ["utm_term", "utm_id", "fbclid", "gclid", "coupon"].forEach((chave) => {
         if (origem[chave]) url.searchParams.set(chave, origem[chave]);
       });
       url.searchParams.set("src", origem.src || fonte);
-      url.searchParams.set("sck", origem.sck || `pagina-vendas-${botao}`);
+      url.searchParams.set("sck", origem.sck || `${prefixo}-${botao}`);
       link.href = url.toString();
     });
 
@@ -69,7 +69,7 @@ export function Rastreio({ valor }: { valor: string }) {
     }
     document.addEventListener("click", clique);
     return () => document.removeEventListener("click", clique);
-  }, [valor]);
+  }, [valor, prefixo]);
 
   if (!faixa) return null;
   return (

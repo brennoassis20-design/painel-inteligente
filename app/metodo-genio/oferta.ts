@@ -15,6 +15,14 @@ export const OFERTA = {
   foto2: "/mg/brenno-familia.jpg" as string,
 };
 
+// VSL do Método Gênio (versão 1.2x). Os arquivos (HLS em 3 qualidades + MP4 leve + capa) ficam no site
+// estático produtos.kitsepromocoes.site/v/genio (pasta do cofre "Páginas de VSL" explica como gerar).
+// mostrarEm: "O Método Gênio custa R$ 497" começa em 563,3 s (conferido no arquivo final) → a carta abre ~5 s antes.
+export const VSL_GENIO = {
+  base: process.env.NEXT_PUBLIC_VSL_GENIO_BASE || "https://produtos.kitsepromocoes.site/v/genio",
+  mostrarEm: 558,
+};
+
 // Todo link sai rastreado: utm_source = origem, utm_medium = tipo de lugar,
 // utm_campaign = produto, utm_content = botão.
 export function rastreado(
