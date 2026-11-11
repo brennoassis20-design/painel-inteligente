@@ -6,6 +6,7 @@ import { Rastreio } from "./Rastreio";
 import { Demo } from "./Demo";
 import { BarraCelular } from "./BarraCelular";
 import { Revelar } from "./Revelar";
+import { Saida } from "./Saida";
 import { VslPlayer } from "./VslPlayer";
 import "./mg.css";
 
@@ -642,6 +643,8 @@ fbq('init','${pixelId}');fbq('track','PageView');fbq('track','ViewContent',{cont
           <p>© {new Date().getFullYear()} Método Gênio · Brenno Lima</p>
         </div>
       </footer>
+
+      <Saida />
 
       <Revelar ativo={vsl}>
         <BarraCelular href={checkoutLink("barra-celular")} precoDe={OFERTA.precoDe} preco={OFERTA.preco} />

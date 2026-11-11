@@ -81,17 +81,24 @@ export async function POST(request: Request) {
       }),
     });
 
-    const accessStatus = mapEventToAccessStatus(eventType);
+    let accessStatus = mapEventToAccessStatus(eventType);
 
     // PIX/boleto gerado, abandono de carrinho etc. nao mexem no acesso de quem ja comprou.
     if (!accessStatus) {
       return Response.json({ ok: true, email, ignored: eventType });
     }
 
+    const plan = planFromPayload(payload);
     const dataCustomer = objectFromData(payload.data, "customer");
     const purchaseId = String(payload.purchase?.id || payload.transaction?.id || payload.data?.id || payload.data?.purchase_id || "");
     const customerId = String(payload.customer?.id || dataCustomer?.id || payload.data?.customer_id || "");
-    const expiresAt = accessStatus === "active" ? await annualExpiry(email) : null;
+    let expiresAt = accessStatus === "active" ? await accessExpiry(email, plan) : null;
+
+    // Reembolso so do order bump vitalicio: o aluno continua com o Metodo Genio (1 ano a partir da compra).
+    if (plan === "vitalicio" && accessStatus === "refunded") {
+      accessStatus = "active";
+      expiresAt = annualFrom(stringFromData(payload.data, "createdAt"));
+    }
 
     await supabaseRest("/entitlements?on_conflict=email", {
       method: "POST",
@@ -198,14 +205,44 @@ function stringFrom(data: Record<string, unknown> | undefined, key: string) {
 
 const ACCESS_DAYS = 365;
 const GRACE_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Assinatura anual: compra e renovacao garantem 1 ano (+ folga para a cobranca da renovacao).
-// Usa o maior prazo entre o atual e o novo, para eventos repetidos nao somarem anos extras.
-async function annualExpiry(email: string) {
+// Ids da Cakto (11/11/2026).
+// Order bump "Acesso Vitalicio ao Painel Inteligente" (R$ 97): acesso sem vencimento.
+const VITALICIO_PRODUCT_ID = "efc079eb-aa85-456d-b222-fa5303f9d6e8";
+// Oferta "Downsell 197 - 6 meses" do produto Metodo Genio: 6 meses de painel.
+const DOWNSELL_6M_OFFER_ID = "3d7v3st";
+const SEMESTRAL_DAYS = 180;
+// "Sem vencimento" gravado como data distante: o Math.max abaixo e o upsert do perfil
+// tratam vazio como "sem dado" e poderiam trocar por 1 ano.
+const VITALICIO_EXPIRES_AT = "2099-12-31T23:59:59.000Z";
+
+type Plan = "anual" | "semestral" | "vitalicio";
+
+function planFromPayload(payload: CaktoPayload): Plan {
+  const product = objectFromData(payload.data, "product");
+  const offer = objectFromData(payload.data, "offer");
+  if (stringFrom(product, "id") === VITALICIO_PRODUCT_ID) return "vitalicio";
+  if (stringFrom(offer, "id") === DOWNSELL_6M_OFFER_ID) return "semestral";
+  return "anual";
+}
+
+// Compra e renovacao garantem o prazo do plano (+ folga para a cobranca da renovacao).
+// Usa o maior prazo entre o atual e o novo: evento repetido nao soma tempo extra,
+// e a compra do Genio que chega depois do vitalicio nao encurta o acesso.
+async function accessExpiry(email: string, plan: Plan) {
   const rows = await supabaseRest<{ access_expires_at: string | null }[]>(
     `/entitlements?email=eq.${encodeURIComponent(email)}&select=access_expires_at`,
   );
   const current = rows[0]?.access_expires_at ? new Date(rows[0].access_expires_at).getTime() : 0;
-  const next = Date.now() + (ACCESS_DAYS + GRACE_DAYS) * 24 * 60 * 60 * 1000;
+  const next =
+    plan === "vitalicio"
+      ? new Date(VITALICIO_EXPIRES_AT).getTime()
+      : Date.now() + ((plan === "semestral" ? SEMESTRAL_DAYS : ACCESS_DAYS) + GRACE_DAYS) * DAY_MS;
   return new Date(Math.max(current, next)).toISOString();
+}
+
+function annualFrom(createdAt: string) {
+  const start = createdAt ? new Date(createdAt).getTime() : Date.now();
+  return new Date((Number.isNaN(start) ? Date.now() : start) + (ACCESS_DAYS + GRACE_DAYS) * DAY_MS).toISOString();
 }

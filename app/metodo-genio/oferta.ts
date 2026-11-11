@@ -15,6 +15,16 @@ export const OFERTA = {
   foto2: "/mg/brenno-familia.jpg" as string,
 };
 
+// Downsell de saída (Saida.tsx): oferta "Downsell 197 - 6 meses" (3d7v3st) do produto Método Gênio.
+// O webhook do painel grava 6 meses + 7 dias para essa oferta. Recusou → Pacote 7 produtos (R$ 27).
+export const DOWNSELL = {
+  checkout: "https://pay.cakto.com.br/3d7v3st",
+  preco: "197",
+  precoCheio: OFERTA.preco,
+  pacote: OFERTA.pacote,
+  pacotePreco: "27",
+};
+
 // VSL do Método Gênio (versão 1.2x). Os arquivos (HLS em 3 qualidades + MP4 leve + capa) ficam no site
 // estático produtos.kitsepromocoes.site/v/genio (pasta do cofre "Páginas de VSL" explica como gerar).
 // mostrarEm: "O Método Gênio custa R$ 497" começa em 563,3 s (conferido no arquivo final) → a carta abre ~5 s antes.
