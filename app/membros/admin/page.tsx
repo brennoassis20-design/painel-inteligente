@@ -356,6 +356,7 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
           <label className="gp-field">
             <span>Plataforma do checkout</span>
             <select id="pf-plat" value={form.checkout_plataforma} onChange={set("checkout_plataforma")}>
+              <option value="eduzz">Eduzz</option>
               <option value="hotmart">Hotmart</option>
               <option value="cakto">Cakto</option>
               <option value="greenn">Greenn</option>
@@ -801,7 +802,7 @@ function Copy({ text, flash }: { text: string; flash: (t: string) => void }) {
 }
 
 function SalesTab({ summary, flash }: { summary: Summary | null; flash: (t: string) => void }) {
-  const [urls, setUrls] = useState<{ hotmart: string; cakto: string; generico: string; hotmart_hottok_salvo: boolean } | null>(null);
+  const [urls, setUrls] = useState<{ hotmart: string; cakto: string; eduzz: string; generico: string; hotmart_hottok_salvo: boolean } | null>(null);
   const [hottok, setHottok] = useState("");
 
   const load = useCallback(async () => setUrls(await op("integracoes")), []);
@@ -840,6 +841,23 @@ function SalesTab({ summary, flash }: { summary: Summary | null; flash: (t: stri
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="gp-box">
+        <h3>Eduzz</h3>
+        <ol className="gp-steps">
+          <li>
+            No <b>Console da Eduzz (Developer Hub) → Webhooks</b>, crie uma configuração nova com a URL abaixo.
+          </li>
+          <li>
+            Marque os eventos de fatura do MyEduzz: <b>paga</b>, <b>aguardando pagamento</b>, <b>reembolsada</b> e <b>chargeback</b>.
+          </li>
+          <li>
+            Em cada produto daqui, preencha o link do checkout da Eduzz e o id <b>eduzz:ID_DO_PRODUTO</b>.
+          </li>
+        </ol>
+        {urls && <Copy text={urls.eduzz} flash={flash} />}
+        <p className="gp-fine">Este link tem a senha do webhook. Não compartilhe.</p>
       </div>
 
       <div className="gp-box">

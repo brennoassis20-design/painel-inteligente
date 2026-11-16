@@ -25,6 +25,7 @@ export async function POST(request: Request) {
         return {
           hotmart: `${origin}/api/webhooks/membros/hotmart`,
           cakto: `${origin}/api/webhooks/membros/cakto?secret=${settings.webhook_secret}`,
+          eduzz: `${origin}/api/webhooks/membros/eduzz?secret=${settings.webhook_secret}`,
           generico: `${origin}/api/webhooks/membros/{plataforma}?secret=${settings.webhook_secret}`,
           hotmart_hottok_salvo: Boolean(settings.hotmart_hottok),
         };

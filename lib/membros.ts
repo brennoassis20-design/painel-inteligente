@@ -340,6 +340,7 @@ export async function checkoutLink(user: { email: string; name?: string }, produ
   link.searchParams.set("email", user.email);
   if (user.name) link.searchParams.set("name", user.name);
   if (product.checkout_provider === "hotmart") link.searchParams.set("sck", "membros");
+  else if (product.checkout_provider === "eduzz") link.searchParams.set("utm_source", "membros");
   else link.searchParams.set("utm_source", "membros");
   await logEvent(user.email, product.id, "checkout_aberto", { provider: product.checkout_provider });
   return { url: link.toString(), provider: product.checkout_provider };

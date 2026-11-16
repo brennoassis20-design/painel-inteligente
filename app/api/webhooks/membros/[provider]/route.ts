@@ -32,6 +32,34 @@ function hotmart(payload: Json): SaleEvent {
   };
 }
 
+// Eduzz (Developer Hub, eventos myeduzz.*): data.buyer/student, data.items[].productId.
+function eduzz(payload: Json): SaleEvent {
+  const data = obj(payload.data);
+  const type = txt(payload.event).toLowerCase();
+  const student = obj(data.student);
+  const buyer = obj(data.buyer);
+  const items = Array.isArray(data.items) ? (data.items as unknown[]).map(obj) : [];
+  const kind: SaleEvent["kind"] = /waiting_refund/.test(type)
+    ? "ignored"
+    : /invoice_paid/.test(type)
+      ? "approved"
+      : /refunded|chargeback/.test(type)
+        ? "refunded"
+        : /waiting_payment|invoice_opened/.test(type)
+          ? "pending"
+          : "ignored";
+  return {
+    provider: "eduzz",
+    kind,
+    rawType: type,
+    // Compra de presente: quem estuda é o "student"; senão, o comprador.
+    email: txt(student.email || buyer.email).toLowerCase().trim(),
+    name: txt(student.name || buyer.name) || undefined,
+    externalIds: items.flatMap((item) => [txt(item.productId), item.parentId ? txt(item.parentId) : ""]),
+    orderId: txt(data.id || payload.id),
+  };
+}
+
 function generic(provider: string, payload: Json): SaleEvent {
   // Formato Cakto e parecidos: { event, data: { id, product: { id }, offer: { id }, customer: { email, name } } }
   const data = obj(payload.data);
@@ -71,7 +99,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
       secret === settings.webhook_secret || (provider === "hotmart" && Boolean(settings.hotmart_hottok) && hottok === settings.hotmart_hottok);
     if (!authorized) return jsonError("Webhook não autorizado.", 401);
 
-    const event = provider === "hotmart" ? hotmart(payload) : generic(provider, payload);
+    const event = provider === "hotmart" ? hotmart(payload) : provider === "eduzz" ? eduzz(payload) : generic(provider, payload);
 
     await supabaseRest("/webhook_events", {
       method: "POST",
