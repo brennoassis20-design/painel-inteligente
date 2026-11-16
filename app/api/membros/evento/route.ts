@@ -1,14 +1,15 @@
 import { findProduct, logEvent, OpError } from "@/lib/membros";
 import { withUser } from "@/lib/membros-http";
 
-const KINDS = new Set(["cadeado_aberto", "upsell_visto"]);
+const KINDS = new Set(["cadeado_aberto", "upsell_visto", "aula_aberta"]);
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => ({}))) as { produto?: string; tipo?: string };
+  const body = (await request.json().catch(() => ({}))) as { produto?: string; tipo?: string; aula?: string };
   return withUser(request, async (user, area) => {
     if (!KINDS.has(String(body.tipo))) throw new OpError("Evento inválido.");
     const product = await findProduct(area, String(body.produto || ""));
-    await logEvent(area.id, user.email, product.id, String(body.tipo));
+    const lesson = /^[0-9a-f-]{36}$/i.test(String(body.aula || "")) ? { aula: String(body.aula) } : {};
+    await logEvent(area.id, user.email, product.id, String(body.tipo), lesson);
     return { ok: true };
   });
 }

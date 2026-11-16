@@ -7,6 +7,12 @@ type Json = Record<string, unknown>;
 
 const obj = (value: unknown) => (value && typeof value === "object" ? (value as Json) : {});
 const txt = (value: unknown) => (value === undefined || value === null ? "" : String(value));
+// Valor em reais: aceita número, "27", "27,90" ou centavos inteiros (quando a plataforma manda em centavos).
+const money = (value: unknown, cents = false) => {
+  const n = Number(String(value ?? "").replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return cents ? n / 100 : n;
+};
 
 function hotmart(payload: Json): SaleEvent {
   const data = obj(payload.data);
@@ -29,6 +35,8 @@ function hotmart(payload: Json): SaleEvent {
     name: txt(buyer.name) || undefined,
     externalIds: [txt(product.id), txt(product.ucode)],
     orderId: txt(purchase.transaction) || txt(payload.id),
+    amount: money(obj(purchase.price).value) ?? money(obj(purchase.full_price).value),
+    utmSource: txt(obj(purchase.origin).src) || txt(obj(purchase.origin).sck) || null,
   };
 }
 
@@ -46,6 +54,9 @@ function eduzz(payload: Json): SaleEvent {
       name: txt(fields.edz_cli_rsocial) || undefined,
       externalIds: [txt(fields.edz_cnt_cod), fields.edz_cnt_paicod ? txt(fields.edz_cnt_paicod) : ""],
       orderId: txt(fields.edz_fat_cod) || undefined,
+      amount: money(fields.edz_valorpago),
+      utmSource: txt(fields.edz_gtr_param1) || null,
+      utmContent: txt(fields.edz_gtr_param4) || null,
     };
   }
   const data = obj(payload.data);
@@ -71,6 +82,9 @@ function eduzz(payload: Json): SaleEvent {
     name: txt(student.name || buyer.name) || undefined,
     externalIds: items.flatMap((item) => [txt(item.productId), item.parentId ? txt(item.parentId) : ""]),
     orderId: txt(data.id || payload.id),
+    amount: money(obj(data.paid).value) ?? money(obj(data.price).value),
+    utmSource: txt(obj(data.utm).source) || null,
+    utmContent: txt(obj(data.utm).content) || null,
   };
 }
 
@@ -96,6 +110,9 @@ function generic(provider: string, payload: Json): SaleEvent {
     name: txt(customer.name) || undefined,
     externalIds: [txt(product.id), offer.id ? `oferta:${txt(offer.id)}` : ""],
     orderId: txt(data.id || payload.id),
+    amount: money(data.amount) ?? money(data.baseAmount),
+    utmSource: txt(data.utm_source || payload.utm_source) || null,
+    utmContent: txt(data.utm_content || payload.utm_content) || null,
   };
 }
 

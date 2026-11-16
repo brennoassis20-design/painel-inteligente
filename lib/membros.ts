@@ -3,6 +3,7 @@
 // painel de administração e pelo conector de IA (MCP). Assim os dois fazem sempre o mesmo.
 import { createHash, randomBytes } from "node:crypto";
 import { inviteBuyer, supabaseRest } from "@/lib/panel-server";
+import { areaStats } from "@/lib/membros-stats";
 import { cleanUrl, createNotice, inviteBuyersWithoutAccount, listLeads, nextLive, noticeNewModule, noticeNewProduct, studentEmails, studentNotices } from "@/lib/membros-avisos";
 
 const enc = encodeURIComponent;
@@ -491,6 +492,10 @@ export type SaleEvent = {
   name?: string;
   externalIds: string[];
   orderId?: string;
+  // Valor pago (R$) e origem da venda (utm_source), quando a plataforma manda.
+  amount?: number | null;
+  utmSource?: string | null;
+  utmContent?: string | null;
 };
 
 // Venda que chegou pelo link de integração da área: só libera produtos daquela área.
@@ -524,7 +529,13 @@ export async function applySale(event: SaleEvent, area: Area) {
         updated_at: now(),
       }),
     });
-    await logEvent(area.id, event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", { provider: event.provider, order: event.orderId });
+    await logEvent(area.id, event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", {
+      provider: event.provider,
+      order: event.orderId,
+      ...(event.amount && products.length === 1 ? { valor: event.amount } : {}),
+      ...(event.utmSource ? { utm_source: event.utmSource } : {}),
+      ...(event.utmContent ? { utm_content: event.utmContent } : {}),
+    });
 
     // Produto do Método Gênio vendido fora da Cakto também libera o Painel Inteligente.
     // Prazo = access_days do produto (padrão 1 ano + 7 dias; 36500+ = vitalício). Nunca encurta um acesso maior.
@@ -1270,6 +1281,13 @@ OPS.convidar_compradores = {
   },
 };
 
+OPS.estatisticas = {
+  description:
+    "Painel da área: alunos, quem está assistindo, vendas feitas por dentro da área (cadeado e oferta no fim das aulas) com receita, funil por produto (cadeado → checkout → Pix → compra), conclusão, aulas mais vistas e sugestões do que fazer.",
+  input: { dias: num("Período: 7, 30 ou 90 dias (padrão 30).") },
+  run: async (args, area) => areaStats(area, Number(args.dias || 30)),
+};
+
 // ---------------------------------------------------------------- áreas de produtores (só a área 1)
 
 OPS.listar_areas = {
@@ -1280,7 +1298,8 @@ OPS.listar_areas = {
     const areas = await supabaseRest<Area[]>("/mp_settings?select=*&order=id.asc");
     const products = await supabaseRest<{ id: string; area_id: number }[]>("/mp_products?select=id,area_id");
     const access = await supabaseRest<{ email: string; mp_products: { area_id: number } }[]>("/mp_access?status=eq.active&select=email,mp_products!inner(area_id)");
-    return areas.map((area) => ({
+    const stats = await Promise.all(areas.map((area) => areaStats(area, 30).catch(() => null)));
+    return areas.map((area, index) => ({
       id: area.id,
       nome: area.brand_name,
       slug: area.slug,
@@ -1289,6 +1308,8 @@ OPS.listar_areas = {
       email_avisos_ligado: area.email_enabled,
       produtos: products.filter((row) => row.area_id === area.id).length,
       alunos: new Set(access.filter((row) => row.mp_products.area_id === area.id).map((row) => row.email)).size,
+      vendas_area_30d: stats[index]?.resumo.vendas_area ?? null,
+      receita_area_30d: stats[index]?.resumo.receita_area ?? null,
       criada_em: area.created_at,
     }));
   },

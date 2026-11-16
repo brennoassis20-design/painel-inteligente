@@ -674,6 +674,26 @@ function ProductScreen({
     void load();
   }, [load]);
 
+  // Estatísticas: registra a aula aberta (uma vez por aula em cada visita).
+  const openLessonId = (() => {
+    if (!data) return null;
+    const list = data.modules.flatMap((module) => module.lessons);
+    const pick = list.find((lesson) => lesson.id === lessonId) || list.find((lesson) => !lesson.locked && !lesson.completed) || list.find((lesson) => !lesson.locked);
+    return pick && !pick.locked ? pick.id : null;
+  })();
+  const productId = data?.product.id;
+  useEffect(() => {
+    if (!openLessonId || !productId) return;
+    const key = `gp_aula_${openLessonId}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      /* sem armazenamento: registra assim mesmo */
+    }
+    void api("/api/membros/evento", { body: { produto: productId, tipo: "aula_aberta", aula: openLessonId } }).catch(() => undefined);
+  }, [openLessonId, productId]);
+
   if (error) return <div className="gp-wrap gp-center"><p className="gp-error">{error}</p></div>;
   if (!data) return <div className="gp-wrap gp-center"><p className="gp-muted">Abrindo…</p></div>;
 

@@ -58,6 +58,7 @@ type Summary = {
 const op = <T,>(name: string, args: Record<string, unknown> = {}) => api<T>("/api/membros/admin", { body: { op: name, args } });
 
 const TABS = [
+  ["painel", "Painel"],
   ["produtos", "Produtos"],
   ["conteudo", "Aulas"],
   ["gratis", "Grátis e avisos"],
@@ -71,7 +72,7 @@ type Tab = (typeof TABS)[number][0];
 
 export default function AdminPage() {
   const [logged, setLogged] = useState<boolean | null>(null);
-  const [tab, setTab] = useState<Tab>("produtos");
+  const [tab, setTab] = useState<Tab>("painel");
   const [products, setProducts] = useState<Product[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState("");
@@ -143,6 +144,7 @@ export default function AdminPage() {
           ))}
         </div>
         {error && <p className="gp-error">{error}</p>}
+        {tab === "painel" && <StatsTab />}
         {tab === "produtos" && <ProductsTab products={products} summary={summary} reload={reload} flash={flash} />}
         {tab === "conteudo" && <ContentTab products={products} flash={flash} />}
         {tab === "gratis" && <FreeTab products={products} flash={flash} />}
@@ -1570,7 +1572,19 @@ function AiTab({ flash }: { flash: (t: string) => void }) {
 
 // ---------------------------------------------------------------- produtores (só na área principal, para quem administra a plataforma)
 
-type AreaRow = { id: number; nome: string; slug: string; endereco: string; dono: string | null; email_avisos_ligado: boolean; produtos: number; alunos: number; criada_em: string };
+type AreaRow = {
+  id: number;
+  nome: string;
+  slug: string;
+  endereco: string;
+  dono: string | null;
+  email_avisos_ligado: boolean;
+  produtos: number;
+  alunos: number;
+  vendas_area_30d: number | null;
+  receita_area_30d: number | null;
+  criada_em: string;
+};
 
 function slugPreview(text: string) {
   return text
@@ -1690,6 +1704,7 @@ function ProducersTab({ flash }: { flash: (t: string) => void }) {
                 <th>Dono</th>
                 <th>Produtos</th>
                 <th>Alunos</th>
+                <th>Vendas pela área (30d)</th>
                 <th>E-mail avisos</th>
                 <th>Acessar</th>
               </tr>
@@ -1706,6 +1721,7 @@ function ProducersTab({ flash }: { flash: (t: string) => void }) {
                   <td>{area.dono || "—"}</td>
                   <td className="n">{area.produtos}</td>
                   <td className="n">{area.alunos}</td>
+                  <td className="n">{area.vendas_area_30d === null ? "—" : `${area.vendas_area_30d} · ${brl(Math.round((area.receita_area_30d || 0) * 100))}`}</td>
                   <td>{area.email_avisos_ligado ? "ligado" : "desligado"}</td>
                   <td>
                     {area.id !== 1 && (
@@ -1725,6 +1741,270 @@ function ProducersTab({ flash }: { flash: (t: string) => void }) {
           </table>
         </div>
       </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------- painel (estatísticas e sugestões)
+
+type StatsRow = {
+  id: string;
+  titulo: string;
+  publicado: boolean;
+  gratuito: boolean;
+  alunos: number;
+  aulas: number;
+  conclusao: number | null;
+  cadeado_aberto: number;
+  checkout_aberto: number;
+  pagamento_gerado: number;
+  vendas_area: number;
+  receita_area: number;
+  vendas_total: number;
+  receita_total: number;
+  conversao_cadeado: number | null;
+  assistiram: number;
+};
+type Stats = {
+  periodo_dias: number;
+  medindo_aulas_desde: string | null;
+  resumo: {
+    alunos: number;
+    novos_alunos: number;
+    cadastros_gratis: number;
+    assistindo: number;
+    aulas_concluidas: number;
+    inativos_14d: number | null;
+    vendas_area: number;
+    receita_area: number;
+    ticket_medio_area: number | null;
+    vendas_total: number;
+    receita_total: number;
+    reembolsos: number;
+  };
+  funil: { cadeado_aberto: number; checkout_aberto: number; pagamento_gerado: number; compraram_pela_area: number; conversao: number | null };
+  produtos: StatsRow[];
+  serie: { dia: string; vendas_area: number; receita_area: number; vendas_total: number; checkouts: number; cadeados: number }[];
+  aulas_mais_vistas: { aula: string; produto: string; alunos: number }[];
+  vendas_recentes: { quando: string; email: string; produto: string; valor: number; origem: string }[];
+  insights: { tipo: "bom" | "atencao" | "dica"; texto: string }[];
+};
+
+const reais = (value: number) => brl(Math.round(value * 100));
+
+function Kpi({ label, value, hint, strong }: { label: string; value: string | number; hint?: string; strong?: boolean }) {
+  return (
+    <div className={`gp-kpi${strong ? " is-strong" : ""}`}>
+      <span>{label}</span>
+      <b>{value}</b>
+      {hint && <small>{hint}</small>}
+    </div>
+  );
+}
+
+function StatsTab() {
+  const [days, setDays] = useState(30);
+  const [data, setData] = useState<Stats | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- busca os dados do servidor
+    setLoading(true);
+    op<Stats>("estatisticas", { dias: days })
+      .then((result) => {
+        if (!alive) return;
+        setData(result);
+        setError("");
+      })
+      .catch((err) => alive && setError(err instanceof Error ? err.message : "Não foi possível carregar o painel."))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [days]);
+
+  const max = Math.max(1, ...(data?.serie || []).map((row) => Math.max(row.vendas_area, row.vendas_total - row.vendas_area + row.vendas_area)));
+  const r = data?.resumo;
+
+  return (
+    <section className="gp-panel">
+      <div className="gp-stats-head">
+        <div>
+          <h2>Painel da área</h2>
+          <p className="gp-muted">Venda pela área = comprou pelo cadeado ou pela oferta no fim das aulas (link da área ou checkout aberto aqui nos 7 dias antes).</p>
+        </div>
+        <div className="gp-btns" role="radiogroup" aria-label="Período">
+          {[7, 30, 90].map((value) => (
+            <button key={value} type="button" role="radio" aria-checked={days === value} className={`gp-btn gp-btn-sm ${days === value ? "gp-btn-gold" : "gp-btn-ghost"}`} onClick={() => setDays(value)}>
+              {value} dias
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <p className="gp-error">{error}</p>}
+      {!data && loading && <p className="gp-muted">Calculando…</p>}
+
+      {data && r && (
+        <>
+          <div className="gp-kpis" aria-busy={loading}>
+            <Kpi strong label="Vendas pela área" value={r.vendas_area} hint={`${reais(r.receita_area)}${r.ticket_medio_area ? ` · ticket ${reais(r.ticket_medio_area)}` : ""}`} />
+            <Kpi label="Vendas no total" value={r.vendas_total} hint={`${reais(r.receita_total)}${r.reembolsos ? ` · ${r.reembolsos} reembolso(s)` : ""}`} />
+            <Kpi label="Alunos" value={r.alunos} hint={`+${r.novos_alunos} novos · ${r.cadastros_gratis} grátis`} />
+            <Kpi label="Assistindo" value={r.assistindo} hint={`${r.aulas_concluidas} aulas concluídas${r.inativos_14d !== null ? ` · ${r.inativos_14d} parados há 14d` : ""}`} />
+          </div>
+
+          <div className="gp-box">
+            <h3>O que fazer agora</h3>
+            <ul className="gp-insights">
+              {data.insights.map((item, index) => (
+                <li key={index} className={`is-${item.tipo}`}>
+                  <span aria-hidden="true">{item.tipo === "bom" ? "▲" : item.tipo === "atencao" ? "!" : "→"}</span>
+                  {item.texto}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="gp-box">
+            <div className="gp-module-head">
+              <h3>Vendas por dia</h3>
+              <span className="gp-legend">
+                <i className="is-area" /> pela área <i className="is-other" /> outras
+              </span>
+            </div>
+            <div className="gp-chart" role="img" aria-label={`Vendas por dia nos últimos ${data.periodo_dias} dias: ${r.vendas_area} pela área de ${r.vendas_total} no total.`}>
+              {data.serie.map((row) => {
+                const other = row.vendas_total - row.vendas_area;
+                const label = new Date(`${row.dia}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+                return (
+                  <div key={row.dia} className="gp-chart-col" title={`${label}: ${row.vendas_area} pela área (${reais(row.receita_area)}), ${other} outras, ${row.checkouts} checkouts abertos`}>
+                    <div className="gp-chart-bar">
+                      {other > 0 && <span className="is-other" style={{ height: `${(other / max) * 100}%` }} />}
+                      {row.vendas_area > 0 && <span className="is-area" style={{ height: `${(row.vendas_area / max) * 100}%` }} />}
+                    </div>
+                    <small>{data.periodo_dias <= 30 || Number(row.dia.slice(8)) % 7 === 1 ? label : ""}</small>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="gp-box">
+            <h3>Funil dentro da área</h3>
+            <div className="gp-funnel">
+              {[
+                ["Abriram o cadeado", data.funil.cadeado_aberto],
+                ["Abriram o checkout", data.funil.checkout_aberto],
+                ["Geraram Pix/boleto", data.funil.pagamento_gerado],
+                ["Compraram", data.funil.compraram_pela_area],
+              ].map(([label, value]) => (
+                <div key={String(label)}>
+                  <b>{value}</b>
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+            <small className="gp-fine">Pessoas únicas no período.{data.funil.conversao !== null ? ` Do cadeado à compra: ${data.funil.conversao}%.` : ""}</small>
+          </div>
+
+          <div className="gp-box">
+            <h3>Por produto</h3>
+            <div className="gp-table-wrap">
+              <table className="gp-table">
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Alunos</th>
+                    <th>Assistiram</th>
+                    <th>Conclusão</th>
+                    <th>Cadeado</th>
+                    <th>Checkout</th>
+                    <th>Pix</th>
+                    <th>Vendas área</th>
+                    <th>Receita área</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.produtos
+                    .filter((row) => row.publicado || row.vendas_total)
+                    .map((row) => (
+                      <tr key={row.id}>
+                        <td>{row.titulo}</td>
+                        <td className="n">{row.alunos}</td>
+                        <td className="n">{row.assistiram}</td>
+                        <td className="n">{row.conclusao === null ? "—" : `${row.conclusao}%`}</td>
+                        <td className="n">{row.cadeado_aberto}</td>
+                        <td className="n">{row.checkout_aberto}</td>
+                        <td className="n">{row.pagamento_gerado}</td>
+                        <td className="n">{row.vendas_area}</td>
+                        <td className="n">{reais(row.receita_area)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="gp-grid2">
+            <div className="gp-box">
+              <h3>Vendas recentes pela área</h3>
+              {data.vendas_recentes.length === 0 ? (
+                <p className="gp-muted">Nenhuma venda pela área neste período ainda.</p>
+              ) : (
+                <div className="gp-table-wrap">
+                  <table className="gp-table gp-table-tight">
+                    <thead>
+                      <tr>
+                        <th>Quando</th>
+                        <th>Aluno</th>
+                        <th>Produto</th>
+                        <th>Valor</th>
+                        <th>Origem</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.vendas_recentes.map((sale, index) => (
+                        <tr key={index}>
+                          <td>{new Date(sale.quando).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
+                          <td>{sale.email}</td>
+                          <td>{sale.produto}</td>
+                          <td className="n">{reais(sale.valor)}</td>
+                          <td>{sale.origem}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className="gp-box">
+              <h3>Aulas mais vistas</h3>
+              {data.aulas_mais_vistas.length === 0 ? (
+                <p className="gp-muted">
+                  {data.medindo_aulas_desde
+                    ? "Ninguém abriu aula neste período."
+                    : "Começamos a medir as aulas abertas agora. Os dados aparecem conforme os alunos assistem."}
+                </p>
+              ) : (
+                <ol className="gp-toplist">
+                  {data.aulas_mais_vistas.map((row, index) => (
+                    <li key={index}>
+                      <span>
+                        <b>{row.aula}</b>
+                        <small>{row.produto}</small>
+                      </span>
+                      <em>{row.alunos} alunos</em>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }
