@@ -2,7 +2,7 @@
 
 // Campo de imagem do admin: mostra o tamanho certo, confere a proporção antes de enviar e guarda no Storage.
 import { useRef, useState } from "react";
-import { api, readSession } from "../session";
+import { api, areaHeaders, readSession } from "../session";
 
 export type ImageKind = "logo" | "inicio" | "inicio-celular" | "capa" | "banner" | "modulo";
 
@@ -38,7 +38,7 @@ async function upload(file: File, kind: ImageKind) {
     const body = new FormData();
     body.append("arquivo", file);
     body.append("tipo", kind);
-    return fetch("/api/membros/admin/upload", { method: "POST", headers: { Authorization: `Bearer ${readSession()?.accessToken || ""}` }, body });
+    return fetch("/api/membros/admin/upload", { method: "POST", headers: { Authorization: `Bearer ${readSession()?.accessToken || ""}`, ...areaHeaders() }, body });
   };
   let response = await send();
   if (response.status === 401) {

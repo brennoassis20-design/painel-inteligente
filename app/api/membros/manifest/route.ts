@@ -1,12 +1,16 @@
-import { getSettings } from "@/lib/membros";
+import { getArea } from "@/lib/membros";
 
 // Manifesto do app (instalar na tela inicial). Em membros.bagencymidia.site o app abre na raiz;
 // no endereço do painel, em /membros.
 export async function GET(request: Request) {
-  const host = new URL(request.url).host;
-  const own = host.startsWith("membros.");
-  const base = own ? "/" : "/membros";
-  const settings = await getSettings().catch(() => null);
+  const url = new URL(request.url);
+  const own = url.host.startsWith("membros.");
+  const slug = (url.searchParams.get("area") || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  const settings = await getArea(slug).catch(() => null);
+  // Área de produtor: o app abre direto no endereço dela.
+  const root = own ? "" : "/membros";
+  const areaPath = settings && settings.id !== 1 ? `/${settings.slug}` : "";
+  const base = `${root}${areaPath}` || "/";
   const name = settings?.brand_name || "Gênio Play";
   return Response.json(
     {
@@ -15,7 +19,7 @@ export async function GET(request: Request) {
       short_name: name,
       description: "Suas aulas, materiais e novidades num lugar só.",
       lang: "pt-BR",
-      start_url: own ? "/?app=1" : "/membros?app=1",
+      start_url: `${root}${areaPath}/?app=1`.replace(/^\/\//, "/"),
       scope: own ? "/" : "/membros",
       display: "standalone",
       orientation: "portrait",

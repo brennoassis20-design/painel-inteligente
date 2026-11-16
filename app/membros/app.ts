@@ -28,7 +28,7 @@ export function iosNotSafari() {
 
 export async function registerWorker() {
   if (!("serviceWorker" in navigator)) return null;
-  const scope = window.location.pathname.startsWith("/membros") ? "/membros" : "/";
+  const scope = /^\/membros(\/|$)/.test(window.location.pathname) ? "/membros" : "/";
   try {
     return await navigator.serviceWorker.register("/gp-sw.js", { scope });
   } catch {

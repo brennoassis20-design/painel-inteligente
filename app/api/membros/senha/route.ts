@@ -1,4 +1,6 @@
-import { inviteBuyer, jsonError, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
+import { jsonError, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
+import { areaUrl, inviteToArea } from "@/lib/membros";
+import { areaFrom } from "@/lib/membros-http";
 import { accountExists } from "@/lib/membros-avisos";
 
 const MESSAGE = "Se este e-mail tiver acesso, você vai receber um link para criar ou trocar a senha.";
@@ -8,12 +10,16 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as { email?: string };
     const email = String(body.email || "").trim().toLowerCase();
     if (!email) return jsonError("Informe seu e-mail.", 400);
-    const redirectTo = new URL(request.url).origin;
+    const area = await areaFrom(request);
+    // A área 1 segue o endereço de onde veio (painel ou membros); as outras voltam para o endereço delas.
+    const redirectTo = area.id === 1 ? new URL(request.url).origin : areaUrl(area);
 
     // Comprador que ainda não criou a conta recebe o convite agora.
-    const access = await supabaseRest<{ status: string }[]>(`/mp_access?email=eq.${encodeURIComponent(email)}&status=eq.active&select=status&limit=1`);
+    const access = await supabaseRest<{ status: string }[]>(
+      `/mp_access?email=eq.${encodeURIComponent(email)}&status=eq.active&select=status,mp_products!inner(area_id)&mp_products.area_id=eq.${area.id}&limit=1`,
+    );
     if (access.length) {
-      const result = await inviteBuyer(email, undefined, redirectTo).catch(() => "invite_failed");
+      const result = await inviteToArea(area, email).catch(() => "invite_failed");
       if (result === "invited") return Response.json({ ok: true, message: MESSAGE });
     }
 

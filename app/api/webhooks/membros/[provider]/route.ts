@@ -1,4 +1,4 @@
-import { applySale, getSettings, type SaleEvent } from "@/lib/membros";
+import { applySale, type Area, type SaleEvent } from "@/lib/membros";
 import { jsonError, supabaseRest } from "@/lib/panel-server";
 
 // Receptor universal de vendas: cada plataforma é traduzida para o mesmo formato.
@@ -129,14 +129,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
     const provider = (await params).provider.toLowerCase().replace(/[^a-z0-9_-]/g, "");
     const raw = await request.text();
     const payload = parseBody(raw);
-    const settings = await getSettings();
     const url = new URL(request.url);
 
+    // O segredo do link diz de qual área é a venda; a Hotmart também pode se identificar pelo hottok da área.
     const hottok = request.headers.get("x-hotmart-hottok") || txt(payload.hottok);
-    const secret = url.searchParams.get("secret") || request.headers.get("x-webhook-secret") || "";
-    const authorized =
-      secret === settings.webhook_secret || (provider === "hotmart" && Boolean(settings.hotmart_hottok) && hottok === settings.hotmart_hottok);
-    if (!authorized) return jsonError("Webhook não autorizado.", 401);
+    const secret = (url.searchParams.get("secret") || request.headers.get("x-webhook-secret") || "").trim();
+    let area: Area | null = null;
+    if (/^[a-f0-9]{16,80}$/i.test(secret)) {
+      const rows = await supabaseRest<Area[]>(`/mp_settings?webhook_secret=eq.${secret}&select=*`);
+      area = rows[0] || null;
+    }
+    if (!area && provider === "hotmart" && hottok) {
+      const rows = await supabaseRest<Area[]>(`/mp_settings?hotmart_hottok=eq.${encodeURIComponent(hottok)}&select=*`);
+      area = rows.length === 1 ? rows[0] : null;
+    }
+    if (!area) return jsonError("Webhook não autorizado.", 401);
 
     const event = provider === "hotmart" ? hotmart(payload) : provider === "eduzz" ? eduzz(payload) : generic(provider, payload);
 
@@ -144,7 +151,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
       method: "POST",
       headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
       body: JSON.stringify({
-        provider: `membros:${provider}`,
+        provider: area.id === 1 ? `membros:${provider}` : `membros:a${area.id}:${provider}`,
         event_id: `${event.rawType}:${event.orderId || Date.now()}`,
         event_type: event.rawType || "unknown",
         payload,
@@ -152,7 +159,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
     }).catch(() => undefined);
 
     if (!event.email) return Response.json({ ok: true, ignored: "sem e-mail" });
-    const result = await applySale(event);
+    const result = await applySale(event, area);
     return Response.json({ ok: true, kind: event.kind, ...result });
   } catch (error) {
     console.error("webhook-membros", error);

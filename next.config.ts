@@ -36,6 +36,17 @@ const nextConfig: NextConfig = {
           has: [{ type: "host", value: "membros.bagencymidia.site" }],
           destination: "/membros",
         },
+        // Áreas de produtores: membros.bagencymidia.site/<area>, /<area>/admin e /<area>/gratis.
+        {
+          source: "/:area([a-z0-9][a-z0-9-]{1,59})",
+          has: [{ type: "host", value: "membros.bagencymidia.site" }],
+          destination: "/membros/:area",
+        },
+        {
+          source: "/:area([a-z0-9][a-z0-9-]{1,59})/:page(admin|gratis)",
+          has: [{ type: "host", value: "membros.bagencymidia.site" }],
+          destination: "/membros/:area/:page",
+        },
       ],
     };
   },

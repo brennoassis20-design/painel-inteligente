@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Login from "../Login";
 import ImageField from "./ImageField";
 import "./admin.css";
-import { api, AuthError, brl, readSession } from "../session";
+import { api, areaBase, areaSlug, AuthError, brl, readSession } from "../session";
 
 type Product = {
   id: string;
@@ -65,6 +65,7 @@ const TABS = [
   ["aparencia", "Aparência"],
   ["vendas", "Vendas e integrações"],
   ["ia", "Conectar IA"],
+  ["produtores", "Produtores"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
@@ -75,6 +76,7 @@ export default function AdminPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
+  const [info, setInfo] = useState<{ principal: boolean; admin_plataforma: boolean; endereco: string } | null>(null);
 
   const flash = useCallback((text: string) => {
     setToast(text);
@@ -83,9 +85,14 @@ export default function AdminPage() {
 
   const reload = useCallback(async () => {
     try {
-      const [list, info] = await Promise.all([op<Product[]>("listar_produtos"), op<Summary>("resumo_area")]);
+      const [list, resume, area] = await Promise.all([
+        op<Product[]>("listar_produtos"),
+        op<Summary>("resumo_area"),
+        op<{ principal: boolean; admin_plataforma: boolean; endereco: string }>("area_info"),
+      ]);
       setProducts(list);
-      setSummary(info);
+      setSummary(resume);
+      setInfo(area);
       setError("");
     } catch (err) {
       if (err instanceof AuthError) setLogged(false);
@@ -107,19 +114,19 @@ export default function AdminPage() {
   if (!logged) {
     return (
       <div className="gp">
-        <Login brand="Gênio Play · Configurar" onDone={() => setLogged(true)} />
+        <Login brand={areaSlug() ? "Configurar sua área" : "Gênio Play · Configurar"} onDone={() => setLogged(true)} />
       </div>
     );
   }
 
-  const home = window.location.pathname.startsWith("/membros") ? "/membros" : "/";
+  const home = areaBase() || "/";
 
   return (
     <div className="gp">
       <header className="gp-top gp-wrap">
         <a className="gp-logo" href={home}>
           <i />
-          {summary?.aparencia.brand_name || "Gênio Play"}
+          {summary?.aparencia.brand_name || (areaSlug() ? "" : "Gênio Play")}
         </a>
         <nav className="gp-nav">
           <a href={home}>Ver como aluno</a>
@@ -127,7 +134,7 @@ export default function AdminPage() {
       </header>
       <main className="gp-wrap gp-admin">
         <div className="gp-tabs" role="tablist">
-          {TABS.map(([key, label]) => (
+          {TABS.filter(([key]) => key !== "produtores" || (info?.principal && info.admin_plataforma)).map(([key, label]) => (
             <button key={key} type="button" role="tab" aria-selected={tab === key} className={tab === key ? "is-on" : ""} onClick={() => setTab(key)}>
               {label}
             </button>
@@ -141,6 +148,7 @@ export default function AdminPage() {
         {tab === "aparencia" && summary && <LookTab summary={summary} products={products} reload={reload} flash={flash} />}
         {tab === "vendas" && <SalesTab summary={summary} flash={flash} />}
         {tab === "ia" && <AiTab flash={flash} />}
+        {tab === "produtores" && info?.principal && info.admin_plataforma && <ProducersTab flash={flash} />}
       </main>
       {toast && <div className="gp-toast" role="status">{toast}</div>}
     </div>
@@ -364,9 +372,11 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
         <label className="gp-check-field">
           <input id="pf-dest" type="checkbox" checked={form.destaque} onChange={set("destaque")} /> Pode aparecer no banner da tela inicial
         </label>
-        <label className="gp-check-field">
-          <input id="pf-painel" type="checkbox" checked={form.especial === "painel"} onChange={(e) => setForm({ ...form, especial: e.target.checked ? "painel" : "" })} /> Também libera o Painel Inteligente (Método Gênio)
-        </label>
+        {!areaSlug() && (
+          <label className="gp-check-field">
+            <input id="pf-painel" type="checkbox" checked={form.especial === "painel"} onChange={(e) => setForm({ ...form, especial: e.target.checked ? "painel" : "" })} /> Também libera o Painel Inteligente (Método Gênio)
+          </label>
+        )}
       </div>
 
       <div className="gp-box">
@@ -891,7 +901,7 @@ const KIND_LABEL: Record<string, string> = { produto_novo: "Produto novo", modul
 const EMPTY_NOTICE = { titulo: "", texto: "", produto: "", link: "", botao: "", aoVivo: false, quando: "", email: true };
 
 function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) => void }) {
-  const [leads, setLeads] = useState<{ total: number; celulares_com_aviso: number; alunos_com_email: number; cadastros: Lead[] } | null>(null);
+  const [leads, setLeads] = useState<{ total: number; celulares_com_aviso: number; alunos_com_email: number; email_ligado: boolean; cadastros: Lead[] } | null>(null);
   const [sent, setSent] = useState<SentNotice[]>([]);
   const [form, setForm] = useState(EMPTY_NOTICE);
   const [confirming, setConfirming] = useState(false);
@@ -908,7 +918,7 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
     void load();
   }, [load]);
 
-  const base = window.location.host.startsWith("membros.") ? `${window.location.origin}` : "https://membros.bagencymidia.site";
+  const base = `${window.location.host.startsWith("membros.") ? window.location.origin : "https://membros.bagencymidia.site"}${areaSlug() ? `/${areaSlug()}` : ""}`;
   const free = products.filter((product) => product.is_free);
 
   function csv() {
@@ -936,7 +946,7 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
         ao_vivo: form.aoVivo,
         // datetime-local vem sem fuso: é horário de Brasília.
         quando: form.aoVivo && form.quando ? `${form.quando}:00-03:00` : "",
-        email: form.email,
+        email: form.email && Boolean(leads?.email_ligado),
         confirmar: true,
       });
       setForm(EMPTY_NOTICE);
@@ -1019,15 +1029,17 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
           </label>
         )}
         <label className="gp-check-field">
-          <input type="checkbox" checked={form.email} onChange={(e) => setForm({ ...form, email: e.target.checked })} />
-          <span>Mandar também por e-mail ({leads?.alunos_com_email ?? "…"} alunos)</span>
+          <input type="checkbox" disabled={leads ? !leads.email_ligado : false} checked={form.email && (leads ? leads.email_ligado : true)} onChange={(e) => setForm({ ...form, email: e.target.checked })} />
+          <span>
+            {leads && !leads.email_ligado ? "E-mail dos avisos ainda não liberado nesta área (vai só no sino e no celular)" : `Mandar também por e-mail (${leads?.alunos_com_email ?? "…"} alunos)`}
+          </span>
         </label>
         {error && <p className="gp-error">{error}</p>}
         <div className="gp-btns">
           {confirming ? (
             <>
               <button type="button" className="gp-btn gp-btn-gold" disabled={busy} onClick={() => void send()}>
-                {busy ? "Enviando…" : `Confirmar: sino + ${leads?.celulares_com_aviso ?? 0} celulares${form.email ? ` + ${leads?.alunos_com_email ?? 0} e-mails` : ""}`}
+                {busy ? "Enviando…" : `Confirmar: sino + ${leads?.celulares_com_aviso ?? 0} celulares${form.email && leads?.email_ligado ? ` + ${leads?.alunos_com_email ?? 0} e-mails` : ""}`}
               </button>
               <button type="button" className="gp-btn gp-btn-ghost" onClick={() => setConfirming(false)}>
                 Cancelar
@@ -1445,7 +1457,7 @@ function SalesTab({ summary, flash }: { summary: Summary | null; flash: (t: stri
 function AiTab({ flash }: { flash: (t: string) => void }) {
   const [keys, setKeys] = useState<{ id: string; name: string; prefix: string; created_at: string; last_used_at: string | null; revoked_at: string | null }[]>([]);
   const [created, setCreated] = useState<{ key: string; url: string } | null>(null);
-  const [name, setName] = useState("Claude do Brenno");
+  const [name, setName] = useState(areaSlug() ? "Meu Claude" : "Claude do Brenno");
   const [tools, setTools] = useState<{ name: string; description: string }[]>([]);
 
   const load = useCallback(async () => {
@@ -1463,7 +1475,7 @@ function AiTab({ flash }: { flash: (t: string) => void }) {
       <div className="gp-box">
         <h3>Conecte o Claude ou o ChatGPT a esta área</h3>
         <p className="gp-muted" style={{ margin: 0 }}>
-          Depois de conectar, é só pedir em português: “cria o produto Sono do Bebê a R$ 67 com estes 5 vídeos do YouTube”, “oferece o Pacote 27 no fim das aulas do Café Sem Pão”, “muda o banner para o Método Gênio”.
+          Depois de conectar, é só pedir em português: “cria o produto Curso X a R$ 97 com estes 5 vídeos do YouTube”, “oferece o produto Y no fim das aulas do X”, “muda a cor dos botões para verde”. A conexão só enxerga esta área.
         </p>
         <div className="gp-copy">
           <input id="ia-nome" className="gp-code" style={{ fontFamily: "inherit", fontSize: 15 }} value={name} onChange={(e) => setName(e.target.value)} aria-label="Nome da conexão" />
@@ -1549,6 +1561,154 @@ function AiTab({ flash }: { flash: (t: string) => void }) {
           </table>
         </div>
         <p className="gp-fine">Apagar, liberar e bloquear acesso sempre pedem a sua confirmação na conversa antes.</p>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------- produtores (só na área principal, para quem administra a plataforma)
+
+type AreaRow = { id: number; nome: string; slug: string; endereco: string; dono: string | null; email_avisos_ligado: boolean; produtos: number; alunos: number; criada_em: string };
+
+function slugPreview(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+function ProducersTab({ flash }: { flash: (t: string) => void }) {
+  const [areas, setAreas] = useState<AreaRow[]>([]);
+  const [form, setForm] = useState({ nome: "", slug: "", email: "", cor: "#F2B441" });
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState<{ endereco_alunos: string; endereco_admin: string; convite: string } | null>(null);
+
+  const load = useCallback(async () => setAreas(await op<AreaRow[]>("listar_areas")), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- busca os dados do servidor
+    void load();
+  }, [load]);
+
+  const slug = slugPreview(form.slug || form.nome);
+  const valid = form.nome.trim().length >= 3 && slug.length >= 3 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim());
+
+  async function create() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await op<{ endereco_alunos: string; endereco_admin: string; convite: string }>("criar_area", {
+        nome: form.nome.trim(),
+        slug,
+        email_dono: form.email.trim().toLowerCase(),
+        cor: form.cor,
+        confirmar: true,
+      });
+      setDone(result);
+      setForm({ nome: "", slug: "", email: "", cor: "#F2B441" });
+      setConfirming(false);
+      flash("Área criada.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível criar a área.");
+      setConfirming(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="gp-panel">
+      <div className="gp-box">
+        <h3>Nova área de produtor</h3>
+        <p className="gp-muted">
+          O produtor recebe um e-mail para criar a senha e cai direto no admin da área dele. Ele só enxerga os próprios produtos, alunos e vendas. E-mail de avisos começa desligado.
+        </p>
+        <div className="gp-grid2">
+          <label className="gp-field">
+            <span>Nome da área</span>
+            <input id="pa-nome" maxLength={60} value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Academia do Daniel" />
+          </label>
+          <label className="gp-field">
+            <span>E-mail do produtor</span>
+            <input id="pa-email" type="email" inputMode="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="produtor@email.com" />
+          </label>
+          <label className="gp-field">
+            <span>Endereço (opcional)</span>
+            <input id="pa-slug" maxLength={40} value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder={slug || "sai do nome"} />
+            <small className="gp-fine">membros.bagencymidia.site/{slug || "…"}</small>
+          </label>
+          <label className="gp-field">
+            <span>Cor dos botões</span>
+            <input id="pa-cor" type="color" value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} />
+          </label>
+        </div>
+        {error && <p className="gp-error">{error}</p>}
+        <div className="gp-btns">
+          {confirming ? (
+            <>
+              <button type="button" className="gp-btn gp-btn-gold" disabled={busy} onClick={() => void create()}>
+                {busy ? "Criando…" : `Confirmar: criar /${slug} e convidar ${form.email.trim()}`}
+              </button>
+              <button type="button" className="gp-btn gp-btn-ghost" onClick={() => setConfirming(false)}>
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <button type="button" className="gp-btn gp-btn-gold" disabled={!valid} onClick={() => setConfirming(true)}>
+              Criar área
+            </button>
+          )}
+        </div>
+        {done && (
+          <div className="gp-box">
+            <p>
+              <b>Pronto.</b> Convite: {done.convite}.
+            </p>
+            <p className="gp-muted">Alunos: {done.endereco_alunos}</p>
+            <Copy text={done.endereco_alunos} flash={flash} />
+            <p className="gp-muted">Admin do produtor: {done.endereco_admin}</p>
+            <Copy text={done.endereco_admin} flash={flash} />
+          </div>
+        )}
+      </div>
+
+      <div className="gp-box">
+        <h3>Áreas</h3>
+        <div className="gp-table-wrap">
+          <table className="gp-table">
+            <thead>
+              <tr>
+                <th>Área</th>
+                <th>Endereço</th>
+                <th>Dono</th>
+                <th>Produtos</th>
+                <th>Alunos</th>
+                <th>E-mail avisos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {areas.map((area) => (
+                <tr key={area.id}>
+                  <td>{area.nome}</td>
+                  <td>
+                    <a href={area.endereco} target="_blank" rel="noreferrer">
+                      {area.endereco.replace("https://", "")}
+                    </a>
+                  </td>
+                  <td>{area.dono || "—"}</td>
+                  <td className="n">{area.produtos}</td>
+                  <td className="n">{area.alunos}</td>
+                  <td>{area.email_avisos_ligado ? "ligado" : "desligado"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { readUtm, track } from "./pixel";
-import { writeSession } from "./session";
+import { areaHeaders, writeSession } from "./session";
 
 // (11) 98765-4321 enquanto digita.
 function maskPhone(value: string) {
@@ -17,12 +17,14 @@ type Mode = "login" | "recover" | "set-password" | "signup";
 
 export default function Login({
   brand,
+  logo,
   linkToken,
   linkRefresh,
   startSignup,
   onDone,
 }: {
   brand: string;
+  logo?: string | null;
   linkToken?: string;
   linkRefresh?: string;
   startSignup?: boolean;
@@ -47,7 +49,7 @@ export default function Login({
         if (password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
         const response = await fetch("/api/membros/cadastro", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...areaHeaders() },
           body: JSON.stringify({ email: email.trim().toLowerCase(), whatsapp, senha: password, utm: readUtm() }),
         });
         const data = await response.json();
@@ -67,7 +69,7 @@ export default function Login({
       if (mode === "recover") {
         const response = await fetch("/api/membros/senha", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...areaHeaders() },
           body: JSON.stringify({ email: email.trim().toLowerCase() }),
         });
         const data = await response.json();
@@ -116,7 +118,8 @@ export default function Login({
     <div className="gp-login">
       <form className="gp-login-card" onSubmit={submit}>
         <div className="gp-logo">
-          <i />
+          {/* eslint-disable-next-line @next/next/no-img-element -- logo externo configurável */}
+          {logo ? <img src={logo} alt="" /> : <i />}
           {brand}
         </div>
         <h1>{mode === "signup" ? "Crie seu acesso grátis" : mode === "set-password" ? "Crie sua senha" : mode === "recover" ? "Recuperar acesso" : "Entre na sua área"}</h1>

@@ -174,3 +174,29 @@ alter table public.mp_notifications
   add column if not exists module_id uuid references public.mp_modules(id) on delete set null,
   add column if not exists email_sent integer not null default 0;
 create unique index if not exists mp_notifications_module_novo_uidx on public.mp_notifications (module_id) where kind = 'modulo_novo';
+
+-- 16/11: multiprodutor. Parte 1 (aditiva, aplicada antes da publicação): cada linha de mp_settings é uma área.
+alter table public.mp_settings drop constraint if exists mp_settings_id_check;
+create sequence if not exists public.mp_settings_id_seq start 2 owned by public.mp_settings.id;
+alter table public.mp_settings alter column id set default nextval('public.mp_settings_id_seq');
+alter table public.mp_settings
+  add column if not exists slug text,
+  add column if not exists owner_email text,
+  add column if not exists email_enabled boolean not null default false,
+  add column if not exists created_at timestamptz not null default now();
+update public.mp_settings set slug = 'genio-play', email_enabled = true where id = 1 and slug is null;
+create unique index if not exists mp_settings_slug_uidx on public.mp_settings (slug);
+create unique index if not exists mp_settings_webhook_secret_uidx on public.mp_settings (webhook_secret);
+-- area_id (padrão 1) em mp_products, mp_api_keys, mp_admins, mp_leads, mp_notifications, mp_notification_seen, mp_push_subs, mp_events
+-- + índices únicos (area_id, slug) / (area_id, email) / (endpoint, area_id) / (user_id, area_id) / (email, area_id).
+
+-- Parte 2 (depois da publicação): tira as chaves antigas que valiam para o site inteiro.
+alter table public.mp_products drop constraint if exists mp_products_slug_key;
+alter table public.mp_leads drop constraint if exists mp_leads_pkey;
+alter table public.mp_leads add constraint mp_leads_pkey primary key using index mp_leads_area_email_uidx;
+alter table public.mp_push_subs drop constraint if exists mp_push_subs_pkey;
+alter table public.mp_push_subs add constraint mp_push_subs_pkey primary key using index mp_push_subs_endpoint_area_uidx;
+alter table public.mp_notification_seen drop constraint if exists mp_notification_seen_pkey;
+alter table public.mp_notification_seen add constraint mp_notification_seen_pkey primary key using index mp_notification_seen_user_area_uidx;
+alter table public.mp_admins drop constraint if exists mp_admins_pkey;
+alter table public.mp_admins add constraint mp_admins_pkey primary key using index mp_admins_email_area_uidx;

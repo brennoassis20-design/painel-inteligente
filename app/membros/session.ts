@@ -25,6 +25,30 @@ export function writeSession(session: Session | null) {
 
 export class AuthError extends Error {}
 
+// Área pelo endereço: membros.bagencymidia.site/<area> (ou /membros/<area> no endereço do painel).
+// Sem nome (raiz, /admin, /gratis) = área principal (Gênio Play).
+const NOT_AREA = new Set(["", "admin", "gratis"]);
+
+export function areaSlug() {
+  if (typeof window === "undefined") return "";
+  const path = window.location.pathname.replace(/^\/membros(?=\/|$)/, "");
+  const first = path.split("/").filter(Boolean)[0] || "";
+  return NOT_AREA.has(first) ? "" : first.toLowerCase();
+}
+
+// Começo do endereço da área atual: "" | "/membros" | "/daniel" | "/membros/daniel".
+export function areaBase() {
+  if (typeof window === "undefined") return "";
+  const prefix = /^\/membros(\/|$)/.test(window.location.pathname) ? "/membros" : "";
+  const slug = areaSlug();
+  return `${prefix}${slug ? `/${slug}` : ""}`;
+}
+
+export function areaHeaders(): Record<string, string> {
+  const slug = areaSlug();
+  return slug ? { "X-Area": slug } : {};
+}
+
 async function renew(session: Session) {
   if (!session.refreshToken) return null;
   const response = await fetch("/api/membros/renovar", {
@@ -46,7 +70,7 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
   const send = (token: string) =>
     fetch(path, {
       method: init.method || (init.body ? "POST" : "GET"),
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...areaHeaders() },
       body: init.body ? JSON.stringify(init.body) : undefined,
     });
 

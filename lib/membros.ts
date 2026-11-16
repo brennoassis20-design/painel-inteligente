@@ -12,6 +12,11 @@ export const MEMBROS_URL = (process.env.MEMBROS_URL || "https://membros.bagencym
 
 export type Settings = {
   id: number;
+  // Endereço da área: membros.bagencymidia.site/<slug>. A área 1 (Gênio Play) também abre na raiz.
+  slug: string;
+  owner_email: string | null;
+  // E-mail dos avisos (Brevo). Áreas de produtores começam desligadas.
+  email_enabled: boolean;
   brand_name: string;
   logo_url: string | null;
   accent: string;
@@ -35,11 +40,13 @@ export type Settings = {
   promo_started_at: string | null;
   vapid_public?: string | null;
   vapid_private?: string | null;
+  created_at: string;
   updated_at: string;
 };
 
 export type Product = {
   id: string;
+  area_id: number;
   slug: string;
   title: string;
   subtitle: string | null;
@@ -139,23 +146,74 @@ function need<T>(value: T | null | undefined, message: string): T {
   return value;
 }
 
-// ---------------------------------------------------------------- leitura
+// ---------------------------------------------------------------- áreas (cada produtor tem a sua)
 
-export async function getSettings() {
-  const rows = await supabaseRest<Settings[]>("/mp_settings?id=eq.1&select=*");
+export type Area = Settings;
+export const MAIN_AREA_ID = 1;
+
+// Primeiro pedaço do caminho que nunca é nome de área.
+// Inclui as rotas que já existem na raiz do site (elas ganhariam do endereço da área).
+export const RESERVED_SLUGS = new Set([
+  "admin", "gratis", "api", "membros", "app", "_next", "login", "entrar", "sair", "static", "public", "www",
+  "brenno", "manual", "metodo-genio", "tools", "w", "icons", "genio-play", "favicon-ico", "gp-sw-js", "robots-txt",
+]);
+
+export function isMainArea(area: Pick<Area, "id">) {
+  return area.id === MAIN_AREA_ID;
+}
+
+// Endereço público da área (a 1 continua na raiz).
+export function areaUrl(area: Pick<Area, "id" | "slug">) {
+  return isMainArea(area) ? MEMBROS_URL : `${MEMBROS_URL}/${area.slug}`;
+}
+
+// Área pelo slug (vazio = área 1). Slug que não existe dá erro: nunca cai na área de outro.
+export async function getArea(slug?: string | null) {
+  const value = String(slug || "").trim().toLowerCase();
+  const filter = value ? `slug=eq.${enc(value)}` : `id=eq.${MAIN_AREA_ID}`;
+  const rows = await supabaseRest<Area[]>(`/mp_settings?${filter}&select=*`);
+  if (!rows[0]) throw new OpError("Área não encontrada.");
   return rows[0];
 }
 
-export async function listProducts(onlyPublished = false) {
+export async function getAreaById(id: number) {
+  const rows = await supabaseRest<Area[]>(`/mp_settings?id=eq.${Number(id)}&select=*`);
+  if (!rows[0]) throw new OpError("Área não encontrada.");
+  return rows[0];
+}
+
+// Compatibilidade: configurações da área 1.
+export async function getSettings() {
+  return getAreaById(MAIN_AREA_ID);
+}
+
+// Dados públicos da área para a tela de entrada (antes do login): nome, logo, cores e pixel.
+export function publicArea(area: Area) {
+  return {
+    slug: area.slug,
+    main: isMainArea(area),
+    brand_name: area.brand_name,
+    logo_url: area.logo_url,
+    accent: area.accent,
+    bg_color: area.bg_color,
+    meta_pixel_id: area.meta_pixel_id,
+    support_url: area.support_url,
+  };
+}
+
+// ---------------------------------------------------------------- leitura
+
+export async function listProducts(area: Pick<Area, "id">, onlyPublished = false) {
   return supabaseRest<Product[]>(
-    `/mp_products?select=*${onlyPublished ? "&published=eq.true" : ""}&order=position.asc,created_at.asc`,
+    `/mp_products?area_id=eq.${area.id}&select=*${onlyPublished ? "&published=eq.true" : ""}&order=position.asc,created_at.asc`,
   );
 }
 
-export async function findProduct(ref: string) {
+// Produto pelo id ou slug, sempre dentro da área (produto de outra área = não encontrado).
+export async function findProduct(area: Pick<Area, "id">, ref: string) {
   const value = need(String(ref || "").trim(), "Informe o produto (id ou slug).");
   const filter = isUuid(value) ? `id=eq.${value}` : `slug=eq.${enc(value)}`;
-  const rows = await supabaseRest<Product[]>(`/mp_products?${filter}&select=*`);
+  const rows = await supabaseRest<Product[]>(`/mp_products?area_id=eq.${area.id}&${filter}&select=*`);
   if (!rows[0]) throw new OpError(`Produto não encontrado: ${value}`);
   return rows[0];
 }
@@ -168,8 +226,16 @@ export async function productTree(productId: string) {
   return modules.map((mod) => ({ ...mod, lessons: lessons.filter((lesson) => lesson.module_id === mod.id) }));
 }
 
-export async function isAdmin(email: string) {
-  const rows = await supabaseRest<{ email: string }[]>(`/mp_admins?email=eq.${enc(cleanEmail(email))}&select=email`);
+// Admin da área (ou da área 1, que administra a plataforma inteira).
+export async function isAdmin(email: string, area: Pick<Area, "id">) {
+  const rows = await supabaseRest<{ area_id: number }[]>(
+    `/mp_admins?email=eq.${enc(cleanEmail(email))}&area_id=in.(${area.id},${MAIN_AREA_ID})&select=area_id`,
+  );
+  return rows.length > 0;
+}
+
+export async function isPlatformAdmin(email: string) {
+  const rows = await supabaseRest<{ area_id: number }[]>(`/mp_admins?email=eq.${enc(cleanEmail(email))}&area_id=eq.${MAIN_AREA_ID}&select=area_id`);
   return rows.length > 0;
 }
 
@@ -245,12 +311,16 @@ function publicProduct(product: Product, settings: Settings | null = null) {
   };
 }
 
-export async function studentHome(user: { id: string; email: string }) {
-  const [settings, products] = await Promise.all([getSettings(), listProducts(true)]);
+export async function studentHome(user: { id: string; email: string }, area: Area) {
+  const settings = area;
+  const products = await listProducts(area, true);
   const access = await accessMap(user.email, products);
-  const lessons = await supabaseRest<{ id: string; product_id: string; module_id: string; title: string; position: number }[]>(
-    `/mp_lessons?published=eq.true&select=id,product_id,module_id,title,position`,
-  );
+  const ids = products.map((product) => product.id);
+  const lessons = ids.length
+    ? await supabaseRest<{ id: string; product_id: string; module_id: string; title: string; position: number }[]>(
+        `/mp_lessons?published=eq.true&product_id=in.(${ids.join(",")})&select=id,product_id,module_id,title,position`,
+      )
+    : [];
   const progress = await supabaseRest<{ lesson_id: string; product_id: string; completed: boolean; updated_at: string }[]>(
     `/mp_progress?user_id=eq.${user.id}&select=lesson_id,product_id,completed,updated_at&order=updated_at.desc`,
   );
@@ -282,6 +352,8 @@ export async function studentHome(user: { id: string; email: string }) {
 
   return {
     settings: {
+      slug: settings.slug,
+      main: isMainArea(settings),
       brand_name: settings.brand_name,
       logo_url: settings.logo_url,
       accent: settings.accent,
@@ -299,15 +371,16 @@ export async function studentHome(user: { id: string; email: string }) {
     hero,
     products: items,
     continueWatching,
-    notices: await studentNotices(user.id).catch(() => ({ items: [], unread: 0 })),
-    live: await nextLive().catch(() => null),
-    isAdmin: await isAdmin(user.email),
+    notices: await studentNotices(user.id, area).catch(() => ({ items: [], unread: 0 })),
+    live: await nextLive(area).catch(() => null),
+    isAdmin: await isAdmin(user.email, area),
   };
 }
 
-export async function studentProduct(user: { id: string; email: string }, slug: string) {
-  const [product, settings] = await Promise.all([findProduct(slug), getSettings()]);
-  const admin = await isAdmin(user.email);
+export async function studentProduct(user: { id: string; email: string }, area: Area, slug: string) {
+  const settings = area;
+  const product = await findProduct(area, slug);
+  const admin = await isAdmin(user.email, area);
   if (!product.published && !admin) throw new OpError("Produto não encontrado.");
   const access = (await accessMap(user.email, [product])).get(product.id) || (admin ? { since: product.created_at, expires_at: null } : undefined);
   const tree = await productTree(product.id);
@@ -347,7 +420,7 @@ export async function studentProduct(user: { id: string; email: string }, slug: 
 
   let upsell = null;
   if (product.upsell_product_id) {
-    const target = await supabaseRest<Product[]>(`/mp_products?id=eq.${product.upsell_product_id}&published=eq.true&select=*`);
+    const target = await supabaseRest<Product[]>(`/mp_products?id=eq.${product.upsell_product_id}&area_id=eq.${area.id}&published=eq.true&select=*`);
     if (target[0]) {
       const owned = (await accessMap(user.email, [target[0]])).has(target[0].id);
       if (!owned) upsell = { ...publicProduct(target[0], settings), text: product.upsell_text };
@@ -369,11 +442,11 @@ export async function saveProgress(user: { id: string }, lessonId: string, compl
   return { ok: true };
 }
 
-export async function logEvent(email: string | null, productId: string | null, kind: string, meta: Record<string, unknown> = {}) {
+export async function logEvent(areaId: number, email: string | null, productId: string | null, kind: string, meta: Record<string, unknown> = {}) {
   await supabaseRest("/mp_events", {
     method: "POST",
     headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ email: email ? cleanEmail(email) : null, product_id: productId, kind, meta }),
+    body: JSON.stringify({ area_id: areaId, email: email ? cleanEmail(email) : null, product_id: productId, kind, meta }),
   }).catch(() => undefined);
 }
 
@@ -384,10 +457,12 @@ const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "ut
 
 export async function checkoutLink(
   user: { email: string; name?: string },
+  area: Area,
   productRef: string,
   extra: { via?: string; utm?: Record<string, unknown> } = {},
 ) {
-  const [product, settings] = await Promise.all([findProduct(productRef), getSettings()]);
+  const settings = area;
+  const product = await findProduct(area, productRef);
   // Em promoção: usa o checkout com desconto (se cadastrado).
   const promo = inPromo(product, settings) && product.promo_checkout_url;
   const url = need(promo ? product.promo_checkout_url : product.checkout_url, "Este produto ainda não tem link de pagamento.");
@@ -402,7 +477,7 @@ export async function checkoutLink(
   }
   for (const [key, value] of Object.entries(tags)) link.searchParams.set(key, value);
   if (product.checkout_provider === "hotmart") link.searchParams.set("sck", `membros_${via}`);
-  await logEvent(user.email, product.id, "checkout_aberto", { provider: product.checkout_provider, promo: Boolean(promo), ...tags });
+  await logEvent(area.id, user.email, product.id, "checkout_aberto", { provider: product.checkout_provider, promo: Boolean(promo), ...tags });
   return { url: link.toString(), provider: product.checkout_provider };
 }
 
@@ -418,16 +493,17 @@ export type SaleEvent = {
   orderId?: string;
 };
 
-export async function applySale(event: SaleEvent) {
+// Venda que chegou pelo link de integração da área: só libera produtos daquela área.
+export async function applySale(event: SaleEvent, area: Area) {
   if (!event.email) throw new OpError("Venda sem e-mail do comprador.");
   const ids = event.externalIds.filter(Boolean).map((id) => `${event.provider}:${id}`);
   if (!ids.length) return { matched: [] as string[] };
 
   const filter = `{${ids.map((id) => `"${id.replaceAll('"', "")}"`).join(",")}}`;
-  const products = await supabaseRest<Product[]>(`/mp_products?external_ids=ov.${enc(filter)}&select=*`);
+  const products = await supabaseRest<Product[]>(`/mp_products?area_id=eq.${area.id}&external_ids=ov.${enc(filter)}&select=*`);
 
   if (event.kind === "pending") {
-    for (const product of products) await logEvent(event.email, product.id, "pagamento_gerado", { provider: event.provider });
+    for (const product of products) await logEvent(area.id, event.email, product.id, "pagamento_gerado", { provider: event.provider });
     return { matched: products.map((product) => product.slug) };
   }
   if (event.kind === "ignored") return { matched: products.map((product) => product.slug) };
@@ -448,14 +524,14 @@ export async function applySale(event: SaleEvent) {
         updated_at: now(),
       }),
     });
-    await logEvent(event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", { provider: event.provider, order: event.orderId });
+    await logEvent(area.id, event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", { provider: event.provider, order: event.orderId });
 
     // Produto do Método Gênio vendido fora da Cakto também libera o Painel Inteligente.
     // Prazo = access_days do produto (padrão 1 ano + 7 dias; 36500+ = vitalício). Nunca encurta um acesso maior.
     // Reembolso de complemento (produto oculto, ex.: Vitalício) não derruba o Painel do Gênio: fica para revisão.
-    if (product.special === "painel" && event.provider !== "cakto") {
+    if (product.special === "painel" && isMainArea(area) && event.provider !== "cakto") {
       if (event.kind !== "approved" && !product.published) {
-        await logEvent(event.email, product.id, "reembolso_complemento_revisar", { provider: event.provider, order: event.orderId });
+        await logEvent(area.id, event.email, product.id, "reembolso_complemento_revisar", { provider: event.provider, order: event.orderId });
         continue;
       }
       const days = product.access_days || 372;
@@ -483,7 +559,7 @@ export async function applySale(event: SaleEvent) {
 
   let account = "unchanged";
   if (event.kind === "approved" && products.length) {
-    account = await inviteBuyer(event.email, event.name, MEMBROS_URL).catch(() => "invite_failed");
+    account = await inviteToArea(area, event.email, event.name).catch(() => "invite_failed");
   }
   return { matched: products.map((product) => product.slug), account };
 }
@@ -494,34 +570,41 @@ function hashKey(key: string) {
   return createHash("sha256").update(key).digest("hex");
 }
 
-export async function createApiKey(name: string) {
+export async function createApiKey(area: Pick<Area, "id">, name: string) {
   const key = `gp_${randomBytes(24).toString("base64url")}`;
   await supabaseRest("/mp_api_keys", {
     method: "POST",
     headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ name: name || "Conector de IA", prefix: key.slice(0, 9), key_hash: hashKey(key) }),
+    body: JSON.stringify({ area_id: area.id, name: name || "Conector de IA", prefix: key.slice(0, 9), key_hash: hashKey(key) }),
   });
   return key;
 }
 
-export async function listApiKeys() {
+export async function listApiKeys(area: Pick<Area, "id">) {
   return supabaseRest<{ id: string; name: string; prefix: string; created_at: string; last_used_at: string | null; revoked_at: string | null }[]>(
-    "/mp_api_keys?select=id,name,prefix,created_at,last_used_at,revoked_at&order=created_at.desc",
+    `/mp_api_keys?area_id=eq.${area.id}&select=id,name,prefix,created_at,last_used_at,revoked_at&order=created_at.desc`,
   );
 }
 
-export async function revokeApiKey(id: string) {
-  await supabaseRest(`/mp_api_keys?id=eq.${enc(id)}`, { method: "PATCH", body: JSON.stringify({ revoked_at: now() }) });
+export async function revokeApiKey(area: Pick<Area, "id">, id: string) {
+  await supabaseRest(`/mp_api_keys?id=eq.${enc(id)}&area_id=eq.${area.id}`, { method: "PATCH", body: JSON.stringify({ revoked_at: now() }) });
   return { ok: true };
 }
 
+// Chave do conector de IA → área dela (null = inválida ou revogada).
 export async function verifyApiKey(key: string) {
-  if (!key || !key.startsWith("gp_")) return false;
-  const rows = await supabaseRest<{ id: string; revoked_at: string | null }[]>(`/mp_api_keys?key_hash=eq.${hashKey(key)}&select=id,revoked_at`);
+  if (!key || !key.startsWith("gp_")) return null;
+  const rows = await supabaseRest<{ id: string; area_id: number; revoked_at: string | null }[]>(`/mp_api_keys?key_hash=eq.${hashKey(key)}&select=id,area_id,revoked_at`);
   const row = rows[0];
-  if (!row || row.revoked_at) return false;
+  if (!row || row.revoked_at) return null;
   await supabaseRest(`/mp_api_keys?id=eq.${row.id}`, { method: "PATCH", body: JSON.stringify({ last_used_at: now() }) }).catch(() => undefined);
-  return true;
+  return getAreaById(row.area_id);
+}
+
+// Convite (criar senha) que leva para a área certa, com o nome dela no e-mail.
+export async function inviteToArea(area: Area, email: string, name?: string, path = "") {
+  const extra = isMainArea(area) && !path ? undefined : { area_nome: area.brand_name, area_url: areaUrl(area) };
+  return inviteBuyer(email, name, `${areaUrl(area)}${path}`, extra);
 }
 
 // ---------------------------------------------------------------- operações (admin + IA)
@@ -531,7 +614,9 @@ type Op = {
   description: string;
   input: Record<string, unknown>;
   required?: string[];
-  run: (args: Args) => Promise<unknown>;
+  // main = só a área 1 (Gênio Play): coisas do Painel Inteligente e a criação de áreas de produtores.
+  main?: boolean;
+  run: (args: Args, area: Area) => Promise<unknown>;
 };
 
 const str = (description: string) => ({ type: "string", description });
@@ -590,6 +675,7 @@ function productBody(args: Args, partial: boolean) {
   set("badge", args.selo);
   set("position", args.posicao);
   set("special", args.especial);
+  if (body.special && body.special !== "painel") throw new OpError("especial só aceita 'painel'.");
   if (args.gratuito !== undefined) body.is_free = Boolean(args.gratuito);
   if (args.em_promocao !== undefined) body.on_promo = Boolean(args.em_promocao);
   if (args.preco_promocional !== undefined) body.promo_price_cents = args.preco_promocional === null || args.preco_promocional === "" ? null : Math.round(Number(args.preco_promocional) * 100);
@@ -603,23 +689,34 @@ async function nextPosition(table: string, filter: string) {
   return (rows[0]?.position ?? -1) + 1;
 }
 
-async function findModule(ref: string, productId?: string) {
+// Módulo e aula só valem se o produto deles for da área (o join !inner filtra pela área do produto).
+async function findModule(area: Pick<Area, "id">, ref: string, productId?: string) {
   const value = need(String(ref || "").trim(), "Informe o módulo.");
+  const inArea = `select=*,mp_products!inner(area_id)&mp_products.area_id=eq.${area.id}`;
+  const clean = (row: Module & { mp_products?: unknown }) => {
+    const { mp_products: _join, ...mod } = row;
+    void _join;
+    return mod as Module;
+  };
   if (isUuid(value)) {
-    const rows = await supabaseRest<Module[]>(`/mp_modules?id=eq.${value}&select=*`);
-    if (rows[0]) return rows[0];
+    const rows = await supabaseRest<Module[]>(`/mp_modules?id=eq.${value}&${inArea}`);
+    if (rows[0]) return clean(rows[0]);
   }
   if (productId) {
-    const rows = await supabaseRest<Module[]>(`/mp_modules?product_id=eq.${productId}&title=ilike.${enc(value)}&select=*`);
-    if (rows[0]) return rows[0];
+    const rows = await supabaseRest<Module[]>(`/mp_modules?product_id=eq.${productId}&title=ilike.${enc(value)}&${inArea}`);
+    if (rows[0]) return clean(rows[0]);
   }
   throw new OpError(`Módulo não encontrado: ${value}`);
 }
 
-async function findLesson(id: string) {
-  const rows = await supabaseRest<Lesson[]>(`/mp_lessons?id=eq.${enc(need(String(id || ""), "Informe a aula."))}&select=*`);
+async function findLesson(area: Pick<Area, "id">, id: string) {
+  const rows = await supabaseRest<(Lesson & { mp_products?: unknown })[]>(
+    `/mp_lessons?id=eq.${enc(need(String(id || ""), "Informe a aula."))}&select=*,mp_products!inner(area_id)&mp_products.area_id=eq.${area.id}`,
+  );
   if (!rows[0]) throw new OpError("Aula não encontrada.");
-  return rows[0];
+  const { mp_products: _join, ...lesson } = rows[0];
+  void _join;
+  return lesson as Lesson;
 }
 
 function lessonBody(args: Args) {
@@ -662,19 +759,23 @@ export const OPS: Record<string, Op> = {
   resumo_area: {
     description: "Resumo da área de membros: aparência, produtos, número de aulas e alunos, e o funil dos últimos 30 dias.",
     input: {},
-    run: async () => {
-      const [settings, products, lessons, access, events] = await Promise.all([
-        getSettings(),
-        listProducts(),
-        supabaseRest<{ product_id: string }[]>("/mp_lessons?select=product_id"),
-        supabaseRest<{ email: string; product_id: string; status: string }[]>("/mp_access?select=email,product_id,status"),
-        supabaseRest<{ kind: string; product_id: string | null }[]>(`/mp_events?created_at=gte.${new Date(Date.now() - 30 * DAY_MS).toISOString()}&select=kind,product_id`),
+    run: async (_args, area) => {
+      const settings = area;
+      const products = await listProducts(area);
+      const ids = products.map((product) => product.id).join(",") || "00000000-0000-0000-0000-000000000000";
+      const [lessons, access, events] = await Promise.all([
+        supabaseRest<{ product_id: string }[]>(`/mp_lessons?product_id=in.(${ids})&select=product_id`),
+        supabaseRest<{ email: string; product_id: string; status: string }[]>(`/mp_access?product_id=in.(${ids})&select=email,product_id,status`),
+        supabaseRest<{ kind: string; product_id: string | null }[]>(
+          `/mp_events?area_id=eq.${area.id}&created_at=gte.${new Date(Date.now() - 30 * DAY_MS).toISOString()}&select=kind,product_id`,
+        ),
       ]);
       const { webhook_secret: _secret, hotmart_hottok: _hottok, vapid_private: _vapid, ...visible } = settings;
       void _secret;
       void _hottok;
       void _vapid;
       return {
+        area: { endereco: areaUrl(area), slug: area.slug },
         aparencia: visible,
         alunos_unicos: new Set(access.filter((row) => row.status === "active").map((row) => row.email)).size,
         produtos: products.map((product) => ({
@@ -713,12 +814,12 @@ export const OPS: Record<string, Op> = {
       capa_inicio: str("Capa da tela inicial no computador: 1920×1080 px (16:9). URL pública. Vazio = usa o banner do produto em destaque."),
       capa_inicio_celular: str("Capa da tela inicial no celular: 1080×1350 px (4:5). URL pública. Vazio = usa a do computador."),
     },
-    run: async (args) => {
+    run: async (args, area) => {
       const body: Record<string, unknown> = { updated_at: now() };
       if (args.nome !== undefined) body.brand_name = args.nome;
       if (args.logo_url !== undefined) body.logo_url = args.logo_url || null;
       if (args.cor !== undefined) body.accent = args.cor;
-      if (args.produto_destaque !== undefined) body.hero_product_id = args.produto_destaque ? (await findProduct(String(args.produto_destaque))).id : null;
+      if (args.produto_destaque !== undefined) body.hero_product_id = args.produto_destaque ? (await findProduct(area, String(args.produto_destaque))).id : null;
       if (args.titulo_banner !== undefined) body.hero_title = args.titulo_banner || null;
       if (args.texto_banner !== undefined) body.hero_text = args.texto_banner || null;
       if (args.suporte_url !== undefined) body.support_url = args.suporte_url || null;
@@ -727,7 +828,7 @@ export const OPS: Record<string, Op> = {
       if (args.cor !== undefined && !/^#[0-9a-f]{6}$/i.test(String(args.cor))) throw new OpError("Cor dos botões inválida (use #RRGGBB).");
       if (args.capa_inicio !== undefined) body.hero_image_url = args.capa_inicio || null;
       if (args.capa_inicio_celular !== undefined) body.hero_image_mobile_url = args.capa_inicio_celular || null;
-      await supabaseRest("/mp_settings?id=eq.1", { method: "PATCH", body: JSON.stringify(body) });
+      await supabaseRest(`/mp_settings?id=eq.${area.id}`, { method: "PATCH", body: JSON.stringify(body) });
       return { ok: true };
     },
   },
@@ -735,15 +836,15 @@ export const OPS: Record<string, Op> = {
   listar_produtos: {
     description: "Lista todos os produtos (publicados e rascunhos) com preço, checkout e ids externos.",
     input: {},
-    run: async () => listProducts(),
+    run: async (_args, area) => listProducts(area),
   },
 
   ver_produto: {
     description: "Mostra um produto com seus módulos e aulas.",
     input: { produto: str("Id ou slug do produto.") },
     required: ["produto"],
-    run: async (args) => {
-      const product = await findProduct(String(args.produto));
+    run: async (args, area) => {
+      const product = await findProduct(area, String(args.produto));
       return { produto: product, modulos: await productTree(product.id) };
     },
   },
@@ -752,10 +853,12 @@ export const OPS: Record<string, Op> = {
     description: "Cria um produto na vitrine. Nasce como rascunho (publicado=false) a não ser que publicado=true. Ao publicar, todos os alunos recebem aviso (sino + celular).",
     input: { ...PRODUCT_FIELDS, avisar: bool("false = publica sem mandar aviso aos alunos (padrão: avisa).") },
     required: ["titulo"],
-    run: async (args) => {
+    run: async (args, area) => {
       need(args.titulo, "Informe o título.");
       const body = productBody(args, false);
-      if (body.position === undefined) body.position = await nextPosition("mp_products", "");
+      if (body.special && !isMainArea(area)) throw new OpError("Opção 'especial' não existe nesta área.");
+      body.area_id = area.id;
+      if (body.position === undefined) body.position = await nextPosition("mp_products", `area_id=eq.${area.id}&`);
       const rows = await supabaseRest<Product[]>("/mp_products", {
         method: "POST",
         headers: { Prefer: "return=representation" },
@@ -771,17 +874,19 @@ export const OPS: Record<string, Op> = {
     description: "Altera campos de um produto (só os campos enviados mudam). Se um rascunho for publicado, todos os alunos recebem aviso (uma vez por produto).",
     input: { produto: str("Id ou slug do produto."), ...PRODUCT_FIELDS, avisar: bool("false = publica sem mandar aviso aos alunos (padrão: avisa).") },
     required: ["produto"],
-    run: async (args) => {
-      const product = await findProduct(String(args.produto));
-      const rows = await supabaseRest<Product[]>(`/mp_products?id=eq.${product.id}`, {
+    run: async (args, area) => {
+      const product = await findProduct(area, String(args.produto));
+      const changes = productBody(args, true);
+      if (changes.special && !isMainArea(area)) throw new OpError("Opção 'especial' não existe nesta área.");
+      const rows = await supabaseRest<Product[]>(`/mp_products?id=eq.${product.id}&area_id=eq.${area.id}`, {
         method: "PATCH",
         headers: { Prefer: "return=representation" },
-        body: JSON.stringify(productBody(args, true)),
+        body: JSON.stringify(changes),
       });
       // Rascunho virou publicado: avisa todos os alunos uma única vez por produto.
       if (!product.published && rows[0]?.published && args.avisar !== false) await noticeNewProduct(rows[0]);
       // Entrou na promoção com a promoção no ar: avisa (uma vez por produto em cada promoção).
-      if (!product.on_promo && rows[0]?.on_promo && args.avisar !== false) await noticePromoProduct(rows[0]);
+      if (!product.on_promo && rows[0]?.on_promo && args.avisar !== false) await noticePromoProduct(rows[0], area);
       return rows[0];
     },
   },
@@ -790,10 +895,10 @@ export const OPS: Record<string, Op> = {
     description: "Apaga um produto com todos os módulos, aulas e acessos. Não tem volta.",
     input: { produto: str("Id ou slug."), confirmar },
     required: ["produto", "confirmar"],
-    run: async (args) => {
+    run: async (args, area) => {
       if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
-      const product = await findProduct(String(args.produto));
-      await supabaseRest(`/mp_products?id=eq.${product.id}`, { method: "DELETE" });
+      const product = await findProduct(area, String(args.produto));
+      await supabaseRest(`/mp_products?id=eq.${product.id}&area_id=eq.${area.id}`, { method: "DELETE" });
       return { ok: true, removido: product.slug };
     },
   },
@@ -806,9 +911,9 @@ export const OPS: Record<string, Op> = {
       texto: str("Chamada da oferta, ex.: Quem fez este também levou..."),
     },
     required: ["produto"],
-    run: async (args) => {
-      const product = await findProduct(String(args.produto));
-      const target = args.oferecer ? await findProduct(String(args.oferecer)) : null;
+    run: async (args, area) => {
+      const product = await findProduct(area, String(args.produto));
+      const target = args.oferecer ? await findProduct(area, String(args.oferecer)) : null;
       if (target && target.id === product.id) throw new OpError("O produto não pode oferecer a si mesmo.");
       await supabaseRest(`/mp_products?id=eq.${product.id}`, {
         method: "PATCH",
@@ -828,8 +933,8 @@ export const OPS: Record<string, Op> = {
       posicao: num("Ordem (opcional; vai para o fim)."),
     },
     required: ["produto", "titulo"],
-    run: async (args) => {
-      const product = await findProduct(String(args.produto));
+    run: async (args, area) => {
+      const product = await findProduct(area, String(args.produto));
       const rows = await supabaseRest<Module[]>("/mp_modules", {
         method: "POST",
         headers: { Prefer: "return=representation" },
@@ -855,8 +960,8 @@ export const OPS: Record<string, Op> = {
       posicao: num("Ordem."),
     },
     required: ["modulo"],
-    run: async (args) => {
-      const mod = await findModule(String(args.modulo));
+    run: async (args, area) => {
+      const mod = await findModule(area, String(args.modulo));
       const body: Record<string, unknown> = {};
       if (args.titulo !== undefined) body.title = args.titulo;
       if (args.capa_url !== undefined) body.cover_url = args.capa_url || null;
@@ -875,9 +980,9 @@ export const OPS: Record<string, Op> = {
     description: "Apaga um módulo e todas as aulas dele. Não tem volta.",
     input: { modulo: str("Id do módulo."), confirmar },
     required: ["modulo", "confirmar"],
-    run: async (args) => {
+    run: async (args, area) => {
       if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
-      const mod = await findModule(String(args.modulo));
+      const mod = await findModule(area, String(args.modulo));
       await supabaseRest(`/mp_modules?id=eq.${mod.id}`, { method: "DELETE" });
       return { ok: true };
     },
@@ -892,16 +997,16 @@ export const OPS: Record<string, Op> = {
       avisar: bool("false = não avisa os alunos quando for a 1ª aula de um módulo novo (padrão: avisa)."),
     },
     required: ["modulo", "titulo"],
-    run: async (args) => {
+    run: async (args, area) => {
       // Sem produto: o módulo precisa ser um id, e o produto vem dele.
       const product = args.produto
-        ? await findProduct(String(args.produto))
-        : await findProduct((await findModule(String(args.modulo))).product_id);
+        ? await findProduct(area, String(args.produto))
+        : await findProduct(area, (await findModule(area, String(args.modulo))).product_id);
       let mod: Module;
       try {
-        mod = await findModule(String(args.modulo), product.id);
+        mod = await findModule(area, String(args.modulo), product.id);
       } catch {
-        mod = (await OPS.criar_modulo.run({ produto: product.id, titulo: args.modulo })) as Module;
+        mod = (await OPS.criar_modulo.run({ produto: product.id, titulo: args.modulo }, area)) as Module;
       }
       const body = lessonBody(args);
       body.product_id = product.id;
@@ -925,11 +1030,11 @@ export const OPS: Record<string, Op> = {
     description: "Altera uma aula (só os campos enviados mudam). Para mudar de módulo, envie modulo.",
     input: { aula: str("Id da aula."), modulo: str("Id do novo módulo (opcional)."), ...LESSON_FIELDS, avisar: bool("false = não avisa se publicar a 1ª aula de um módulo (padrão: avisa).") },
     required: ["aula"],
-    run: async (args) => {
-      const lesson = await findLesson(String(args.aula));
+    run: async (args, area) => {
+      const lesson = await findLesson(area, String(args.aula));
       const body = lessonBody(args);
       if (args.modulo) {
-        const mod = await findModule(String(args.modulo), lesson.product_id);
+        const mod = await findModule(area, String(args.modulo), lesson.product_id);
         body.module_id = mod.id;
         body.product_id = mod.product_id;
       }
@@ -941,7 +1046,7 @@ export const OPS: Record<string, Op> = {
       // Aula que estava escondida e foi publicada: se for a 1ª do módulo, avisa como módulo novo.
       if (!lesson.published && rows[0]?.published && args.avisar !== false) {
         const live = await supabaseRest<{ id: string }[]>(`/mp_lessons?module_id=eq.${rows[0].module_id}&published=eq.true&select=id`).catch(() => []);
-        if (live.length === 1) await noticeNewModule(await findProduct(rows[0].product_id), await findModule(rows[0].module_id));
+        if (live.length === 1) await noticeNewModule(await findProduct(area, rows[0].product_id), await findModule(area, rows[0].module_id));
       }
       return rows[0];
     },
@@ -951,9 +1056,9 @@ export const OPS: Record<string, Op> = {
     description: "Apaga uma aula. Não tem volta.",
     input: { aula: str("Id da aula."), confirmar },
     required: ["aula", "confirmar"],
-    run: async (args) => {
+    run: async (args, area) => {
       if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
-      const lesson = await findLesson(String(args.aula));
+      const lesson = await findLesson(area, String(args.aula));
       await supabaseRest(`/mp_lessons?id=eq.${lesson.id}`, { method: "DELETE" });
       return { ok: true };
     },
@@ -966,10 +1071,17 @@ export const OPS: Record<string, Op> = {
       ids: { type: "array", items: { type: "string" }, description: "Ids na nova ordem." },
     },
     required: ["tipo", "ids"],
-    run: async (args) => {
+    run: async (args, area) => {
       const table = { produtos: "mp_products", modulos: "mp_modules", aulas: "mp_lessons" }[String(args.tipo)];
       if (!table) throw new OpError("tipo deve ser produtos, modulos ou aulas.");
       const ids = Array.isArray(args.ids) ? args.ids.map(String) : [];
+      // Confere que todos os ids são desta área antes de mexer em qualquer um.
+      for (const id of ids) {
+        if (!isUuid(id)) throw new OpError(`Id inválido: ${id}`);
+        if (table === "mp_products") await findProduct(area, id);
+        else if (table === "mp_modules") await findModule(area, id);
+        else await findLesson(area, id);
+      }
       for (const [index, id] of ids.entries()) {
         await supabaseRest(`/${table}?id=eq.${enc(id)}`, { method: "PATCH", body: JSON.stringify({ position: index }) });
       }
@@ -980,12 +1092,12 @@ export const OPS: Record<string, Op> = {
   listar_alunos: {
     description: "Lista acessos (aluno × produto). Filtre por produto ou e-mail.",
     input: { produto: str("Id ou slug (opcional)."), email: str("E-mail (opcional)."), limite: num("Máximo de linhas (padrão 100).") },
-    run: async (args) => {
-      let filter = "";
-      if (args.produto) filter += `&product_id=eq.${(await findProduct(String(args.produto))).id}`;
+    run: async (args, area) => {
+      let filter = `&mp_products.area_id=eq.${area.id}`;
+      if (args.produto) filter += `&product_id=eq.${(await findProduct(area, String(args.produto))).id}`;
       if (args.email) filter += `&email=eq.${enc(cleanEmail(args.email))}`;
       const limit = Math.min(Number(args.limite || 100), 1000);
-      return supabaseRest(`/mp_access?select=email,status,expires_at,provider,created_at,mp_products(slug,title)${filter}&order=created_at.desc&limit=${limit}`);
+      return supabaseRest(`/mp_access?select=email,status,expires_at,provider,created_at,mp_products!inner(slug,title,area_id)${filter}&order=created_at.desc&limit=${limit}`);
     },
   },
 
@@ -993,9 +1105,9 @@ export const OPS: Record<string, Op> = {
     description: "Libera um produto para um e-mail (cortesia, troca, suporte). Envia convite se a pessoa ainda não tem conta.",
     input: { email: str("E-mail do aluno."), produto: str("Id ou slug."), dias: num("Dias de acesso (vazio = segue o produto)."), confirmar },
     required: ["email", "produto", "confirmar"],
-    run: async (args) => {
+    run: async (args, area) => {
       if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
-      const product = await findProduct(String(args.produto));
+      const product = await findProduct(area, String(args.produto));
       const email = need(cleanEmail(args.email), "Informe o e-mail.");
       const days = args.dias ? Number(args.dias) : product.access_days;
       await supabaseRest("/mp_access?on_conflict=email,product_id", {
@@ -1003,7 +1115,7 @@ export const OPS: Record<string, Op> = {
         headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
         body: JSON.stringify({ email, product_id: product.id, status: "active", expires_at: days ? new Date(Date.now() + days * DAY_MS).toISOString() : null, provider: "manual", updated_at: now() }),
       });
-      const account = await inviteBuyer(email, undefined, MEMBROS_URL).catch(() => "invite_failed");
+      const account = await inviteToArea(area, email).catch(() => "invite_failed");
       return { ok: true, email, produto: product.slug, conta: account };
     },
   },
@@ -1012,9 +1124,9 @@ export const OPS: Record<string, Op> = {
     description: "Tira o acesso de um e-mail a um produto.",
     input: { email: str("E-mail do aluno."), produto: str("Id ou slug."), confirmar },
     required: ["email", "produto", "confirmar"],
-    run: async (args) => {
+    run: async (args, area) => {
       if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
-      const product = await findProduct(String(args.produto));
+      const product = await findProduct(area, String(args.produto));
       await supabaseRest(`/mp_access?email=eq.${enc(cleanEmail(args.email))}&product_id=eq.${product.id}`, {
         method: "PATCH",
         body: JSON.stringify({ status: "blocked", updated_at: now() }),
@@ -1024,14 +1136,15 @@ export const OPS: Record<string, Op> = {
   },
 };
 
-async function noticePromoProduct(product: Product) {
-  const settings = await getSettings();
+async function noticePromoProduct(product: Product, area: Area) {
+  const settings = await getAreaById(area.id);
   if (!settings.promo_notify || !inPromo(product, settings) || !product.published) return null;
   const since = settings.promo_started_at || new Date(0).toISOString();
   const exists = await supabaseRest<{ id: string }[]>(`/mp_notifications?product_id=eq.${product.id}&kind=eq.promo&created_at=gte.${enc(since)}&select=id`);
   if (exists.length) return null;
   const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   return createNotice({
+    areaId: area.id,
     title: `${settings.promo_title}: ${product.title}`,
     body: `De ${brl(product.price_cents || 0)} por ${brl(product.promo_price_cents || 0)}. Toque para aproveitar.`,
     productId: product.id,
@@ -1051,8 +1164,8 @@ OPS.configurar_promocao = {
     card_no_canto: bool("true = mostra o card pequeno da promoção no canto da tela."),
     avisos: bool("true = manda aviso no sino e no celular ao ligar e quando um produto entra na promoção."),
   },
-  run: async (args) => {
-    const current = await getSettings();
+  run: async (args, area) => {
+    const current = area;
     const body: Record<string, unknown> = { updated_at: now() };
     if (args.titulo !== undefined) body.promo_title = String(args.titulo || "Promoção").slice(0, 40);
     if (args.texto !== undefined) body.promo_text = args.texto ? String(args.texto).slice(0, 120) : null;
@@ -1067,13 +1180,14 @@ OPS.configurar_promocao = {
     const turningOn = args.ligada === true && !current.promo_enabled;
     if (args.ligada !== undefined) body.promo_enabled = Boolean(args.ligada);
     if (turningOn) body.promo_started_at = now();
-    await supabaseRest("/mp_settings?id=eq.1", { method: "PATCH", body: JSON.stringify(body) });
-    const settings = await getSettings();
+    await supabaseRest(`/mp_settings?id=eq.${area.id}`, { method: "PATCH", body: JSON.stringify(body) });
+    const settings = await getAreaById(area.id);
     let aviso = null;
     if (turningOn && settings.promo_notify && promoActive(settings)) {
-      const products = (await listProducts(true)).filter((product) => inPromo(product, settings));
+      const products = (await listProducts(area, true)).filter((product) => inPromo(product, settings));
       const best = Math.max(0, ...products.map((product) => Math.round((1 - (product.promo_price_cents || 0) / (product.price_cents || 1)) * 100)));
       aviso = await createNotice({
+        areaId: area.id,
         title: `${settings.promo_title} no ar${best ? `: até ${best}% off` : ""}`,
         body: settings.promo_text || `${products.length} produto(s) com desconto. Toque para ver.`,
         kind: "promo_geral",
@@ -1098,7 +1212,7 @@ OPS.enviar_notificacao = {
     confirmar,
   },
   required: ["titulo", "confirmar"],
-  run: async (args) => {
+  run: async (args, area) => {
     if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
     const live = args.ao_vivo === true;
     let startsAt: string | null = null;
@@ -1110,8 +1224,9 @@ OPS.enviar_notificacao = {
     if (live && !startsAt) throw new OpError("Informe quando a live começa.");
     const url = cleanUrl(args.link);
     if (live && !url) throw new OpError("Informe o link da live.");
-    const product = args.produto && !url ? await findProduct(String(args.produto)) : null;
+    const product = args.produto && !url ? await findProduct(area, String(args.produto)) : null;
     return createNotice({
+      areaId: area.id,
       title: String(need(args.titulo, "Informe o título.")),
       body: args.texto ? String(args.texto) : null,
       productId: product?.id,
@@ -1128,20 +1243,20 @@ OPS.enviar_notificacao = {
 OPS.listar_notificacoes = {
   description: "Lista os últimos avisos enviados e quantos celulares receberam cada um.",
   input: {},
-  run: async () => supabaseRest("/mp_notifications?select=id,title,body,kind,url,starts_at,push_sent,email_sent,created_at,mp_products(slug,title)&order=created_at.desc&limit=50"),
+  run: async (_args, area) => supabaseRest(`/mp_notifications?area_id=eq.${area.id}&select=id,title,body,kind,url,starts_at,push_sent,email_sent,created_at,mp_products(slug,title)&order=created_at.desc&limit=50`),
 };
 
 OPS.listar_cadastros_gratis = {
   description: "Lista quem se cadastrou grátis (nome, e-mail, WhatsApp, UTM de origem), mais recentes primeiro.",
   input: { limite: num("Máximo de linhas (padrão 200).") },
-  run: async (args) => {
+  run: async (args, area) => {
     const [leads, subs, emails] = await Promise.all([
-      listLeads(Number(args.limite || 200)),
-      supabaseRest<{ email: string }[]>("/mp_push_subs?select=email"),
-      studentEmails().catch(() => []),
+      listLeads(area, Number(args.limite || 200)),
+      supabaseRest<{ email: string }[]>(`/mp_push_subs?area_id=eq.${area.id}&select=email`),
+      studentEmails(area).catch(() => []),
     ]);
     const withPush = new Set(subs.map((row) => row.email));
-    return { total: leads.length, celulares_com_aviso: subs.length, alunos_com_email: emails.length, cadastros: leads.map((lead) => ({ ...lead, aviso_no_celular: withPush.has(lead.email) })) };
+    return { total: leads.length, celulares_com_aviso: subs.length, alunos_com_email: emails.length, email_ligado: area.email_enabled, cadastros: leads.map((lead) => ({ ...lead, aviso_no_celular: withPush.has(lead.email) })) };
   },
 };
 
@@ -1149,22 +1264,127 @@ OPS.convidar_compradores = {
   description: "Manda o e-mail de convite (criar senha) para todo comprador com acesso ativo que ainda não tem conta. Quem já tem conta não recebe nada. Até 80 por vez (limite de e-mails por hora).",
   input: { confirmar },
   required: ["confirmar"],
-  run: async (args) => {
+  run: async (args, area) => {
     if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
-    return inviteBuyersWithoutAccount(80);
+    return inviteBuyersWithoutAccount(area, 80);
   },
 };
 
-export function opsAsTools() {
-  return Object.entries(OPS).map(([name, op]) => ({
+// ---------------------------------------------------------------- áreas de produtores (só a área 1)
+
+OPS.listar_areas = {
+  description: "Lista as áreas de membros de produtores (nome, endereço, dono, produtos e alunos).",
+  input: {},
+  main: true,
+  run: async () => {
+    const areas = await supabaseRest<Area[]>("/mp_settings?select=*&order=id.asc");
+    const products = await supabaseRest<{ id: string; area_id: number }[]>("/mp_products?select=id,area_id");
+    const access = await supabaseRest<{ email: string; mp_products: { area_id: number } }[]>("/mp_access?status=eq.active&select=email,mp_products!inner(area_id)");
+    return areas.map((area) => ({
+      id: area.id,
+      nome: area.brand_name,
+      slug: area.slug,
+      endereco: areaUrl(area),
+      dono: area.owner_email,
+      email_avisos_ligado: area.email_enabled,
+      produtos: products.filter((row) => row.area_id === area.id).length,
+      alunos: new Set(access.filter((row) => row.mp_products.area_id === area.id).map((row) => row.email)).size,
+      criada_em: area.created_at,
+    }));
+  },
+};
+
+OPS.criar_area = {
+  description:
+    "Cria a área de membros de um produtor (por convite). O endereço fica membros.bagencymidia.site/<slug> (slug sai do nome). O dono vira administrador da área e recebe por e-mail o convite para criar a senha (quem já tem conta só entra). E-mail de avisos começa desligado.",
+  input: {
+    nome: str("Nome da área (ex.: Academia do Daniel)."),
+    slug: str("Endereço curto (opcional; sai do nome)."),
+    email_dono: str("E-mail do produtor dono da área."),
+    cor: str("Cor dos botões em hexadecimal (opcional)."),
+    confirmar,
+  },
+  required: ["nome", "email_dono", "confirmar"],
+  main: true,
+  run: async (args) => {
+    if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
+    const name = String(need(args.nome, "Informe o nome da área.")).trim().slice(0, 60);
+    const slug = slugify(String(args.slug || name)).slice(0, 40);
+    const owner = need(cleanEmail(args.email_dono), "Informe o e-mail do produtor.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(owner)) throw new OpError("E-mail do produtor inválido.");
+    if (slug.length < 3) throw new OpError("O endereço precisa ter pelo menos 3 letras.");
+    if (RESERVED_SLUGS.has(slug)) throw new OpError(`O endereço "${slug}" é reservado. Escolha outro.`);
+    const taken = await supabaseRest<{ id: number }[]>(`/mp_settings?slug=eq.${enc(slug)}&select=id`);
+    if (taken.length) throw new OpError(`Já existe uma área com o endereço "${slug}".`);
+    const color = /^#[0-9a-f]{6}$/i.test(String(args.cor || "")) ? String(args.cor) : "#F2B441";
+    const rows = await supabaseRest<Area[]>("/mp_settings", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ slug, brand_name: name, owner_email: owner, accent: color, email_enabled: false, promo_enabled: false }),
+    });
+    const area = rows[0];
+    await supabaseRest("/mp_admins?on_conflict=email,area_id", {
+      method: "POST",
+      headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
+      body: JSON.stringify({ email: owner, area_id: area.id }),
+    });
+    const conta = await inviteToArea(area, owner, undefined, "/admin").catch(() => "invite_failed");
+    return {
+      ok: true,
+      area: { id: area.id, nome: area.brand_name, slug: area.slug },
+      endereco_alunos: areaUrl(area),
+      endereco_admin: `${areaUrl(area)}/admin`,
+      convite: conta === "invited" ? "enviado (criar senha)" : conta === "existing" ? "já tem conta: é só entrar com o e-mail e a senha" : "falhou",
+    };
+  },
+};
+
+OPS.adicionar_admin_area = {
+  description: "Dá acesso de administrador de uma área a mais um e-mail (sócio, editor).",
+  input: { area: str("Slug da área."), email: str("E-mail."), confirmar },
+  required: ["area", "email", "confirmar"],
+  main: true,
+  run: async (args) => {
+    if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
+    const area = await getArea(String(args.area || ""));
+    const email = need(cleanEmail(args.email), "Informe o e-mail.");
+    await supabaseRest("/mp_admins?on_conflict=email,area_id", {
+      method: "POST",
+      headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
+      body: JSON.stringify({ email, area_id: area.id }),
+    });
+    const conta = await inviteToArea(area, email, undefined, "/admin").catch(() => "invite_failed");
+    return { ok: true, area: area.slug, email, conta };
+  },
+};
+
+OPS.ligar_email_area = {
+  description: "Liga ou desliga o envio de avisos por e-mail (Brevo) de uma área. Ligar só quando o plano pago do Brevo estiver ativo.",
+  input: { area: str("Slug da área."), ligado: bool("true = liga."), confirmar },
+  required: ["area", "ligado", "confirmar"],
+  main: true,
+  run: async (args) => {
+    if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
+    const area = await getArea(String(args.area || ""));
+    await supabaseRest(`/mp_settings?id=eq.${area.id}`, { method: "PATCH", body: JSON.stringify({ email_enabled: args.ligado === true }) });
+    return { ok: true, area: area.slug, email_ligado: args.ligado === true };
+  },
+};
+
+function opsFor(area: Pick<Area, "id">) {
+  return Object.entries(OPS).filter(([, op]) => !op.main || isMainArea(area));
+}
+
+export function opsAsTools(area: Pick<Area, "id">) {
+  return opsFor(area).map(([name, op]) => ({
     name,
     description: op.description,
     inputSchema: { type: "object", properties: op.input, ...(op.required?.length ? { required: op.required } : {}) },
   }));
 }
 
-export async function runOp(name: string, args: Args) {
+export async function runOp(name: string, args: Args, area: Area) {
   const op = OPS[name];
-  if (!op) throw new OpError(`Operação desconhecida: ${name}`);
-  return op.run(args || {});
+  if (!op || (op.main && !isMainArea(area))) throw new OpError(`Operação desconhecida: ${name}`);
+  return op.run(args || {}, area);
 }

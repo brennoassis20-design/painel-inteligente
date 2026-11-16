@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isInstalled, platform, refreshPush, registerWorker } from "./app";
 import { Bell, InstallGuide, LiveBar, PushInvite, type NoticeItem } from "./Extras";
-import { captureUtm, readUtm, track } from "./pixel";
+import { captureUtm, loadPixel, readUtm, track } from "./pixel";
 import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Promo";
 import Login from "./Login";
-import { api, AuthError, brl, readSession, writeSession } from "./session";
+import { api, areaBase, areaHeaders, areaSlug, AuthError, brl, readSession, writeSession } from "./session";
 
 type Item = {
   id: string;
@@ -125,8 +125,13 @@ function Row({ title, hint, children }: { title: string; hint: string; children:
   );
 }
 
+type PublicArea = { slug: string; main: boolean; brand_name: string; logo_url: string | null; accent: string; bg_color: string | null; meta_pixel_id: string | null };
+
 export default function MembrosPage() {
   const [ready, setReady] = useState(false);
+  // Nome, logo, cores e pixel da área do endereço (antes mesmo do login).
+  const [area, setArea] = useState<PublicArea | null>(null);
+  const [areaMissing, setAreaMissing] = useState(false);
   const [logged, setLogged] = useState(false);
   const [link, setLink] = useState<{ token: string; refresh?: string } | null>(null);
   const [home, setHome] = useState<Home | null>(null);
@@ -171,6 +176,22 @@ export default function MembrosPage() {
     setShowInstallLink(platform() !== "desktop" && !isInstalled());
     void registerWorker();
     captureUtm();
+    const slug = areaSlug();
+    // App instalado de cada área abre na área certa.
+    if (slug) document.querySelector('link[rel="manifest"]')?.setAttribute("href", `/api/membros/manifest?area=${encodeURIComponent(slug)}`);
+    void fetch("/api/membros/area", { headers: areaHeaders() })
+      .then(async (response) => {
+        if (response.status === 404) {
+          setAreaMissing(true);
+          return;
+        }
+        if (!response.ok) return;
+        const info = (await response.json()) as PublicArea;
+        setArea(info);
+        loadPixel(info.meta_pixel_id);
+        if (!info.main) document.title = info.brand_name;
+      })
+      .catch(() => undefined);
     const readRoute = () => {
       const params = new URLSearchParams(window.location.search);
       setSlug(params.get("p"));
@@ -191,7 +212,7 @@ export default function MembrosPage() {
   // Celular que já ligou os avisos: mantém a inscrição em dia.
   useEffect(() => {
     if (!logged) return;
-    void fetch("/api/membros/avisos", { headers: { Authorization: `Bearer ${readSession()?.accessToken || ""}` } })
+    void fetch("/api/membros/avisos", { headers: { Authorization: `Bearer ${readSession()?.accessToken || ""}`, ...areaHeaders() } })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => data?.vapid && refreshPush(data.vapid))
       .catch(() => undefined);
@@ -228,11 +249,30 @@ export default function MembrosPage() {
 
   if (!ready) return <div className="gp" />;
 
-  if (!logged || link) {
+  if (areaMissing) {
     return (
       <div className="gp">
+        <div className="gp-wrap gp-center">
+          <p className="gp-muted">Esta área não existe. Confira o endereço que você recebeu.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const loginTheme = area
+    ? ({
+        "--gp-accent": area.accent || "#f2b441",
+        "--gp-on-accent": onAccent(area.accent || "#f2b441"),
+        ...(area.bg_color ? { "--gp-bg": area.bg_color } : {}),
+      } as React.CSSProperties)
+    : undefined;
+
+  if (!logged || link) {
+    return (
+      <div className="gp" style={loginTheme}>
         <Login
-          brand={home?.settings.brand_name || "Gênio Play"}
+          brand={home?.settings.brand_name || area?.brand_name || (areaSlug() ? "" : "Gênio Play")}
+          logo={area?.logo_url || null}
           linkToken={link?.token}
           linkRefresh={link?.refresh}
           startSignup={signupStart}
@@ -314,7 +354,7 @@ export default function MembrosPage() {
               Suporte
             </a>
           )}
-          {home.isAdmin && <a href={`${window.location.pathname.startsWith("/membros") ? "/membros" : ""}/admin`}>Configurar</a>}
+          {home.isAdmin && <a href={`${areaBase()}/admin`}>Configurar</a>}
           <Bell
             items={notices.items}
             unread={notices.unread}

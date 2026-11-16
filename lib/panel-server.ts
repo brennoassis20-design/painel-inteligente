@@ -272,10 +272,11 @@ export async function supabaseAdminAuthRequest(path: string, init: RequestInit =
   });
 }
 
-export async function inviteBuyer(email: string, name: string | undefined, redirectTo: string) {
+// extra vai para os dados do usuário e o modelo do e-mail lê (ex.: area_nome / area_url das áreas de produtores).
+export async function inviteBuyer(email: string, name: string | undefined, redirectTo: string, extra?: Record<string, string>) {
   const response = await supabaseAdminAuthRequest(`/invite?redirect_to=${encodeURIComponent(redirectTo)}`, {
     method: "POST",
-    body: JSON.stringify({ email, data: name ? { name } : {} }),
+    body: JSON.stringify({ email, data: { ...(name ? { name } : {}), ...(extra || {}) } }),
   });
 
   if (response.ok) return "invited";

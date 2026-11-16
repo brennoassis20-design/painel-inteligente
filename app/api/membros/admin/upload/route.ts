@@ -10,7 +10,7 @@ const MAX = 5 * 1024 * 1024;
 
 export async function POST(request: Request) {
   const form = await request.formData().catch(() => null);
-  return withAdmin(request, async () => {
+  return withAdmin(request, async (_user, area) => {
     const file = form?.get("arquivo");
     const kind = String(form?.get("tipo") || "");
     if (!(file instanceof File)) throw new OpError("Escolha uma imagem.");
@@ -19,7 +19,8 @@ export async function POST(request: Request) {
     if (!ext) throw new OpError("Use JPG, PNG ou WEBP.");
     if (file.size > MAX) throw new OpError("A imagem passa de 5 MB. Exporte menor (JPG com qualidade 80 resolve).");
 
-    const path = `${kind}/${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`;
+    // Área 1 mantém as pastas de antes; produtores ganham a pasta a<id>/.
+    const path = `${area.id === 1 ? "" : `a${area.id}/`}${kind}/${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`;
     const config = getSupabaseConfig();
     const response = await fetch(`${config.url}/storage/v1/object/membros/${path}`, {
       method: "POST",
