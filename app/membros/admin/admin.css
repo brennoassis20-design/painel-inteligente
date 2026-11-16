@@ -1,0 +1,26 @@
+/* Admin do Gênio Play: campos de imagem e aba de promoção. */
+.gp-image-field { gap: 8px; }
+.gp-image-row { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.gp-image-preview { width: 150px; max-width: 100%; flex: none; border-radius: 10px; border: 1px dashed var(--gp-line); background: var(--gp-bg) center / cover no-repeat; display: grid; place-items: center; color: var(--gp-muted); }
+.gp-image-preview.is-logo { background-size: contain; background-color: #ffffff0a; }
+.gp-image-side { flex: 1 1 220px; min-width: 0; display: grid; gap: 6px; }
+.gp-image-side input { width: 100%; background: var(--gp-bg); color: var(--gp-fg); border: 1px solid var(--gp-line); border-radius: 10px; padding: 9px 11px; font: 14px var(--gp-body); }
+.gp-image-spec b { color: var(--gp-fg); }
+.gp-warn { color: #f5b74a; }
+.gp-color-row { display: flex; gap: 10px; align-items: center; }
+.gp-color-row input[type="color"] { width: 52px; height: 40px; padding: 2px; flex: none; }
+.gp-color-row input[type="text"] { flex: 1; min-width: 0; }
+.gp-switch { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.gp-switch input { accent-color: var(--gp-accent); width: 20px; height: 20px; flex: none; margin-top: 1px; }
+.gp-switch small { display: block; color: var(--gp-muted); font-size: 12.5px; }
+.gp-promo-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 110px minmax(0, 1.4fr); gap: 10px; align-items: center; background: var(--gp-card); border: 1px solid var(--gp-line); border-radius: 12px; padding: 10px 12px; }
+.gp-promo-row input[type="text"], .gp-promo-row input:not([type]) { width: 100%; background: var(--gp-bg); color: var(--gp-fg); border: 1px solid var(--gp-line); border-radius: 8px; padding: 8px 10px; font: 14px var(--gp-body); }
+.gp-promo-price { display: grid; gap: 2px; font-size: 12.5px; }
+.gp-promo-price s { color: var(--gp-muted); }
+.gp-promo-price b { font-size: 15px; }
+.gp-promo-name { display: grid; gap: 3px; min-width: 0; }
+.gp-promo-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) {
+  .gp-promo-row { grid-template-columns: 30px minmax(0, 1fr); }
+  .gp-promo-row > :nth-child(n + 3) { grid-column: 1 / -1; }
+}

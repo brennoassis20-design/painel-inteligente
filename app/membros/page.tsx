@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isInstalled, platform, refreshPush, registerWorker } from "./app";
 import { Bell, InstallGuide, PushInvite, type NoticeItem } from "./Extras";
 import { captureUtm, readUtm, track } from "./pixel";
+import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Promo";
 import Login from "./Login";
 import { api, AuthError, brl, readSession, writeSession } from "./session";
 
@@ -18,6 +19,8 @@ type Item = {
   trailer_youtube: string | null;
   color: string;
   price_cents: number | null;
+  promo_price_cents?: number | null;
+  promo_off?: number | null;
   badge: string | null;
   featured: boolean;
   special: string | null;
@@ -31,7 +34,19 @@ type Item = {
 };
 
 type Home = {
-  settings: { brand_name: string; logo_url: string | null; accent: string; hero_title: string | null; hero_text: string | null; support_url: string | null; meta_pixel_id?: string | null };
+  settings: {
+    brand_name: string;
+    logo_url: string | null;
+    accent: string;
+    hero_title: string | null;
+    hero_text: string | null;
+    support_url: string | null;
+    meta_pixel_id?: string | null;
+    bg_color?: string | null;
+    hero_image_url?: string | null;
+    hero_image_mobile_url?: string | null;
+  };
+  promo?: PromoInfo | null;
   hero: Item | null;
   products: Item[];
   continueWatching: { product: Item; lesson_id: string; lesson_title: string }[];
@@ -54,7 +69,7 @@ type LessonView = {
 
 type ProductView = {
   product: Item & { owned: boolean };
-  modules: { id: string; title: string; open: boolean; release_at: string | null; lessons: LessonView[] }[];
+  modules: { id: string; title: string; cover_url?: string | null; open: boolean; release_at: string | null; lessons: LessonView[] }[];
   upsell: (Item & { text: string | null }) | null;
 };
 
@@ -74,11 +89,15 @@ function Lock() {
   );
 }
 
-function Tile({ item, label, progress, onOpen }: { item: Item; label: string; progress?: number; onOpen: () => void }) {
+function Tile({ item, label, progress, onOpen }: { item: Item; label: React.ReactNode; progress?: number; onOpen: () => void }) {
   return (
     <button type="button" className={`gp-tile${item.owned ? "" : " is-locked"}${item.cover_url ? " has-cover" : ""}`} onClick={onOpen} aria-label={item.owned ? `Abrir ${item.title}` : `${item.title}, bloqueado. Ver como liberar`}>
       <span className="gp-tile-art" style={art(item)} />
-      {!item.owned && item.badge && <span className="gp-badge">{item.badge}</span>}
+      {!item.owned && item.promo_off ? (
+        <span className="gp-badge gp-badge-promo">-{item.promo_off}%</span>
+      ) : (
+        !item.owned && item.badge && <span className="gp-badge">{item.badge}</span>
+      )}
       {!item.owned && (
         <span className="gp-lock">
           <Lock />
@@ -87,7 +106,7 @@ function Tile({ item, label, progress, onOpen }: { item: Item; label: string; pr
       <span className="gp-tile-text">
         {/* A capa já traz o nome do produto; sem capa, o nome vai escrito. */}
         {item.cover_url ? null : item.title}
-        <small>{label}</small>
+        <small className={item.promo_price_cents && !item.owned ? "has-promo" : undefined}>{label}</small>
       </span>
       {progress !== undefined && <span className="gp-bar" style={{ width: `${progress}%` }} />}
     </button>
@@ -198,7 +217,7 @@ export default function MembrosPage() {
           content_ids: [item.slug],
           content_type: "product",
           currency: "BRL",
-          value: item.price_cents ? item.price_cents / 100 : 0,
+          value: finalPrice(item) ? (finalPrice(item) || 0) / 100 : 0,
         });
         void api("/api/membros/evento", { body: { produto: item.id, tipo: "cadeado_aberto" } }).catch(() => undefined);
       }
@@ -252,9 +271,19 @@ export default function MembrosPage() {
     else open(item);
   };
   const hero = home.hero;
+  // Capa da tela inicial: a configurada em Aparência (computador 16:9, celular 4:5) ou o banner do produto em destaque.
+  const heroDesk = home.settings.hero_image_url || hero?.banner_url || null;
+  const heroMob = home.settings.hero_image_mobile_url || heroDesk;
+  const promo = home.promo || null;
+  const theme = {
+    "--gp-accent": home.settings.accent || "#f2b441",
+    "--gp-on-accent": onAccent(home.settings.accent || "#f2b441"),
+    ...(home.settings.bg_color ? { "--gp-bg": home.settings.bg_color } : {}),
+    ...(promo?.color ? { "--gp-promo": promo.color } : {}),
+  } as React.CSSProperties;
 
   return (
-    <div className="gp" style={{ ["--gp-accent" as string]: home.settings.accent }}>
+    <div className="gp" style={theme}>
       <header className="gp-top gp-wrap">
         <button type="button" className="gp-logo" onClick={() => go(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element -- logo externo configurável */}
@@ -318,6 +347,12 @@ export default function MembrosPage() {
                 <span className="gp-eyebrow">{hero.owned ? "Continue de onde parou" : "Em destaque"}</span>
                 <h1>{home.settings.hero_title || hero.title}</h1>
                 <p>{home.settings.hero_text || hero.subtitle || hero.description}</p>
+                {!hero.owned && hero.promo_price_cents ? (
+                  <div className="gp-promo-line">
+                    {promo && <span className="gp-promo-pill">{promo.title}</span>}
+                    <PriceTag item={hero} size="lg" />
+                  </div>
+                ) : null}
                 <div className="gp-btns">
                   {hero.owned ? (
                     <button type="button" className="gp-btn gp-btn-light" onClick={() => go(hero.slug)}>
@@ -325,7 +360,7 @@ export default function MembrosPage() {
                     </button>
                   ) : (
                     <button type="button" className="gp-btn gp-btn-gold" onClick={() => open(hero)}>
-                      Desbloquear {hero.price_cents ? `por ${brl(hero.price_cents)}` : ""}
+                      Desbloquear {hero.price_cents ? `por ${brl(finalPrice(hero))}` : ""}
                     </button>
                   )}
                   {hero.trailer_youtube && (
@@ -337,8 +372,12 @@ export default function MembrosPage() {
               </div>
               <button
                 type="button"
-                className="gp-hero-art"
-                style={hero.banner_url ? { backgroundImage: `url("${hero.banner_url}")` } : art(hero)}
+                className={`gp-hero-art${heroDesk ? " has-img" : ""}${home.settings.hero_image_mobile_url ? " is-portrait" : ""}`}
+                style={
+                  heroDesk
+                    ? ({ "--gp-hero-desk": `url("${heroDesk}")`, "--gp-hero-mob": `url("${heroMob}")` } as React.CSSProperties)
+                    : art(hero)
+                }
                 onClick={() => (hero.trailer_youtube ? setTrailer(hero.trailer_youtube) : open(hero))}
                 aria-label={hero.trailer_youtube ? "Ver trailer" : `Abrir ${hero.title}`}
               >
@@ -394,7 +433,7 @@ export default function MembrosPage() {
             {store.length > 0 && (
               <Row title="Desbloqueie agora" hint="toque para ver como liberar">
                 {store.map((item) => (
-                  <Tile key={item.id} item={item} label={brl(item.price_cents) || "Ver detalhes"} onOpen={() => open(item)} />
+                  <Tile key={item.id} item={item} label={item.price_cents ? <PriceTag item={item} size="sm" /> : "Ver detalhes"} onOpen={() => open(item)} />
                 ))}
               </Row>
             )}
@@ -419,6 +458,8 @@ export default function MembrosPage() {
           }}
         />
       )}
+
+      {promo && !slug && !locked && <PromoCard promo={promo} items={home.products} onOpen={(item) => open(item)} />}
 
       <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />
 
@@ -469,7 +510,7 @@ function LockedSheet({
         content_ids: [item.slug],
         content_type: "product",
         currency: "BRL",
-        value: item.price_cents ? item.price_cents / 100 : 0,
+        value: finalPrice(item) ? (finalPrice(item) || 0) / 100 : 0,
       });
       const data = await api<{ url: string }>("/api/membros/checkout", { body: { produto: item.id, via: item.via, utm: readUtm() } });
       if (tab) tab.location.href = data.url;
@@ -528,9 +569,10 @@ function LockedSheet({
             </>
           ) : (
             <>
+              {item.promo_price_cents ? <PriceTag item={item} size="lg" /> : null}
               {item.has_checkout ? (
                 <button type="button" className="gp-btn gp-btn-gold" onClick={() => void buy()} disabled={state === "opening"}>
-                  {state === "opening" ? "Abrindo…" : `Desbloquear ${item.price_cents ? `por ${brl(item.price_cents)}` : "agora"}`}
+                  {state === "opening" ? "Abrindo…" : `Desbloquear ${item.price_cents ? `por ${brl(finalPrice(item))}` : "agora"}`}
                 </button>
               ) : (
                 <p className="gp-muted">Em breve à venda por aqui.</p>
@@ -623,7 +665,7 @@ function ProductScreen({
         <div className="gp-banner-lock">
           <Lock /> Você ainda não tem este produto.{" "}
           <button type="button" className="gp-btn gp-btn-gold" onClick={() => onLocked(data.product)}>
-            Desbloquear {data.product.price_cents ? `por ${brl(data.product.price_cents)}` : ""}
+            Desbloquear {data.product.price_cents ? <>por <PriceTag item={data.product} size="md" /></> : ""}
           </button>
         </div>
       )}
@@ -683,7 +725,7 @@ function ProductScreen({
                 <b>{data.upsell.title}</b>
                 <small>{data.upsell.subtitle || "Toque para ver como liberar"}</small>
               </span>
-              <span className="gp-btn gp-btn-gold">{data.upsell.price_cents ? brl(data.upsell.price_cents) : "Ver"}</span>
+              <span className="gp-btn gp-btn-gold">{data.upsell.price_cents ? <PriceTag item={data.upsell} size="sm" /> : "Ver"}</span>
             </button>
           )}
         </section>
@@ -691,7 +733,8 @@ function ProductScreen({
         <aside className="gp-modules">
           {data.modules.map((module) => (
             <details key={module.id} open={module.lessons.some((lesson) => lesson.id === current?.id) || data.modules.length < 4}>
-              <summary>
+              <summary className={module.cover_url ? "has-cover" : undefined}>
+                {module.cover_url && <span className="gp-module-cover" style={{ backgroundImage: `url("${module.cover_url}")` }} aria-hidden="true" />}
                 {module.title}
                 {!module.open && data.product.owned && module.release_at && <small>libera em {new Date(module.release_at).toLocaleDateString("pt-BR")}</small>}
               </summary>

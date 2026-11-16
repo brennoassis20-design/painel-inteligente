@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Login from "../Login";
+import ImageField from "./ImageField";
+import "./admin.css";
 import { api, AuthError, brl, readSession } from "../session";
 
 type Product = {
@@ -28,6 +30,9 @@ type Product = {
   upsell_text: string | null;
   special: string | null;
   is_free?: boolean;
+  on_promo?: boolean;
+  promo_price_cents?: number | null;
+  promo_checkout_url?: string | null;
 };
 
 type Lesson = {
@@ -40,10 +45,12 @@ type Lesson = {
   free_preview: boolean;
   published: boolean;
 };
-type Module = { id: string; title: string; release_days: number; lessons: Lesson[] };
+type Module = { id: string; title: string; release_days: number; cover_url?: string | null; lessons: Lesson[] };
 
 type Summary = {
-  aparencia: { brand_name: string; logo_url: string | null; accent: string; hero_product_id: string | null; hero_title: string | null; hero_text: string | null; support_url: string | null; meta_pixel_id?: string | null };
+  aparencia: { brand_name: string; logo_url: string | null; accent: string; hero_product_id: string | null; hero_title: string | null; hero_text: string | null; support_url: string | null; meta_pixel_id?: string | null;
+    bg_color?: string; hero_image_url?: string | null; hero_image_mobile_url?: string | null;
+    promo_enabled?: boolean; promo_title?: string; promo_text?: string | null; promo_ends_at?: string | null; promo_color?: string; promo_card?: boolean; promo_notify?: boolean };
   alunos_unicos: number;
   produtos: { id: string; slug: string; titulo: string; publicado: boolean; preco: number | null; checkout: string; tem_checkout: boolean; aulas: number; alunos: number; funil_30d: Record<string, number> }[];
 };
@@ -54,6 +61,7 @@ const TABS = [
   ["produtos", "Produtos"],
   ["conteudo", "Aulas"],
   ["gratis", "Grátis e avisos"],
+  ["promocao", "Promoção"],
   ["aparencia", "Aparência"],
   ["vendas", "Vendas e integrações"],
   ["ia", "Conectar IA"],
@@ -129,6 +137,7 @@ export default function AdminPage() {
         {tab === "produtos" && <ProductsTab products={products} summary={summary} reload={reload} flash={flash} />}
         {tab === "conteudo" && <ContentTab products={products} flash={flash} />}
         {tab === "gratis" && <FreeTab products={products} flash={flash} />}
+        {tab === "promocao" && summary && <PromoTab summary={summary} products={products} reload={reload} flash={flash} />}
         {tab === "aparencia" && summary && <LookTab summary={summary} products={products} reload={reload} flash={flash} />}
         {tab === "vendas" && <SalesTab summary={summary} flash={flash} />}
         {tab === "ia" && <AiTab flash={flash} />}
@@ -192,6 +201,7 @@ function ProductsTab({ products, summary, reload, flash }: { products: Product[]
                 </small>
               </div>
               {product.is_free && <span className="gp-pill on">Grátis</span>}
+              {product.on_promo && product.promo_price_cents ? <span className="gp-pill warn">Promo {brl(product.promo_price_cents)}</span> : null}
               <span className={`gp-pill ${product.published ? "on" : "warn"}`}>{product.published ? "Publicado" : "Rascunho"}</span>
               <div className="gp-item-actions">
                 <button type="button" className="gp-btn gp-btn-ghost gp-btn-sm" onClick={() => void move(index, -1)} aria-label="Subir">
@@ -250,6 +260,9 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
     destaque: Boolean(initial.featured),
     especial: initial.special || "",
     gratuito: Boolean(initial.is_free),
+    em_promocao: Boolean(initial.on_promo),
+    preco_promocional: initial.promo_price_cents ? String(initial.promo_price_cents / 100).replace(".", ",") : "",
+    checkout_promocional: initial.promo_checkout_url || "",
     upsell: initial.upsell_product_id || "",
     upsell_texto: initial.upsell_text || "",
   });
@@ -282,7 +295,13 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
         destaque: form.destaque,
         especial: form.especial,
         gratuito: form.gratuito,
+        em_promocao: form.em_promocao,
+        preco_promocional: form.preco_promocional ? Number(form.preco_promocional.replace(",", ".")) : "",
+        checkout_promocional: form.checkout_promocional,
       };
+      if (args.em_promocao && (!args.preco_promocional || (args.preco && Number(args.preco_promocional) >= Number(args.preco)))) {
+        throw new Error("O preço promocional precisa ser menor que o preço normal.");
+      }
       const saved = initial.id
         ? await op<Product>("atualizar_produto", { produto: initial.id, ...args })
         : await op<Product>("criar_produto", args);
@@ -316,14 +335,8 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
           <textarea id="pf-desc" value={form.descricao} onChange={set("descricao")} />
         </label>
         <div className="gp-grid2">
-          <label className="gp-field">
-            <span>Capa vertical 2:3 (link da imagem)</span>
-            <input id="pf-capa" value={form.capa_url} onChange={set("capa_url")} placeholder="https://..." />
-          </label>
-          <label className="gp-field">
-            <span>Banner horizontal 16:9 (link da imagem)</span>
-            <input id="pf-banner" value={form.banner_url} onChange={set("banner_url")} placeholder="https://..." />
-          </label>
+          <ImageField label="Capa do produto (vitrine)" kind="capa" value={form.capa_url} onChange={(url) => setForm((f) => ({ ...f, capa_url: url }))} />
+          <ImageField label="Banner do produto (destaque e cadeado)" kind="banner" value={form.banner_url} onChange={(url) => setForm((f) => ({ ...f, banner_url: url }))} />
           <label className="gp-field">
             <span>Trailer (link do YouTube)</span>
             <input id="pf-trailer" value={form.trailer_youtube} onChange={set("trailer_youtube")} />
@@ -390,6 +403,28 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
           <span>Página de vendas (opcional)</span>
           <input id="pf-pagina" value={form.pagina_vendas_url} onChange={set("pagina_vendas_url")} />
         </label>
+      </div>
+
+      <div className="gp-box">
+        <h3>Promoção</h3>
+        <label className="gp-switch">
+          <input id="pf-promo" type="checkbox" checked={form.em_promocao} onChange={set("em_promocao")} />
+          <span>
+            Este produto entra na promoção
+            <small>Só aparece com desconto enquanto a promoção estiver ligada na aba Promoção.</small>
+          </span>
+        </label>
+        <div className="gp-grid2">
+          <label className="gp-field">
+            <span>Preço com desconto (R$)</span>
+            <input id="pf-promo-preco" inputMode="decimal" value={form.preco_promocional} onChange={set("preco_promocional")} placeholder="19,90" />
+          </label>
+          <label className="gp-field">
+            <span>Link do checkout com desconto</span>
+            <input id="pf-promo-checkout" value={form.checkout_promocional} onChange={set("checkout_promocional")} placeholder="https://..." />
+            <small>Precisa cobrar o preço com desconto. Sem ele, o aluno cai no checkout normal (preço cheio).</small>
+          </label>
+        </div>
       </div>
 
       <div className="gp-box">
@@ -517,6 +552,7 @@ function ContentTab({ products, flash }: { products: Product[]; flash: (t: strin
 function ModuleEditor({ module, onRun, onMove }: { module: Module; onRun: (name: string, args: Record<string, unknown>, message: string) => Promise<void>; onMove: (delta: number) => Promise<void> }) {
   const [title, setTitle] = useState(module.title);
   const [release, setRelease] = useState(String(module.release_days || 0));
+  const [cover, setCover] = useState(module.cover_url || "");
   const [adding, setAdding] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -547,6 +583,15 @@ function ModuleEditor({ module, onRun, onMove }: { module: Module; onRun: (name:
           </button>
         )}
       </div>
+      <ImageField
+        label="Capa do módulo"
+        kind="modulo"
+        value={cover}
+        onChange={(url) => {
+          setCover(url);
+          void onRun("atualizar_modulo", { modulo: module.id, capa_url: url }, url ? "Capa do módulo salva." : "Capa removida.");
+        }}
+      />
       <div className="gp-list">
         {module.lessons.map((lesson, index) => (
           <LessonEditor
@@ -724,7 +769,11 @@ function LookTab({ summary, products, reload, flash }: { summary: Summary; produ
     texto_banner: look.hero_text || "",
     suporte_url: look.support_url || "",
     pixel_meta: look.meta_pixel_id || "",
+    cor_fundo: look.bg_color || "#0A0C12",
+    capa_inicio: look.hero_image_url || "",
+    capa_inicio_celular: look.hero_image_mobile_url || "",
   });
+  const hex = (value: string) => /^#[0-9a-f]{6}$/i.test(value);
   const [error, setError] = useState("");
 
   return (
@@ -733,6 +782,9 @@ function LookTab({ summary, products, reload, flash }: { summary: Summary; produ
       onSubmit={async (event) => {
         event.preventDefault();
         try {
+          if (!hex(form.cor) || !hex(form.cor_fundo)) throw new Error("Use cores no formato #RRGGBB.");
+          const [r, g, b] = [1, 3, 5].map((i) => parseInt(form.cor_fundo.slice(i, i + 2), 16) / 255);
+          if (0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3) throw new Error("A cor de fundo está clara demais: os textos da área são claros e ficariam ilegíveis. Escolha um tom escuro.");
           await op("configurar_aparencia", form);
           await reload();
           flash("Aparência salva.");
@@ -747,14 +799,22 @@ function LookTab({ summary, products, reload, flash }: { summary: Summary; produ
             <span>Nome da área</span>
             <input id="lk-nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
           </label>
-          <label className="gp-field">
-            <span>Logo (link da imagem, opcional)</span>
-            <input id="lk-logo" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} />
-          </label>
-          <label className="gp-field">
-            <span>Cor de destaque</span>
-            <input id="lk-cor" type="color" value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} />
-          </label>
+          <div className="gp-field">
+            <span>Cor dos botões</span>
+            <div className="gp-color-row">
+              <input id="lk-cor" type="color" aria-label="Cor dos botões" value={hex(form.cor) ? form.cor : "#F2B441"} onChange={(e) => setForm({ ...form, cor: e.target.value })} />
+              <input type="text" aria-label="Cor dos botões em código" value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} />
+            </div>
+            <small>O texto do botão fica claro ou escuro sozinho, conforme a cor.</small>
+          </div>
+          <div className="gp-field">
+            <span>Cor de fundo</span>
+            <div className="gp-color-row">
+              <input id="lk-fundo" type="color" aria-label="Cor de fundo" value={hex(form.cor_fundo) ? form.cor_fundo : "#0A0C12"} onChange={(e) => setForm({ ...form, cor_fundo: e.target.value })} />
+              <input type="text" aria-label="Cor de fundo em código" value={form.cor_fundo} onChange={(e) => setForm({ ...form, cor_fundo: e.target.value })} />
+            </div>
+            <small>Fundos escuros deixam as capas e os textos mais legíveis.</small>
+          </div>
           <label className="gp-field">
             <span>Produto do banner principal</span>
             <select id="lk-destaque" value={form.produto_destaque} onChange={(e) => setForm({ ...form, produto_destaque: e.target.value })}>
@@ -783,6 +843,13 @@ function LookTab({ summary, products, reload, flash }: { summary: Summary; produ
           <span>Texto do banner (opcional)</span>
           <textarea id="lk-texto" value={form.texto_banner} onChange={(e) => setForm({ ...form, texto_banner: e.target.value })} />
         </label>
+      </div>
+      <div className="gp-box">
+        <h3>Imagens da área</h3>
+        <ImageField label="Logo" kind="logo" value={form.logo_url} onChange={(url) => setForm((f) => ({ ...f, logo_url: url }))} />
+        <ImageField label="Capa da tela inicial: computador" kind="inicio" value={form.capa_inicio} onChange={(url) => setForm((f) => ({ ...f, capa_inicio: url }))} />
+        <ImageField label="Capa da tela inicial: celular" kind="inicio-celular" value={form.capa_inicio_celular} onChange={(url) => setForm((f) => ({ ...f, capa_inicio_celular: url }))} />
+        <small className="gp-fine">Sem capa própria, a tela inicial usa o banner do produto em destaque. Sem a versão de celular, usa a do computador.</small>
       </div>
       {error && <p className="gp-error">{error}</p>}
       <div className="gp-btns">
@@ -1046,6 +1113,174 @@ function InviteBox({ flash }: { flash: (t: string) => void }) {
         </p>
       )}
     </div>
+  );
+}
+
+// ------------------------------------------------------------------ promoção
+
+function toLocalInput(iso: string | null | undefined) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function PromoTab({ summary, products, reload, flash }: { summary: Summary; products: Product[]; reload: () => Promise<void>; flash: (t: string) => void }) {
+  const look = summary.aparencia;
+  const [form, setForm] = useState({
+    ligada: Boolean(look.promo_enabled),
+    titulo: look.promo_title || "Black Friday",
+    texto: look.promo_text || "",
+    termina_em: toLocalInput(look.promo_ends_at),
+    cor: look.promo_color || "#22C55E",
+    card_no_canto: look.promo_card !== false,
+    avisos: look.promo_notify !== false,
+  });
+  const [rows, setRows] = useState(() =>
+    Object.fromEntries(
+      products.map((product) => [
+        product.id,
+        {
+          on: Boolean(product.on_promo),
+          preco: product.promo_price_cents ? String(product.promo_price_cents / 100).replace(".", ",") : "",
+          checkout: product.promo_checkout_url || "",
+        },
+      ]),
+    ),
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [confirmOn, setConfirmOn] = useState(false);
+  const turningOn = form.ligada && !look.promo_enabled;
+  const inPromo = products.filter((product) => rows[product.id]?.on);
+
+  async function save() {
+    setBusy(true);
+    setError("");
+    try {
+      // 1) Produtos primeiro (sem aviso individual; o aviso geral sai ao ligar).
+      for (const product of products) {
+        const row = rows[product.id];
+        const preco = row.preco ? Number(row.preco.replace(",", ".")) : null;
+        if (row.on) {
+          if (!product.price_cents) throw new Error(`${product.title}: cadastre o preço normal antes.`);
+          if (!preco || preco * 100 >= product.price_cents) throw new Error(`${product.title}: o preço com desconto precisa ser menor que ${brl(product.price_cents)}.`);
+        }
+        const changed = row.on !== Boolean(product.on_promo) || (preco ? Math.round(preco * 100) : null) !== (product.promo_price_cents ?? null) || row.checkout !== (product.promo_checkout_url || "");
+        if (changed) {
+          await op("atualizar_produto", { produto: product.id, em_promocao: row.on, preco_promocional: preco ?? "", checkout_promocional: row.checkout, avisar: look.promo_enabled ? undefined : false });
+        }
+      }
+      // 2) Configuração geral.
+      const result = await op<{ promocao_no_ar: boolean; aviso_enviado: boolean }>("configurar_promocao", {
+        ...form,
+        termina_em: form.termina_em ? new Date(form.termina_em).toISOString() : "",
+      });
+      setConfirmOn(false);
+      await reload();
+      flash(result.promocao_no_ar ? `Promoção no ar${result.aviso_enviado ? " e aviso enviado" : ""}.` : "Promoção salva (desligada).");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível salvar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="gp-panel">
+      <div className="gp-box">
+        <h3>Promoção (Black Friday e ofertas)</h3>
+        <label className="gp-switch">
+          <input id="pr-on" type="checkbox" checked={form.ligada} onChange={(e) => setForm({ ...form, ligada: e.target.checked })} />
+          <span>
+            Promoção ligada
+            <small>Desligada, todos os produtos voltam ao preço normal na hora.</small>
+          </span>
+        </label>
+        <label className="gp-switch">
+          <input id="pr-card" type="checkbox" checked={form.card_no_canto} onChange={(e) => setForm({ ...form, card_no_canto: e.target.checked })} />
+          <span>
+            Card pequeno no canto da tela
+            <small>Mostra os produtos em promoção, um de cada vez, com o preço riscado e o preço com desconto.</small>
+          </span>
+        </label>
+        <label className="gp-switch">
+          <input id="pr-avisos" type="checkbox" checked={form.avisos} onChange={(e) => setForm({ ...form, avisos: e.target.checked })} />
+          <span>
+            Avisos no sino e no celular
+            <small>Um aviso para todos ao ligar a promoção e um quando você colocar mais um produto nela. Desligue para promoções discretas.</small>
+          </span>
+        </label>
+        <div className="gp-grid2">
+          <label className="gp-field">
+            <span>Nome da promoção</span>
+            <input id="pr-titulo" maxLength={40} value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+          </label>
+          <label className="gp-field">
+            <span>Termina em (vazio = sem prazo; mostra contagem regressiva)</span>
+            <input id="pr-fim" type="datetime-local" value={form.termina_em} onChange={(e) => setForm({ ...form, termina_em: e.target.value })} />
+          </label>
+          <label className="gp-field">
+            <span>Frase curta do card</span>
+            <input id="pr-texto" maxLength={120} value={form.texto} onChange={(e) => setForm({ ...form, texto: e.target.value })} placeholder="Só até domingo" />
+          </label>
+          <div className="gp-field">
+            <span>Cor do preço com desconto</span>
+            <div className="gp-color-row">
+              <input type="color" aria-label="Cor do preço com desconto" value={/^#[0-9a-f]{6}$/i.test(form.cor) ? form.cor : "#22C55E"} onChange={(e) => setForm({ ...form, cor: e.target.value })} />
+              <input type="text" aria-label="Cor do preço em código" value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="gp-box">
+        <h3>Produtos na promoção ({inPromo.length})</h3>
+        <p className="gp-muted">Marque, coloque o preço com desconto e o link do checkout que cobra esse preço. Sem o link, o aluno cai no checkout normal.</p>
+        <div className="gp-list">
+          {products
+            .filter((product) => product.published)
+            .map((product) => {
+              const row = rows[product.id];
+              const preco = row.preco ? Math.round(Number(row.preco.replace(",", ".")) * 100) : 0;
+              const off = product.price_cents && preco ? Math.round((1 - preco / product.price_cents) * 100) : 0;
+              const set = (patch: Partial<typeof row>) => setRows({ ...rows, [product.id]: { ...row, ...patch } });
+              return (
+                <div className="gp-promo-row" key={product.id}>
+                  <input type="checkbox" aria-label={`${product.title} na promoção`} checked={row.on} onChange={(e) => set({ on: e.target.checked })} />
+                  <div className="gp-promo-name">
+                    <b>{product.title}</b>
+                    <span className="gp-promo-price">
+                      {product.price_cents ? <s>{brl(product.price_cents)}</s> : <span className="gp-error">sem preço normal</span>}
+                      {preco > 0 && <b style={{ color: form.cor }}>{brl(preco)}{off > 0 ? ` (-${off}%)` : ""}</b>}
+                    </span>
+                  </div>
+                  <input aria-label={`${product.title}: preço com desconto`} inputMode="decimal" value={row.preco} placeholder="Preço R$" onChange={(e) => set({ preco: e.target.value })} />
+                  <input aria-label={`${product.title}: checkout com desconto`} value={row.checkout} placeholder="Link do checkout com desconto" onChange={(e) => set({ checkout: e.target.value })} />
+                </div>
+              );
+            })}
+        </div>
+      </div>
+
+      {error && <p className="gp-error">{error}</p>}
+      <div className="gp-btns">
+        {turningOn && form.avisos && !confirmOn ? (
+          <button type="button" className="gp-btn gp-btn-gold" onClick={() => setConfirmOn(true)}>
+            Salvar e ligar a promoção
+          </button>
+        ) : (
+          <button type="button" className="gp-btn gp-btn-gold" disabled={busy} onClick={() => void save()}>
+            {busy ? "Salvando…" : turningOn && form.avisos ? `Confirmar: ligar e avisar todos os alunos (${inPromo.length} produtos)` : "Salvar promoção"}
+          </button>
+        )}
+        {confirmOn && (
+          <button type="button" className="gp-btn gp-btn-ghost" onClick={() => setConfirmOn(false)}>
+            Cancelar
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 

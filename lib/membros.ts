@@ -22,6 +22,19 @@ export type Settings = {
   webhook_secret: string;
   hotmart_hottok: string | null;
   meta_pixel_id: string | null;
+  bg_color: string;
+  hero_image_url: string | null;
+  hero_image_mobile_url: string | null;
+  promo_enabled: boolean;
+  promo_title: string;
+  promo_text: string | null;
+  promo_ends_at: string | null;
+  promo_color: string;
+  promo_card: boolean;
+  promo_notify: boolean;
+  promo_started_at: string | null;
+  vapid_public?: string | null;
+  vapid_private?: string | null;
   updated_at: string;
 };
 
@@ -50,6 +63,10 @@ export type Product = {
   special: string | null;
   // Conteúdo gratuito: qualquer pessoa cadastrada assiste.
   is_free: boolean;
+  // Promoção: vale só enquanto a promoção geral estiver ligada (mp_settings.promo_enabled e dentro do prazo).
+  on_promo: boolean;
+  promo_price_cents: number | null;
+  promo_checkout_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -196,8 +213,19 @@ function moduleOpen(mod: Module, access: AccessInfo | undefined) {
   return Date.now() >= new Date(access.since).getTime() + mod.release_days * DAY_MS;
 }
 
-function publicProduct(product: Product) {
+export function promoActive(settings: Pick<Settings, "promo_enabled" | "promo_ends_at">) {
+  return Boolean(settings.promo_enabled) && (!settings.promo_ends_at || new Date(settings.promo_ends_at).getTime() > Date.now());
+}
+
+function inPromo(product: Product, settings: Settings | null) {
+  return Boolean(settings && promoActive(settings) && product.on_promo && product.promo_price_cents && product.price_cents && product.promo_price_cents < product.price_cents);
+}
+
+function publicProduct(product: Product, settings: Settings | null = null) {
+  const promo = inPromo(product, settings);
   return {
+    promo_price_cents: promo ? product.promo_price_cents : null,
+    promo_off: promo && product.price_cents ? Math.round((1 - (product.promo_price_cents || 0) / product.price_cents) * 100) : null,
     id: product.id,
     slug: product.slug,
     title: product.title,
@@ -231,7 +259,7 @@ export async function studentHome(user: { id: string; email: string }) {
     const own = lessons.filter((lesson) => lesson.product_id === product.id);
     const done = progress.filter((row) => row.product_id === product.id && row.completed).length;
     return {
-      ...publicProduct(product),
+      ...publicProduct(product, settings),
       owned: access.has(product.id),
       lessons_total: own.length,
       lessons_done: done,
@@ -261,7 +289,13 @@ export async function studentHome(user: { id: string; email: string }) {
       hero_text: settings.hero_text,
       support_url: settings.support_url,
       meta_pixel_id: settings.meta_pixel_id,
+      bg_color: settings.bg_color,
+      hero_image_url: settings.hero_image_url,
+      hero_image_mobile_url: settings.hero_image_mobile_url,
     },
+    promo: promoActive(settings)
+      ? { title: settings.promo_title, text: settings.promo_text, ends_at: settings.promo_ends_at, color: settings.promo_color, card: settings.promo_card }
+      : null,
     hero,
     products: items,
     continueWatching,
@@ -271,7 +305,7 @@ export async function studentHome(user: { id: string; email: string }) {
 }
 
 export async function studentProduct(user: { id: string; email: string }, slug: string) {
-  const product = await findProduct(slug);
+  const [product, settings] = await Promise.all([findProduct(slug), getSettings()]);
   const admin = await isAdmin(user.email);
   if (!product.published && !admin) throw new OpError("Produto não encontrado.");
   const access = (await accessMap(user.email, [product])).get(product.id) || (admin ? { since: product.created_at, expires_at: null } : undefined);
@@ -315,11 +349,11 @@ export async function studentProduct(user: { id: string; email: string }, slug: 
     const target = await supabaseRest<Product[]>(`/mp_products?id=eq.${product.upsell_product_id}&published=eq.true&select=*`);
     if (target[0]) {
       const owned = (await accessMap(user.email, [target[0]])).has(target[0].id);
-      if (!owned) upsell = { ...publicProduct(target[0]), text: product.upsell_text };
+      if (!owned) upsell = { ...publicProduct(target[0], settings), text: product.upsell_text };
     }
   }
 
-  return { product: { ...publicProduct(product), owned: Boolean(access) }, modules, upsell };
+  return { product: { ...publicProduct(product, settings), owned: Boolean(access) }, modules, upsell };
 }
 
 export async function saveProgress(user: { id: string }, lessonId: string, completed: boolean) {
@@ -352,8 +386,10 @@ export async function checkoutLink(
   productRef: string,
   extra: { via?: string; utm?: Record<string, unknown> } = {},
 ) {
-  const product = await findProduct(productRef);
-  const url = need(product.checkout_url, "Este produto ainda não tem link de pagamento.");
+  const [product, settings] = await Promise.all([findProduct(productRef), getSettings()]);
+  // Em promoção: usa o checkout com desconto (se cadastrado).
+  const promo = inPromo(product, settings) && product.promo_checkout_url;
+  const url = need(promo ? product.promo_checkout_url : product.checkout_url, "Este produto ainda não tem link de pagamento.");
   const link = new URL(url);
   link.searchParams.set("email", user.email);
   if (user.name) link.searchParams.set("name", user.name);
@@ -365,7 +401,7 @@ export async function checkoutLink(
   }
   for (const [key, value] of Object.entries(tags)) link.searchParams.set(key, value);
   if (product.checkout_provider === "hotmart") link.searchParams.set("sck", `membros_${via}`);
-  await logEvent(user.email, product.id, "checkout_aberto", { provider: product.checkout_provider, ...tags });
+  await logEvent(user.email, product.id, "checkout_aberto", { provider: product.checkout_provider, promo: Boolean(promo), ...tags });
   return { url: link.toString(), provider: product.checkout_provider };
 }
 
@@ -523,6 +559,9 @@ const PRODUCT_FIELDS = {
   posicao: num("Ordem na vitrine (menor primeiro)."),
   especial: str("'painel' se o produto também libera o Painel Inteligente (Método Gênio). Vazio nos demais."),
   gratuito: bool("true = conteúdo gratuito: qualquer pessoa cadastrada (cadastro grátis) assiste. Os pagos aparecem com cadeado."),
+  em_promocao: bool("true = entra na promoção (vale enquanto a promoção geral estiver ligada)."),
+  preco_promocional: num("Preço com desconto em reais (menor que o preço normal)."),
+  checkout_promocional: str("Link do checkout que cobra o preço com desconto. Sem ele, o aluno cai no checkout normal (preço cheio)."),
 };
 
 function productBody(args: Args, partial: boolean) {
@@ -551,6 +590,9 @@ function productBody(args: Args, partial: boolean) {
   set("position", args.posicao);
   set("special", args.especial);
   if (args.gratuito !== undefined) body.is_free = Boolean(args.gratuito);
+  if (args.em_promocao !== undefined) body.on_promo = Boolean(args.em_promocao);
+  if (args.preco_promocional !== undefined) body.promo_price_cents = args.preco_promocional === null || args.preco_promocional === "" ? null : Math.round(Number(args.preco_promocional) * 100);
+  set("promo_checkout_url", args.checkout_promocional);
   body.updated_at = now();
   return body;
 }
@@ -627,9 +669,10 @@ export const OPS: Record<string, Op> = {
         supabaseRest<{ email: string; product_id: string; status: string }[]>("/mp_access?select=email,product_id,status"),
         supabaseRest<{ kind: string; product_id: string | null }[]>(`/mp_events?created_at=gte.${new Date(Date.now() - 30 * DAY_MS).toISOString()}&select=kind,product_id`),
       ]);
-      const { webhook_secret: _secret, hotmart_hottok: _hottok, ...visible } = settings;
+      const { webhook_secret: _secret, hotmart_hottok: _hottok, vapid_private: _vapid, ...visible } = settings;
       void _secret;
       void _hottok;
+      void _vapid;
       return {
         aparencia: visible,
         alunos_unicos: new Set(access.filter((row) => row.status === "active").map((row) => row.email)).size,
@@ -665,6 +708,9 @@ export const OPS: Record<string, Op> = {
       texto_banner: str("Texto do banner."),
       suporte_url: str("Link de suporte (WhatsApp ou página)."),
       pixel_meta: str("ID do pixel da Meta (Facebook) que mede a área; vazio desliga."),
+      cor_fundo: str("Cor de fundo da área em hexadecimal (escura funciona melhor), ex.: #0A0C12."),
+      capa_inicio: str("Capa da tela inicial no computador: 1920×1080 px (16:9). URL pública. Vazio = usa o banner do produto em destaque."),
+      capa_inicio_celular: str("Capa da tela inicial no celular: 1080×1350 px (4:5). URL pública. Vazio = usa a do computador."),
     },
     run: async (args) => {
       const body: Record<string, unknown> = { updated_at: now() };
@@ -676,6 +722,10 @@ export const OPS: Record<string, Op> = {
       if (args.texto_banner !== undefined) body.hero_text = args.texto_banner || null;
       if (args.suporte_url !== undefined) body.support_url = args.suporte_url || null;
       if (args.pixel_meta !== undefined) body.meta_pixel_id = String(args.pixel_meta || "").replace(/\D/g, "") || null;
+      if (args.cor_fundo !== undefined) body.bg_color = /^#[0-9a-f]{6}$/i.test(String(args.cor_fundo)) ? args.cor_fundo : "#0A0C12";
+      if (args.cor !== undefined && !/^#[0-9a-f]{6}$/i.test(String(args.cor))) throw new OpError("Cor dos botões inválida (use #RRGGBB).");
+      if (args.capa_inicio !== undefined) body.hero_image_url = args.capa_inicio || null;
+      if (args.capa_inicio_celular !== undefined) body.hero_image_mobile_url = args.capa_inicio_celular || null;
       await supabaseRest("/mp_settings?id=eq.1", { method: "PATCH", body: JSON.stringify(body) });
       return { ok: true };
     },
@@ -729,6 +779,8 @@ export const OPS: Record<string, Op> = {
       });
       // Rascunho virou publicado: avisa todos os alunos uma única vez por produto.
       if (!product.published && rows[0]?.published && args.avisar !== false) await noticeNewProduct(rows[0]);
+      // Entrou na promoção com a promoção no ar: avisa (uma vez por produto em cada promoção).
+      if (!product.on_promo && rows[0]?.on_promo && args.avisar !== false) await noticePromoProduct(rows[0]);
       return rows[0];
     },
   },
@@ -957,6 +1009,65 @@ export const OPS: Record<string, Op> = {
       });
       return { ok: true };
     },
+  },
+};
+
+async function noticePromoProduct(product: Product) {
+  const settings = await getSettings();
+  if (!settings.promo_notify || !inPromo(product, settings) || !product.published) return null;
+  const since = settings.promo_started_at || new Date(0).toISOString();
+  const exists = await supabaseRest<{ id: string }[]>(`/mp_notifications?product_id=eq.${product.id}&kind=eq.promo&created_at=gte.${enc(since)}&select=id`);
+  if (exists.length) return null;
+  const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return createNotice({
+    title: `${settings.promo_title}: ${product.title}`,
+    body: `De ${brl(product.price_cents || 0)} por ${brl(product.promo_price_cents || 0)}. Toque para aproveitar.`,
+    productId: product.id,
+    slug: product.slug,
+    kind: "promo",
+  }).catch(() => null);
+}
+
+OPS.configurar_promocao = {
+  description: "Liga/desliga a promoção (ex.: Black Friday) e define título, texto, data de fim, cor do preço, card no canto e avisos. Os produtos entram pela opção em_promocao + preco_promocional de cada produto. Ao ligar com avisos ativos, todos os alunos recebem um aviso.",
+  input: {
+    ligada: bool("true = promoção no ar."),
+    titulo: str("Ex.: Black Friday."),
+    texto: str("Frase curta do card, ex.: Só até domingo."),
+    termina_em: str("Data/hora de fim (ISO, ex.: 2026-11-30T23:59:00-03:00). Vazio = sem prazo."),
+    cor: str("Cor do preço com desconto, ex.: #22C55E."),
+    card_no_canto: bool("true = mostra o card pequeno da promoção no canto da tela."),
+    avisos: bool("true = manda aviso no sino e no celular ao ligar e quando um produto entra na promoção."),
+  },
+  run: async (args) => {
+    const current = await getSettings();
+    const body: Record<string, unknown> = { updated_at: now() };
+    if (args.titulo !== undefined) body.promo_title = String(args.titulo || "Promoção").slice(0, 40);
+    if (args.texto !== undefined) body.promo_text = args.texto ? String(args.texto).slice(0, 120) : null;
+    if (args.termina_em !== undefined) {
+      const date = args.termina_em ? new Date(String(args.termina_em)) : null;
+      if (date && Number.isNaN(date.getTime())) throw new OpError("Data de fim inválida.");
+      body.promo_ends_at = date ? date.toISOString() : null;
+    }
+    if (args.cor !== undefined) body.promo_color = /^#[0-9a-f]{6}$/i.test(String(args.cor)) ? args.cor : "#22C55E";
+    if (args.card_no_canto !== undefined) body.promo_card = Boolean(args.card_no_canto);
+    if (args.avisos !== undefined) body.promo_notify = Boolean(args.avisos);
+    const turningOn = args.ligada === true && !current.promo_enabled;
+    if (args.ligada !== undefined) body.promo_enabled = Boolean(args.ligada);
+    if (turningOn) body.promo_started_at = now();
+    await supabaseRest("/mp_settings?id=eq.1", { method: "PATCH", body: JSON.stringify(body) });
+    const settings = await getSettings();
+    let aviso = null;
+    if (turningOn && settings.promo_notify && promoActive(settings)) {
+      const products = (await listProducts(true)).filter((product) => inPromo(product, settings));
+      const best = Math.max(0, ...products.map((product) => Math.round((1 - (product.promo_price_cents || 0) / (product.price_cents || 1)) * 100)));
+      aviso = await createNotice({
+        title: `${settings.promo_title} no ar${best ? `: até ${best}% off` : ""}`,
+        body: settings.promo_text || `${products.length} produto(s) com desconto. Toque para ver.`,
+        kind: "promo_geral",
+      }).catch(() => null);
+    }
+    return { ok: true, promocao_no_ar: promoActive(settings), aviso_enviado: Boolean(aviso) };
   },
 };
 
