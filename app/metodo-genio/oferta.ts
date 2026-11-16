@@ -1,6 +1,6 @@
 // Dados da oferta do Método Gênio, usados na página de vendas, na página de links e no login.
 export const OFERTA = {
-  checkout: "https://pay.cakto.com.br/vfkrack_1203787",
+  checkout: "https://chk.eduzz.com/ahuo24bq", // 16/11/2026: Eduzz (antes Cakto vfkrack_1203787)
   precoDe: "497",
   preco: "297",
   gdm: "https://groupdigitalmedia.com.br/",
@@ -18,7 +18,8 @@ export const OFERTA = {
 // Downsell de saída (Saida.tsx): oferta "Downsell 197 - 6 meses" (3d7v3st) do produto Método Gênio.
 // O webhook do painel grava 6 meses + 7 dias para essa oferta. Recusou → Pacote 7 produtos (R$ 27).
 export const DOWNSELL = {
-  checkout: "https://pay.cakto.com.br/3d7v3st",
+  // 16/11/2026: oferta de 6 meses R$ 197 não existe na Eduzz → botão vai para a página de vendas do Pacote (antes Cakto 3d7v3st)
+  checkout: "https://produtos.kitsepromocoes.site/?pg=N",
   preco: "197",
   precoCheio: OFERTA.preco,
   pacote: OFERTA.pacote,
