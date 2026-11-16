@@ -1,4 +1,5 @@
 import { inviteBuyer, jsonError, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
+import { accountExists } from "@/lib/membros-avisos";
 
 const MESSAGE = "Se este e-mail tiver acesso, você vai receber um link para criar ou trocar a senha.";
 
@@ -14,6 +15,11 @@ export async function POST(request: Request) {
     if (access.length) {
       const result = await inviteBuyer(email, undefined, redirectTo).catch(() => "invite_failed");
       if (result === "invited") return Response.json({ ok: true, message: MESSAGE });
+    }
+
+    // Sem conta e sem compra: em vez de fingir que mandou, convida para o cadastro grátis.
+    if (!(await accountExists(email))) {
+      return Response.json({ ok: false, sem_conta: true, message: "Não encontramos uma conta com este e-mail. Confira se digitou certo ou crie seu acesso grátis." });
     }
 
     await supabaseAuthRequest(`/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {

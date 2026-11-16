@@ -3,7 +3,7 @@
 // painel de administração e pelo conector de IA (MCP). Assim os dois fazem sempre o mesmo.
 import { createHash, randomBytes } from "node:crypto";
 import { inviteBuyer, supabaseRest } from "@/lib/panel-server";
-import { createNotice, listLeads, noticeNewProduct, studentNotices } from "@/lib/membros-avisos";
+import { createNotice, inviteBuyersWithoutAccount, listLeads, noticeNewProduct, studentNotices } from "@/lib/membros-avisos";
 
 const enc = encodeURIComponent;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -992,6 +992,16 @@ OPS.listar_cadastros_gratis = {
     ]);
     const withPush = new Set(subs.map((row) => row.email));
     return { total: leads.length, celulares_com_aviso: subs.length, cadastros: leads.map((lead) => ({ ...lead, aviso_no_celular: withPush.has(lead.email) })) };
+  },
+};
+
+OPS.convidar_compradores = {
+  description: "Manda o e-mail de convite (criar senha) para todo comprador com acesso ativo que ainda não tem conta. Quem já tem conta não recebe nada. Até 80 por vez (limite de e-mails por hora).",
+  input: { confirmar },
+  required: ["confirmar"],
+  run: async (args) => {
+    if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
+    return inviteBuyersWithoutAccount(80);
   },
 };
 

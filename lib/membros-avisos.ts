@@ -1,6 +1,6 @@
 // Gênio Play: cadastro grátis (lead), notificações (sino) e avisos no celular (web push).
 import webpush from "web-push";
-import { supabaseAdminAuthRequest, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
+import { inviteBuyer, supabaseAdminAuthRequest, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
 import { MEMBROS_URL, OpError } from "@/lib/membros";
 
 const enc = encodeURIComponent;
@@ -45,7 +45,20 @@ export async function signupFree(input: Signup) {
   if (!created.ok) {
     const text = await created.text();
     if (created.status === 422 || /already|exists|registered/i.test(text)) {
-      throw new OpError("Este e-mail já tem acesso. Entre com a sua senha ou toque em Esqueci minha senha.");
+      // Já tem conta (comprador ou aluno do Painel): guarda o WhatsApp e manda o link de acesso no e-mail.
+      await supabaseRest("/mp_leads?on_conflict=email", {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ email, name: name || null, whatsapp, source: "gratis_conta_existente", utm }),
+      }).catch(() => undefined);
+      await supabaseAuthRequest(`/otp?redirect_to=${enc(MEMBROS_URL)}`, {
+        method: "POST",
+        body: JSON.stringify({ email, create_user: false }),
+      }).catch(() => null);
+      return {
+        existente: true,
+        mensagem: "Você já tem acesso com este e-mail. Mandamos agora um link de entrada para o seu e-mail (olhe também em Promoções e Spam).",
+      };
     }
     throw new Error(text || "Não foi possível criar o acesso.");
   }
@@ -79,6 +92,39 @@ export async function signupFree(input: Signup) {
     session: { accessToken: session.access_token, refreshToken: session.refresh_token },
     email_enviado: Boolean(mail?.ok),
   };
+}
+
+// Existe conta com este e-mail? (gera um link de recuperação sem enviar; 404/422 = não existe)
+export async function accountExists(email: string) {
+  const response = await supabaseAdminAuthRequest("/admin/generate_link", {
+    method: "POST",
+    body: JSON.stringify({ type: "recovery", email }),
+  });
+  if (response.ok) return true;
+  const text = await response.text();
+  if (/not.?found|no user/i.test(text) || response.status === 404) return false;
+  return true; // na dúvida, segue o fluxo normal
+}
+
+// Convite para todo comprador com acesso ativo que ainda não criou a conta (máx. por vez por causa do limite de e-mails/hora).
+export async function inviteBuyersWithoutAccount(limit = 80) {
+  const rows = await supabaseRest<{ email: string }[]>("/mp_access?status=eq.active&select=email");
+  const emails = [...new Set(rows.map((row) => row.email.trim().toLowerCase()))];
+  const result = { convidados: [] as string[], ja_tinham_conta: 0, falhas: [] as string[], restantes: 0 };
+  for (const email of emails) {
+    if (result.convidados.length >= limit) {
+      result.restantes += 1;
+      continue;
+    }
+    try {
+      const status = await inviteBuyer(email, undefined, MEMBROS_URL);
+      if (status === "invited") result.convidados.push(email);
+      else result.ja_tinham_conta += 1;
+    } catch {
+      result.falhas.push(email);
+    }
+  }
+  return { ...result, total_compradores: emails.length };
 }
 
 export async function listLeads(limit = 200) {

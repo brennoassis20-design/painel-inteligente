@@ -52,6 +52,11 @@ export default function Login({
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Não foi possível criar o acesso.");
+        if (data.existente) {
+          setNotice(data.mensagem);
+          setMode("login");
+          return;
+        }
         track("CompleteRegistration", { content_name: "Cadastro grátis", status: true });
         track("Lead", { content_name: "Cadastro grátis" });
         writeSession(data.session);
@@ -67,6 +72,10 @@ export default function Login({
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Não foi possível enviar o link.");
+        if (data.sem_conta) {
+          setError(data.message);
+          return;
+        }
         setNotice(data.message);
         return;
       }
@@ -185,6 +194,11 @@ export default function Login({
         {mode === "login" && (
           <button type="button" className="gp-link" onClick={() => setMode("recover")}>
             Esqueci minha senha / primeiro acesso
+          </button>
+        )}
+        {mode === "recover" && error && (
+          <button type="button" className="gp-link gp-link-strong" onClick={() => { setError(""); setMode("signup"); }}>
+            Criar acesso grátis com este e-mail
           </button>
         )}
         {mode === "recover" && (

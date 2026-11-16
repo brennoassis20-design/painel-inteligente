@@ -2,6 +2,8 @@ import { createApiKey, getSettings, listApiKeys, OpError, opsAsTools, revokeApiK
 import { withAdmin } from "@/lib/membros-http";
 import { supabaseRest } from "@/lib/panel-server";
 
+export const maxDuration = 120;
+
 // Painel de administração: as mesmas operações do conector de IA + chaves e integrações (só pela tela).
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as { op?: string; args?: Record<string, unknown> };
