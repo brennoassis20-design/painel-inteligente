@@ -70,7 +70,7 @@ function Lock() {
 
 function Tile({ item, label, progress, onOpen }: { item: Item; label: string; progress?: number; onOpen: () => void }) {
   return (
-    <button type="button" className={`gp-tile${item.owned ? "" : " is-locked"}`} onClick={onOpen} aria-label={item.owned ? `Abrir ${item.title}` : `${item.title}, bloqueado. Ver como liberar`}>
+    <button type="button" className={`gp-tile${item.owned ? "" : " is-locked"}${item.cover_url ? " has-cover" : ""}`} onClick={onOpen} aria-label={item.owned ? `Abrir ${item.title}` : `${item.title}, bloqueado. Ver como liberar`}>
       <span className="gp-tile-art" style={art(item)} />
       {!item.owned && item.badge && <span className="gp-badge">{item.badge}</span>}
       {!item.owned && (
@@ -79,7 +79,8 @@ function Tile({ item, label, progress, onOpen }: { item: Item; label: string; pr
         </span>
       )}
       <span className="gp-tile-text">
-        {item.title}
+        {/* A capa já traz o nome do produto; sem capa, o nome vai escrito. */}
+        {item.cover_url ? null : item.title}
         <small>{label}</small>
       </span>
       {progress !== undefined && <span className="gp-bar" style={{ width: `${progress}%` }} />}

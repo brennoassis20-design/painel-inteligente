@@ -86,6 +86,7 @@
 .gp-tile.is-locked .gp-tile-art { filter: saturate(0.4) brightness(0.6); }
 .gp-tile-text { position: absolute; left: 10px; right: 10px; bottom: 12px; font: 700 14px/1.18 var(--gp-display); display: grid; gap: 6px; }
 .gp-tile-text small { font: 500 11px var(--gp-body); color: var(--gp-gold2); }
+.gp-tile.has-cover .gp-tile-text small { justify-self: start; background: #0a0c12d9; padding: 4px 9px; border-radius: 7px; font-size: 12px; }
 .gp-bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--gp-accent); }
 .gp-lock { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 9px; background: #0a0c12cc; border: 1px solid #ffffff22; display: grid; place-items: center; color: var(--gp-gold2); }
 .gp-badge { position: absolute; top: 10px; left: 10px; font-size: 10px; font-weight: 700; background: var(--gp-accent); color: #1b1405; padding: 3px 7px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
