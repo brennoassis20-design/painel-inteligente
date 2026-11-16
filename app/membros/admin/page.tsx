@@ -129,6 +129,8 @@ export default function AdminPage() {
           {summary?.aparencia.brand_name || (areaSlug() ? "" : "Gênio Play")}
         </a>
         <nav className="gp-nav">
+          {/* Quem administra a plataforma, dentro da área de um produtor, volta para a principal em um clique. */}
+          {info?.admin_plataforma && !info.principal && <a href={`${/^\/membros(\/|$)/.test(window.location.pathname) ? "/membros" : ""}/admin`}>← Gênio Play (Produtores)</a>}
           <a href={home}>Ver como aluno</a>
         </nav>
       </header>
@@ -1689,6 +1691,7 @@ function ProducersTab({ flash }: { flash: (t: string) => void }) {
                 <th>Produtos</th>
                 <th>Alunos</th>
                 <th>E-mail avisos</th>
+                <th>Acessar</th>
               </tr>
             </thead>
             <tbody>
@@ -1704,6 +1707,18 @@ function ProducersTab({ flash }: { flash: (t: string) => void }) {
                   <td className="n">{area.produtos}</td>
                   <td className="n">{area.alunos}</td>
                   <td>{area.email_avisos_ligado ? "ligado" : "desligado"}</td>
+                  <td>
+                    {area.id !== 1 && (
+                      <div className="gp-btns">
+                        <a className="gp-btn gp-btn-gold gp-btn-sm" href={`${area.endereco}/admin`}>
+                          Admin
+                        </a>
+                        <a className="gp-btn gp-btn-ghost gp-btn-sm" href={area.endereco} target="_blank" rel="noreferrer">
+                          Ver área
+                        </a>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
