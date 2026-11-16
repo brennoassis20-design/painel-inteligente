@@ -19,6 +19,17 @@ const nextConfig: NextConfig = {
           has: [{ type: "host", value: "genio.brennolimaoficial.com" }],
           destination: "/metodo-genio/vsl",
         },
+        // membros.bagencymidia.site abre a área de membros (Gênio Play).
+        {
+          source: "/",
+          has: [{ type: "host", value: "membros.bagencymidia.site" }],
+          destination: "/membros",
+        },
+        {
+          source: "/admin",
+          has: [{ type: "host", value: "membros.bagencymidia.site" }],
+          destination: "/membros/admin",
+        },
       ],
     };
   },
