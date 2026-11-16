@@ -886,12 +886,14 @@ function Copy({ text, flash }: { text: string; flash: (t: string) => void }) {
 // ------------------------------------------------------------------ grátis e avisos
 
 type Lead = { email: string; name: string | null; whatsapp: string | null; utm: Record<string, string>; created_at: string; aviso_no_celular: boolean };
-type SentNotice = { id: string; title: string; body: string | null; kind: string; push_sent: number; created_at: string };
+type SentNotice = { id: string; title: string; body: string | null; kind: string; push_sent: number; email_sent: number; starts_at: string | null; created_at: string };
+const KIND_LABEL: Record<string, string> = { produto_novo: "Produto novo", modulo_novo: "Módulo novo", promo: "Promoção", ao_vivo: "Ao vivo", aviso: "Manual" };
+const EMPTY_NOTICE = { titulo: "", texto: "", produto: "", link: "", botao: "", aoVivo: false, quando: "", email: true };
 
 function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) => void }) {
-  const [leads, setLeads] = useState<{ total: number; celulares_com_aviso: number; cadastros: Lead[] } | null>(null);
+  const [leads, setLeads] = useState<{ total: number; celulares_com_aviso: number; alunos_com_email: number; cadastros: Lead[] } | null>(null);
   const [sent, setSent] = useState<SentNotice[]>([]);
-  const [form, setForm] = useState({ titulo: "", texto: "", produto: "" });
+  const [form, setForm] = useState(EMPTY_NOTICE);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -925,10 +927,22 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
     setBusy(true);
     setError("");
     try {
-      const result = await op<{ push_enviados: number }>("enviar_notificacao", { titulo: form.titulo, texto: form.texto, produto: form.produto, confirmar: true });
-      setForm({ titulo: "", texto: "", produto: "" });
+      const result = await op<{ push_enviados: number; emails: { enviados: number; falhas: number; erro?: string } | null }>("enviar_notificacao", {
+        titulo: form.titulo,
+        texto: form.texto,
+        produto: form.link ? "" : form.produto,
+        link: form.link,
+        botao: form.botao,
+        ao_vivo: form.aoVivo,
+        // datetime-local vem sem fuso: é horário de Brasília.
+        quando: form.aoVivo && form.quando ? `${form.quando}:00-03:00` : "",
+        email: form.email,
+        confirmar: true,
+      });
+      setForm(EMPTY_NOTICE);
       setConfirming(false);
-      flash(`Aviso enviado. ${result.push_enviados} celular(es) receberam.`);
+      const mail = result.emails ? ` E-mails: ${result.emails.enviados} enviados${result.emails.falhas ? `, ${result.emails.falhas} falharam (${result.emails.erro || "erro"})` : ""}.` : "";
+      flash(`Aviso enviado. ${result.push_enviados} celular(es) receberam.${mail}`);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível enviar.");
@@ -955,11 +969,19 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
 
       <div className="gp-box">
         <h3>Mandar um aviso para todos</h3>
-        <p className="gp-muted">Aparece no sino da área e chega no celular de quem ligou os avisos. Produto novo publicado já avisa sozinho.</p>
+        <p className="gp-muted">Aparece no sino da área, chega no celular de quem ligou os avisos e, se marcar, no e-mail. Produto novo e módulo novo já avisam sozinhos.</p>
+        <div className="gp-btns" role="radiogroup" aria-label="Tipo de aviso">
+          <button type="button" role="radio" aria-checked={!form.aoVivo} className={`gp-btn gp-btn-sm ${form.aoVivo ? "gp-btn-ghost" : "gp-btn-gold"}`} onClick={() => setForm({ ...form, aoVivo: false })}>
+            Aviso
+          </button>
+          <button type="button" role="radio" aria-checked={form.aoVivo} className={`gp-btn gp-btn-sm ${form.aoVivo ? "gp-btn-gold" : "gp-btn-ghost"}`} onClick={() => setForm({ ...form, aoVivo: true, botao: form.botao || "Entrar na live" })}>
+            🔴 Ao vivo
+          </button>
+        </div>
         <div className="gp-grid2">
           <label className="gp-field">
             <span>Título</span>
-            <input id="nt-titulo" maxLength={120} value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} placeholder="Aula nova liberada" />
+            <input id="nt-titulo" maxLength={120} value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} placeholder={form.aoVivo ? "Live: como escalar o seu produto" : "Aula nova liberada"} />
           </label>
           <label className="gp-field">
             <span>Ao tocar, abrir</span>
@@ -979,19 +1001,45 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
           <span>Texto (opcional)</span>
           <input id="nt-texto" maxLength={300} value={form.texto} onChange={(e) => setForm({ ...form, texto: e.target.value })} />
         </label>
+        <div className="gp-grid2">
+          <label className="gp-field">
+            <span>Link {form.aoVivo ? "da live" : "(opcional: troca o \"Ao tocar, abrir\")"}</span>
+            <input id="nt-link" type="url" inputMode="url" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value.trim() })} placeholder="https://youtube.com/live/..." />
+          </label>
+          <label className="gp-field">
+            <span>Texto do botão</span>
+            <input id="nt-botao" maxLength={40} value={form.botao} onChange={(e) => setForm({ ...form, botao: e.target.value })} placeholder={form.aoVivo ? "Entrar na live" : "Abrir"} />
+          </label>
+        </div>
+        {form.aoVivo && (
+          <label className="gp-field">
+            <span>Dia e hora (horário de Brasília)</span>
+            <input id="nt-quando" type="datetime-local" value={form.quando} onChange={(e) => setForm({ ...form, quando: e.target.value })} />
+            <small className="gp-fine">Fica uma faixa vermelha no topo da área até 3 h depois do início.</small>
+          </label>
+        )}
+        <label className="gp-check-field">
+          <input type="checkbox" checked={form.email} onChange={(e) => setForm({ ...form, email: e.target.checked })} />
+          <span>Mandar também por e-mail ({leads?.alunos_com_email ?? "…"} alunos)</span>
+        </label>
         {error && <p className="gp-error">{error}</p>}
         <div className="gp-btns">
           {confirming ? (
             <>
               <button type="button" className="gp-btn gp-btn-gold" disabled={busy} onClick={() => void send()}>
-                {busy ? "Enviando…" : `Confirmar envio para todos (${leads?.celulares_com_aviso ?? 0} celulares)`}
+                {busy ? "Enviando…" : `Confirmar: sino + ${leads?.celulares_com_aviso ?? 0} celulares${form.email ? ` + ${leads?.alunos_com_email ?? 0} e-mails` : ""}`}
               </button>
               <button type="button" className="gp-btn gp-btn-ghost" onClick={() => setConfirming(false)}>
                 Cancelar
               </button>
             </>
           ) : (
-            <button type="button" className="gp-btn gp-btn-gold" disabled={!form.titulo.trim()} onClick={() => setConfirming(true)}>
+            <button
+              type="button"
+              className="gp-btn gp-btn-gold"
+              disabled={!form.titulo.trim() || (form.aoVivo && (!form.quando || !/^https:\/\//.test(form.link))) || (!!form.link && !/^https:\/\//.test(form.link))}
+              onClick={() => setConfirming(true)}
+            >
               Enviar aviso
             </button>
           )}
@@ -1005,6 +1053,7 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
                   <th>Aviso</th>
                   <th>Tipo</th>
                   <th>Celulares</th>
+                  <th>E-mails</th>
                 </tr>
               </thead>
               <tbody>
@@ -1012,8 +1061,9 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
                   <tr key={notice.id}>
                     <td>{new Date(notice.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
                     <td>{notice.title}</td>
-                    <td>{notice.kind === "produto_novo" ? "Produto novo" : "Manual"}</td>
+                    <td>{KIND_LABEL[notice.kind] || "Manual"}</td>
                     <td className="n">{notice.push_sent}</td>
+                    <td className="n">{notice.email_sent || "—"}</td>
                   </tr>
                 ))}
               </tbody>

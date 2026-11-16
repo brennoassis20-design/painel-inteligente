@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isInstalled, platform, refreshPush, registerWorker } from "./app";
-import { Bell, InstallGuide, PushInvite, type NoticeItem } from "./Extras";
+import { Bell, InstallGuide, LiveBar, PushInvite, type NoticeItem } from "./Extras";
 import { captureUtm, readUtm, track } from "./pixel";
 import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Promo";
 import Login from "./Login";
@@ -51,6 +51,7 @@ type Home = {
   products: Item[];
   continueWatching: { product: Item; lesson_id: string; lesson_title: string }[];
   notices?: { items: NoticeItem[]; unread: number };
+  live?: NoticeItem | null;
   isAdmin: boolean;
 };
 
@@ -265,6 +266,10 @@ export default function MembrosPage() {
   const notices = home.notices || { items: [], unread: 0 };
 
   const openNotice = (notice: NoticeItem) => {
+    if (notice.url) {
+      window.open(notice.url, "_blank", "noopener");
+      return;
+    }
     const item = home.products.find((product) => product.id === notice.product_id);
     if (!item) return;
     if (item.owned) go(item.slug);
@@ -329,6 +334,12 @@ export default function MembrosPage() {
           </button>
         </nav>
       </header>
+
+      {home.live && (
+        <div className="gp-wrap">
+          <LiveBar live={home.live} />
+        </div>
+      )}
 
       {slug ? (
         <ProductScreen

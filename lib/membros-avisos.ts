@@ -135,11 +135,23 @@ export async function listLeads(limit = 200) {
 
 // ---------------------------------------------------------------- notificações
 
-export type Notice = { id: string; title: string; body: string | null; product_id: string | null; kind: string; created_at: string };
+export type Notice = {
+  id: string;
+  title: string;
+  body: string | null;
+  product_id: string | null;
+  kind: string;
+  url: string | null;
+  button_label: string | null;
+  starts_at: string | null;
+  created_at: string;
+};
+
+const NOTICE_FIELDS = "id,title,body,product_id,kind,url,button_label,starts_at,created_at";
 
 export async function studentNotices(userId: string) {
   const [list, seen] = await Promise.all([
-    supabaseRest<Notice[]>("/mp_notifications?select=id,title,body,product_id,kind,created_at&order=created_at.desc&limit=30"),
+    supabaseRest<Notice[]>(`/mp_notifications?select=${NOTICE_FIELDS}&order=created_at.desc&limit=30`),
     supabaseRest<{ seen_at: string }[]>(`/mp_notification_seen?user_id=eq.${userId}&select=seen_at`),
   ]);
   const seenAt = seen[0]?.seen_at || "1970-01-01T00:00:00Z";
@@ -155,25 +167,169 @@ export async function markNoticesSeen(userId: string) {
   return { ok: true };
 }
 
-// Cria o aviso no sino e manda para todos os celulares com aviso ligado.
-export async function createNotice(input: { title: string; body?: string | null; productId?: string | null; slug?: string | null; kind?: string }) {
+// Próxima live (começa daqui pra frente ou começou há menos de 3 h): vira faixa no topo da área.
+export async function nextLive() {
+  const since = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
+  const rows = await supabaseRest<Notice[]>(
+    `/mp_notifications?kind=eq.ao_vivo&starts_at=gte.${enc(since)}&select=${NOTICE_FIELDS}&order=starts_at.asc&limit=1`,
+  );
+  return rows[0] || null;
+}
+
+type NewNotice = {
+  title: string;
+  body?: string | null;
+  productId?: string | null;
+  moduleId?: string | null;
+  slug?: string | null;
+  kind?: string;
+  url?: string | null;
+  buttonLabel?: string | null;
+  startsAt?: string | null;
+  email?: boolean;
+};
+
+export function cleanUrl(value: unknown) {
+  const url = String(value || "").trim();
+  if (!url) return null;
+  if (!/^https:\/\/[^\s]+$/i.test(url)) throw new OpError("O link precisa começar com https://");
+  return url.slice(0, 500);
+}
+
+// Cria o aviso no sino, manda para todos os celulares com aviso ligado e, se pedido, por e-mail.
+export async function createNotice(input: NewNotice) {
   const rows = await supabaseRest<Notice[]>("/mp_notifications", {
     method: "POST",
     headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ title: input.title.slice(0, 120), body: input.body?.slice(0, 300) || null, product_id: input.productId || null, kind: input.kind || "aviso" }),
+    body: JSON.stringify({
+      title: input.title.slice(0, 120),
+      body: input.body?.slice(0, 300) || null,
+      product_id: input.productId || null,
+      module_id: input.moduleId || null,
+      kind: input.kind || "aviso",
+      url: input.url || null,
+      button_label: input.buttonLabel?.slice(0, 40) || null,
+      starts_at: input.startsAt || null,
+    }),
   });
   const notice = rows[0];
+  const target = notice.url || (input.slug ? `${MEMBROS_URL}/?p=${enc(input.slug)}` : MEMBROS_URL);
+  const when = notice.starts_at ? `${whenText(notice.starts_at)}. ` : "";
   const sent = await pushAll({
-    title: notice.title,
-    body: notice.body || "Toque para ver na sua área.",
-    url: input.slug ? `${MEMBROS_URL}/?p=${enc(input.slug)}` : MEMBROS_URL,
+    title: notice.kind === "ao_vivo" ? `🔴 ${notice.title}` : notice.title,
+    body: `${when}${notice.body || (notice.url ? "Toque para abrir." : "Toque para ver na sua área.")}`.slice(0, 240),
+    url: target,
     tag: notice.id,
   }).catch((error) => {
     console.error("push", error);
     return 0;
   });
-  await supabaseRest(`/mp_notifications?id=eq.${notice.id}`, { method: "PATCH", body: JSON.stringify({ push_sent: sent }) }).catch(() => undefined);
-  return { ...notice, push_enviados: sent };
+  const mail = input.email ? await emailAll(notice, target).catch((error) => ({ enviados: 0, falhas: 0, erro: String(error?.message || error) })) : null;
+  await supabaseRest(`/mp_notifications?id=eq.${notice.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ push_sent: sent, email_sent: mail?.enviados || 0 }),
+  }).catch(() => undefined);
+  return { ...notice, push_enviados: sent, emails: mail };
+}
+
+// Módulo novo ganhou a 1ª aula num produto já publicado: um aviso por módulo (o índice único impede repetir).
+export async function noticeNewModule(
+  product: { id: string; slug: string; title: string; published?: boolean },
+  mod: { id: string; title: string; release_days?: number },
+) {
+  if (!product.published || (mod.release_days || 0) > 0) return null;
+  const exists = await supabaseRest<{ id: string }[]>(`/mp_notifications?module_id=eq.${mod.id}&kind=eq.modulo_novo&select=id`);
+  if (exists.length) return null;
+  return createNotice({
+    title: `Módulo novo: ${mod.title}`,
+    body: `Acabou de entrar em ${product.title}. Toque para assistir.`,
+    productId: product.id,
+    moduleId: mod.id,
+    slug: product.slug,
+    kind: "modulo_novo",
+  }).catch((error) => {
+    console.error("aviso módulo novo", error);
+    return null;
+  });
+}
+
+// ---------------------------------------------------------------- e-mail (Brevo)
+
+const TZ = "America/Sao_Paulo";
+
+export function whenText(iso: string) {
+  const date = new Date(iso);
+  const day = date.toLocaleDateString("pt-BR", { timeZone: TZ, weekday: "long", day: "2-digit", month: "2-digit" });
+  const hour = date.toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }).replace(":00", "h").replace(":", "h");
+  const today = new Date().toLocaleDateString("pt-BR", { timeZone: TZ });
+  const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("pt-BR", { timeZone: TZ });
+  const label = date.toLocaleDateString("pt-BR", { timeZone: TZ });
+  const prefix = label === today ? "Hoje" : label === tomorrow ? "Amanhã" : day.charAt(0).toUpperCase() + day.slice(1);
+  return `${prefix}, às ${hour}`;
+}
+
+// Todos os alunos: compradores com acesso ativo + cadastros grátis.
+export async function studentEmails() {
+  const [access, leads] = await Promise.all([
+    supabaseRest<{ email: string }[]>("/mp_access?status=eq.active&select=email"),
+    supabaseRest<{ email: string }[]>("/mp_leads?select=email"),
+  ]);
+  return [...new Set([...access, ...leads].map((row) => row.email.trim().toLowerCase()).filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)))];
+}
+
+const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
+
+export function noticeEmailHtml(notice: Notice, target: string) {
+  const live = notice.kind === "ao_vivo";
+  const font = "font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;";
+  const kicker = live ? "🔴 AO VIVO" : "GÊNIO PLAY";
+  const when = notice.starts_at ? `<tr><td align="center" style="padding:14px 36px 0;${font}font-size:16px;font-weight:700;color:#ffd27a;">${esc(whenText(notice.starts_at))} (horário de Brasília)</td></tr>` : "";
+  const body = notice.body ? `<tr><td align="center" style="padding:12px 36px 0;${font}font-size:15px;line-height:24px;color:#9aa2b8;">${esc(notice.body).replace(/\n/g, "<br>")}</td></tr>` : "";
+  const label = esc(notice.button_label || (live ? "Entrar na live" : "Abrir"));
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><title>${esc(notice.title)}</title></head>
+<body style="margin:0;padding:0;background-color:#0a0c12;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0c12;"><tr><td align="center" style="padding:40px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background-color:#121622;border:1px solid #262c3d;border-radius:24px;">
+<tr><td align="center" style="padding:36px 36px 0;"><img src="${MEMBROS_URL}/membros/app/icone-192.png" width="64" height="64" alt="" style="display:block;border:0;border-radius:16px;"></td></tr>
+<tr><td align="center" style="padding:14px 36px 0;${font}font-size:11px;font-weight:600;letter-spacing:4px;color:${live ? "#ff5a5a" : "#f2b441"};">${kicker}</td></tr>
+<tr><td align="center" style="padding:12px 36px 0;${font}font-size:25px;line-height:32px;font-weight:700;color:#eef0f6;">${esc(notice.title)}</td></tr>
+${when}${body}
+<tr><td align="center" style="padding:28px 36px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" bgcolor="#f2b441" style="border-radius:14px;background-color:#f2b441;">
+<a href="${esc(target)}" target="_blank" style="display:inline-block;padding:16px 34px;${font}font-size:15px;font-weight:700;color:#1b1405;text-decoration:none;border-radius:14px;">${label} &rarr;</a></td></tr></table></td></tr>
+<tr><td align="center" style="padding:28px 36px 32px;${font}font-size:12px;line-height:19px;color:#6b7390;">Você recebe este e-mail porque é aluno do Gênio Play.<br>Área: <a href="${MEMBROS_URL}" style="color:#ffd27a;">${MEMBROS_URL.replace("https://", "")}</a></td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+async function emailAll(notice: Notice, target: string) {
+  const key = process.env.BREVO_API_KEY;
+  if (!key) throw new OpError("E-mail ainda não configurado (falta BREVO_API_KEY na Vercel).");
+  const emails = await studentEmails();
+  const sender = { name: process.env.MEMBROS_EMAIL_NOME || "Brenno Lima", email: process.env.MEMBROS_EMAIL_DE || "material@brennolimaoficial.com" };
+  const subject = notice.kind === "ao_vivo" && notice.starts_at ? `🔴 ${notice.title} · ${whenText(notice.starts_at)}` : notice.title;
+  const html = noticeEmailHtml(notice, target);
+  const result = { enviados: 0, falhas: 0, total: emails.length, erro: "" };
+  // Um destinatário por versão (ninguém vê o e-mail do outro), 50 por chamada.
+  for (let i = 0; i < emails.length; i += 50) {
+    const batch = emails.slice(i, i + 50);
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": key, "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({
+        sender,
+        replyTo: { email: process.env.MEMBROS_EMAIL_RESPOSTA || "contato@brennolimaoficial.com" },
+        subject: subject.slice(0, 150),
+        htmlContent: html,
+        tags: ["genio-play", notice.kind],
+        messageVersions: batch.map((email) => ({ to: [{ email }] })),
+      }),
+    });
+    if (response.ok) result.enviados += batch.length;
+    else {
+      result.falhas += batch.length;
+      result.erro = (await response.text()).slice(0, 200);
+    }
+  }
+  return result;
 }
 
 // Produto novo publicado: um aviso por produto (o índice único impede repetir).

@@ -165,3 +165,12 @@ alter table public.mp_notifications enable row level security;
 alter table public.mp_notification_seen enable row level security;
 alter table public.mp_push_subs enable row level security;
 revoke all on table public.mp_leads, public.mp_notifications, public.mp_notification_seen, public.mp_push_subs from anon, authenticated;
+
+-- 16/11: avisos com link (ao vivo), e-mail junto e aviso de módulo novo (um por módulo).
+alter table public.mp_notifications
+  add column if not exists url text,
+  add column if not exists button_label text,
+  add column if not exists starts_at timestamptz,
+  add column if not exists module_id uuid references public.mp_modules(id) on delete set null,
+  add column if not exists email_sent integer not null default 0;
+create unique index if not exists mp_notifications_module_novo_uidx on public.mp_notifications (module_id) where kind = 'modulo_novo';

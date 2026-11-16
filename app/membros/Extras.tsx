@@ -167,7 +167,53 @@ export function InstallGuide({ forceOpen, onClose }: { forceOpen?: boolean; onCl
   );
 }
 
-export type NoticeItem = { id: string; title: string; body: string | null; product_id: string | null; created_at: string };
+export type NoticeItem = {
+  id: string;
+  title: string;
+  body: string | null;
+  product_id: string | null;
+  kind?: string;
+  url?: string | null;
+  button_label?: string | null;
+  starts_at?: string | null;
+  created_at: string;
+};
+
+const TZ = "America/Sao_Paulo";
+
+// "Hoje, às 20h" / "Amanhã, às 19h30" / "Sexta-feira, 21/11, às 20h" (horário de Brasília).
+export function liveWhen(iso: string) {
+  const date = new Date(iso);
+  const hour = date.toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }).replace(":00", "h").replace(":", "h");
+  const label = date.toLocaleDateString("pt-BR", { timeZone: TZ });
+  if (label === new Date().toLocaleDateString("pt-BR", { timeZone: TZ })) return `Hoje, às ${hour}`;
+  if (label === new Date(Date.now() + 86400000).toLocaleDateString("pt-BR", { timeZone: TZ })) return `Amanhã, às ${hour}`;
+  const day = date.toLocaleDateString("pt-BR", { timeZone: TZ, weekday: "long", day: "2-digit", month: "2-digit" });
+  return `${day.charAt(0).toUpperCase()}${day.slice(1)}, às ${hour}`;
+}
+
+// Faixa no topo da área enquanto a live não acaba (até 3 h depois do início).
+export function LiveBar({ live }: { live: NoticeItem }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+  if (!live.url || !live.starts_at) return null;
+  const start = new Date(live.starts_at).getTime();
+  if (now > start + 3 * 3600 * 1000) return null;
+  const onAir = now >= start - 5 * 60 * 1000;
+  return (
+    <a className={`gp-live${onAir ? " is-on" : ""}`} href={live.url} target="_blank" rel="noreferrer">
+      <span className="gp-live-tag">{onAir ? "AO VIVO AGORA" : "AO VIVO"}</span>
+      <span className="gp-live-text">
+        <b>{live.title}</b>
+        <small>{onAir ? "Já começou. Toque para entrar." : liveWhen(live.starts_at)}</small>
+      </span>
+      <span className="gp-live-go">{live.button_label || "Entrar na live"} →</span>
+    </a>
+  );
+}
 
 function ago(iso: string) {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -248,7 +294,11 @@ export function Bell({
                       onOpenItem(item);
                     }}
                   >
-                    <b>{item.title}</b>
+                    <b>
+                      {item.kind === "ao_vivo" && <em className="gp-bell-live">AO VIVO</em>}
+                      {item.title}
+                    </b>
+                    {item.kind === "ao_vivo" && item.starts_at && <span className="gp-bell-when">{liveWhen(item.starts_at)}</span>}
                     {item.body && <span>{item.body}</span>}
                     <small>{ago(item.created_at)}</small>
                   </button>

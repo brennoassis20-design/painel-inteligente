@@ -3,7 +3,7 @@
 // painel de administração e pelo conector de IA (MCP). Assim os dois fazem sempre o mesmo.
 import { createHash, randomBytes } from "node:crypto";
 import { inviteBuyer, supabaseRest } from "@/lib/panel-server";
-import { createNotice, inviteBuyersWithoutAccount, listLeads, noticeNewProduct, studentNotices } from "@/lib/membros-avisos";
+import { cleanUrl, createNotice, inviteBuyersWithoutAccount, listLeads, nextLive, noticeNewModule, noticeNewProduct, studentEmails, studentNotices } from "@/lib/membros-avisos";
 
 const enc = encodeURIComponent;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -300,6 +300,7 @@ export async function studentHome(user: { id: string; email: string }) {
     products: items,
     continueWatching,
     notices: await studentNotices(user.id).catch(() => ({ items: [], unread: 0 })),
+    live: await nextLive().catch(() => null),
     isAdmin: await isAdmin(user.email),
   };
 }
@@ -888,6 +889,7 @@ export const OPS: Record<string, Op> = {
       produto: str("Id ou slug do produto (opcional se 'modulo' for o id do módulo)."),
       modulo: str("Id ou título do módulo."),
       ...LESSON_FIELDS,
+      avisar: bool("false = não avisa os alunos quando for a 1ª aula de um módulo novo (padrão: avisa)."),
     },
     required: ["modulo", "titulo"],
     run: async (args) => {
@@ -910,13 +912,18 @@ export const OPS: Record<string, Op> = {
         headers: { Prefer: "return=representation" },
         body: JSON.stringify(body),
       });
+      // 1ª aula publicada de um módulo novo em produto já no ar: avisa os alunos (avisar=false pula).
+      if (args.avisar !== false && rows[0]?.published !== false) {
+        const live = await supabaseRest<{ id: string }[]>(`/mp_lessons?module_id=eq.${mod.id}&published=eq.true&select=id`).catch(() => []);
+        if (live.length === 1) await noticeNewModule(product, mod);
+      }
       return rows[0];
     },
   },
 
   atualizar_aula: {
     description: "Altera uma aula (só os campos enviados mudam). Para mudar de módulo, envie modulo.",
-    input: { aula: str("Id da aula."), modulo: str("Id do novo módulo (opcional)."), ...LESSON_FIELDS },
+    input: { aula: str("Id da aula."), modulo: str("Id do novo módulo (opcional)."), ...LESSON_FIELDS, avisar: bool("false = não avisa se publicar a 1ª aula de um módulo (padrão: avisa).") },
     required: ["aula"],
     run: async (args) => {
       const lesson = await findLesson(String(args.aula));
@@ -931,6 +938,11 @@ export const OPS: Record<string, Op> = {
         headers: { Prefer: "return=representation" },
         body: JSON.stringify(body),
       });
+      // Aula que estava escondida e foi publicada: se for a 1ª do módulo, avisa como módulo novo.
+      if (!lesson.published && rows[0]?.published && args.avisar !== false) {
+        const live = await supabaseRest<{ id: string }[]>(`/mp_lessons?module_id=eq.${rows[0].module_id}&published=eq.true&select=id`).catch(() => []);
+        if (live.length === 1) await noticeNewModule(await findProduct(rows[0].product_id), await findModule(rows[0].module_id));
+      }
       return rows[0];
     },
   },
@@ -1072,37 +1084,64 @@ OPS.configurar_promocao = {
 };
 
 OPS.enviar_notificacao = {
-  description: "Manda um aviso para TODOS os alunos (cadastro grátis e compradores): aparece no sino da área e chega no celular de quem ligou os avisos.",
+  description:
+    "Manda um aviso para TODOS os alunos (cadastro grátis e compradores): aparece no sino da área, chega no celular de quem ligou os avisos e, com email=true, vai por e-mail. Para live/conteúdo ao vivo use ao_vivo=true + quando + link: aparece também como faixa no topo da área até 3 h depois do início.",
   input: {
-    titulo: str("Título curto do aviso."),
+    titulo: str("Título curto do aviso (ex.: Live: como escalar o seu produto)."),
     texto: str("Texto do aviso (opcional)."),
-    produto: str("Id ou slug do produto que abre ao tocar (opcional)."),
+    produto: str("Id ou slug do produto que abre ao tocar (opcional; ignorado se tiver link)."),
+    link: str("Link que abre ao tocar (https://...), ex.: YouTube, Instagram, Meet, grupo de WhatsApp."),
+    botao: str("Texto do botão (ex.: Entrar na live). Opcional."),
+    ao_vivo: bool("true = é uma live / conteúdo ao vivo."),
+    quando: str("Data e hora da live em ISO com fuso (ex.: 2026-11-20T20:00:00-03:00). Obrigatório se ao_vivo=true."),
+    email: bool("true = manda também por e-mail para todos os alunos."),
     confirmar,
   },
   required: ["titulo", "confirmar"],
   run: async (args) => {
     if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
-    const product = args.produto ? await findProduct(String(args.produto)) : null;
-    return createNotice({ title: String(need(args.titulo, "Informe o título.")), body: args.texto ? String(args.texto) : null, productId: product?.id, slug: product?.slug });
+    const live = args.ao_vivo === true;
+    let startsAt: string | null = null;
+    if (args.quando) {
+      const date = new Date(String(args.quando));
+      if (Number.isNaN(date.getTime())) throw new OpError("Data/hora inválida.");
+      startsAt = date.toISOString();
+    }
+    if (live && !startsAt) throw new OpError("Informe quando a live começa.");
+    const url = cleanUrl(args.link);
+    if (live && !url) throw new OpError("Informe o link da live.");
+    const product = args.produto && !url ? await findProduct(String(args.produto)) : null;
+    return createNotice({
+      title: String(need(args.titulo, "Informe o título.")),
+      body: args.texto ? String(args.texto) : null,
+      productId: product?.id,
+      slug: product?.slug,
+      kind: live ? "ao_vivo" : "aviso",
+      url,
+      buttonLabel: args.botao ? String(args.botao) : null,
+      startsAt,
+      email: args.email === true,
+    });
   },
 };
 
 OPS.listar_notificacoes = {
   description: "Lista os últimos avisos enviados e quantos celulares receberam cada um.",
   input: {},
-  run: async () => supabaseRest("/mp_notifications?select=id,title,body,kind,push_sent,created_at,mp_products(slug,title)&order=created_at.desc&limit=50"),
+  run: async () => supabaseRest("/mp_notifications?select=id,title,body,kind,url,starts_at,push_sent,email_sent,created_at,mp_products(slug,title)&order=created_at.desc&limit=50"),
 };
 
 OPS.listar_cadastros_gratis = {
   description: "Lista quem se cadastrou grátis (nome, e-mail, WhatsApp, UTM de origem), mais recentes primeiro.",
   input: { limite: num("Máximo de linhas (padrão 200).") },
   run: async (args) => {
-    const [leads, subs] = await Promise.all([
+    const [leads, subs, emails] = await Promise.all([
       listLeads(Number(args.limite || 200)),
       supabaseRest<{ email: string }[]>("/mp_push_subs?select=email"),
+      studentEmails().catch(() => []),
     ]);
     const withPush = new Set(subs.map((row) => row.email));
-    return { total: leads.length, celulares_com_aviso: subs.length, cadastros: leads.map((lead) => ({ ...lead, aviso_no_celular: withPush.has(lead.email) })) };
+    return { total: leads.length, celulares_com_aviso: subs.length, alunos_com_email: emails.length, cadastros: leads.map((lead) => ({ ...lead, aviso_no_celular: withPush.has(lead.email) })) };
   },
 };
 

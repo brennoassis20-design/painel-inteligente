@@ -26,6 +26,11 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = (event.notification.data && event.notification.data.url) || self.registration.scope;
+  // Link de fora (live no YouTube/Instagram, grupo): abre direto, sem trocar a área de lugar.
+  if (!url.startsWith(self.location.origin)) {
+    event.waitUntil(self.clients.openWindow(url));
+    return;
+  }
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const client of list) {
