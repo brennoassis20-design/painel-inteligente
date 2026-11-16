@@ -34,6 +34,20 @@ function hotmart(payload: Json): SaleEvent {
 
 // Eduzz (Developer Hub, eventos myeduzz.*): data.buyer/student, data.items[].productId.
 function eduzz(payload: Json): SaleEvent {
+  // Entrega customizada da Eduzz: { type: "create" | "remove", fields: { edz_cli_email, edz_cnt_cod, ... } }
+  const fields = obj(payload.fields);
+  if (fields.edz_cli_email || payload.type === "create" || payload.type === "remove") {
+    const type = txt(payload.type).toLowerCase();
+    return {
+      provider: "eduzz",
+      kind: type === "create" ? "approved" : type === "remove" ? "refunded" : "ignored",
+      rawType: `entrega_${type || "teste"}`,
+      email: txt(fields.edz_cli_email).toLowerCase().trim(),
+      name: txt(fields.edz_cli_rsocial) || undefined,
+      externalIds: [txt(fields.edz_cnt_cod), fields.edz_cnt_paicod ? txt(fields.edz_cnt_paicod) : ""],
+      orderId: txt(fields.edz_fat_cod) || undefined,
+    };
+  }
   const data = obj(payload.data);
   const type = txt(payload.event).toLowerCase();
   const student = obj(data.student);
@@ -85,11 +99,36 @@ function generic(provider: string, payload: Json): SaleEvent {
   };
 }
 
+// Aceita JSON ou formulário (a Eduzz manda "fields[edz_cli_email]=..." em algumas integrações).
+function parseBody(raw: string): Json {
+  const text = raw.trim();
+  if (!text) return {};
+  if (text.startsWith("{") || text.startsWith("[")) {
+    try {
+      return JSON.parse(text) as Json;
+    } catch {
+      return {};
+    }
+  }
+  const out: Json = {};
+  for (const [key, value] of new URLSearchParams(text)) {
+    const nested = key.match(/^([^[]+)\[([^\]]+)\]$/);
+    if (nested) {
+      const parent = obj(out[nested[1]]);
+      parent[nested[2]] = value;
+      out[nested[1]] = parent;
+    } else out[key] = value;
+  }
+  // Formulário "solto" (edz_* na raiz) vira o mesmo formato de { fields }.
+  if (!out.fields && Object.keys(out).some((key) => key.startsWith("edz_"))) out.fields = { ...out };
+  return out;
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ provider: string }> }) {
   try {
     const provider = (await params).provider.toLowerCase().replace(/[^a-z0-9_-]/g, "");
     const raw = await request.text();
-    const payload = JSON.parse(raw || "{}") as Json;
+    const payload = parseBody(raw);
     const settings = await getSettings();
     const url = new URL(request.url);
 
