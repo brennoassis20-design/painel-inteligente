@@ -148,3 +148,20 @@ alter table public.mp_settings add column if not exists webhook_secret text not 
 alter table public.mp_settings add column if not exists hotmart_hottok text;
 
 insert into public.mp_admins (email) values ('brennoassis30@gmail.com'), ('brennoassis20@icloud.com') on conflict do nothing;
+
+-- 16/11/2026 (noite): conteúdo gratuito, cadastro grátis (leads), notificações e avisos no celular (web push).
+alter table public.mp_products add column if not exists is_free boolean not null default false;
+create table if not exists public.mp_leads (email text primary key, user_id uuid references auth.users(id) on delete set null, name text, whatsapp text, source text not null default 'gratis', utm jsonb not null default '{}'::jsonb, created_at timestamptz not null default now());
+create table if not exists public.mp_notifications (id uuid primary key default gen_random_uuid(), title text not null, body text, product_id uuid references public.mp_products(id) on delete set null, kind text not null default 'aviso', push_sent integer not null default 0, created_at timestamptz not null default now());
+create unique index if not exists mp_notifications_produto_novo_uq on public.mp_notifications (product_id) where kind = 'produto_novo';
+create index if not exists mp_notifications_created_idx on public.mp_notifications (created_at desc);
+create table if not exists public.mp_notification_seen (user_id uuid primary key references auth.users(id) on delete cascade, seen_at timestamptz not null default now());
+create table if not exists public.mp_push_subs (endpoint text primary key, user_id uuid references auth.users(id) on delete cascade, email text, p256dh text not null, auth text not null, user_agent text, created_at timestamptz not null default now());
+-- Chaves VAPID do push: geradas pelo servidor na primeira vez (lib/membros-avisos.ts).
+alter table public.mp_settings add column if not exists vapid_public text;
+alter table public.mp_settings add column if not exists vapid_private text;
+alter table public.mp_leads enable row level security;
+alter table public.mp_notifications enable row level security;
+alter table public.mp_notification_seen enable row level security;
+alter table public.mp_push_subs enable row level security;
+revoke all on table public.mp_leads, public.mp_notifications, public.mp_notification_seen, public.mp_push_subs from anon, authenticated;

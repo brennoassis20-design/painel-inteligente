@@ -3,6 +3,7 @@
 // painel de administração e pelo conector de IA (MCP). Assim os dois fazem sempre o mesmo.
 import { createHash, randomBytes } from "node:crypto";
 import { inviteBuyer, supabaseRest } from "@/lib/panel-server";
+import { createNotice, listLeads, noticeNewProduct, studentNotices } from "@/lib/membros-avisos";
 
 const enc = encodeURIComponent;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -47,6 +48,8 @@ export type Product = {
   upsell_product_id: string | null;
   upsell_text: string | null;
   special: string | null;
+  // Conteúdo gratuito: qualquer pessoa cadastrada assiste.
+  is_free: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -164,6 +167,9 @@ export async function accessMap(email: string, products: Product[]) {
   );
   const nowMs = Date.now();
 
+  // Produto gratuito: liberado para todo mundo que tem conta (cadastro grátis ou comprador).
+  for (const product of products) if (product.is_free) map.set(product.id, { since: product.created_at, expires_at: null });
+
   for (const row of rows) {
     if (row.status !== "active") continue;
     if (row.expires_at && new Date(row.expires_at).getTime() < nowMs) continue;
@@ -207,6 +213,7 @@ function publicProduct(product: Product) {
     special: product.special,
     sales_page_url: product.sales_page_url,
     has_checkout: Boolean(product.checkout_url),
+    is_free: Boolean(product.is_free),
   };
 }
 
@@ -258,6 +265,7 @@ export async function studentHome(user: { id: string; email: string }) {
     hero,
     products: items,
     continueWatching,
+    notices: await studentNotices(user.id).catch(() => ({ items: [], unread: 0 })),
     isAdmin: await isAdmin(user.email),
   };
 }
@@ -514,6 +522,7 @@ const PRODUCT_FIELDS = {
   selo: str("Etiqueta curta no card, ex.: Novo, Mais vendido."),
   posicao: num("Ordem na vitrine (menor primeiro)."),
   especial: str("'painel' se o produto também libera o Painel Inteligente (Método Gênio). Vazio nos demais."),
+  gratuito: bool("true = conteúdo gratuito: qualquer pessoa cadastrada (cadastro grátis) assiste. Os pagos aparecem com cadeado."),
 };
 
 function productBody(args: Args, partial: boolean) {
@@ -541,6 +550,7 @@ function productBody(args: Args, partial: boolean) {
   set("badge", args.selo);
   set("position", args.posicao);
   set("special", args.especial);
+  if (args.gratuito !== undefined) body.is_free = Boolean(args.gratuito);
   body.updated_at = now();
   return body;
 }
@@ -688,8 +698,8 @@ export const OPS: Record<string, Op> = {
   },
 
   criar_produto: {
-    description: "Cria um produto na vitrine. Nasce como rascunho (publicado=false) a não ser que publicado=true.",
-    input: PRODUCT_FIELDS,
+    description: "Cria um produto na vitrine. Nasce como rascunho (publicado=false) a não ser que publicado=true. Ao publicar, todos os alunos recebem aviso (sino + celular).",
+    input: { ...PRODUCT_FIELDS, avisar: bool("false = publica sem mandar aviso aos alunos (padrão: avisa).") },
     required: ["titulo"],
     run: async (args) => {
       need(args.titulo, "Informe o título.");
@@ -700,13 +710,15 @@ export const OPS: Record<string, Op> = {
         headers: { Prefer: "return=representation" },
         body: JSON.stringify(body),
       });
+      // Já nasceu publicado: avisa todos os alunos (sino + celular).
+      if (rows[0]?.published && args.avisar !== false) await noticeNewProduct(rows[0]);
       return rows[0];
     },
   },
 
   atualizar_produto: {
-    description: "Altera campos de um produto (só os campos enviados mudam).",
-    input: { produto: str("Id ou slug do produto."), ...PRODUCT_FIELDS },
+    description: "Altera campos de um produto (só os campos enviados mudam). Se um rascunho for publicado, todos os alunos recebem aviso (uma vez por produto).",
+    input: { produto: str("Id ou slug do produto."), ...PRODUCT_FIELDS, avisar: bool("false = publica sem mandar aviso aos alunos (padrão: avisa).") },
     required: ["produto"],
     run: async (args) => {
       const product = await findProduct(String(args.produto));
@@ -715,6 +727,8 @@ export const OPS: Record<string, Op> = {
         headers: { Prefer: "return=representation" },
         body: JSON.stringify(productBody(args, true)),
       });
+      // Rascunho virou publicado: avisa todos os alunos uma única vez por produto.
+      if (!product.published && rows[0]?.published && args.avisar !== false) await noticeNewProduct(rows[0]);
       return rows[0];
     },
   },
@@ -943,6 +957,41 @@ export const OPS: Record<string, Op> = {
       });
       return { ok: true };
     },
+  },
+};
+
+OPS.enviar_notificacao = {
+  description: "Manda um aviso para TODOS os alunos (cadastro grátis e compradores): aparece no sino da área e chega no celular de quem ligou os avisos.",
+  input: {
+    titulo: str("Título curto do aviso."),
+    texto: str("Texto do aviso (opcional)."),
+    produto: str("Id ou slug do produto que abre ao tocar (opcional)."),
+    confirmar,
+  },
+  required: ["titulo", "confirmar"],
+  run: async (args) => {
+    if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
+    const product = args.produto ? await findProduct(String(args.produto)) : null;
+    return createNotice({ title: String(need(args.titulo, "Informe o título.")), body: args.texto ? String(args.texto) : null, productId: product?.id, slug: product?.slug });
+  },
+};
+
+OPS.listar_notificacoes = {
+  description: "Lista os últimos avisos enviados e quantos celulares receberam cada um.",
+  input: {},
+  run: async () => supabaseRest("/mp_notifications?select=id,title,body,kind,push_sent,created_at,mp_products(slug,title)&order=created_at.desc&limit=50"),
+};
+
+OPS.listar_cadastros_gratis = {
+  description: "Lista quem se cadastrou grátis (nome, e-mail, WhatsApp, UTM de origem), mais recentes primeiro.",
+  input: { limite: num("Máximo de linhas (padrão 200).") },
+  run: async (args) => {
+    const [leads, subs] = await Promise.all([
+      listLeads(Number(args.limite || 200)),
+      supabaseRest<{ email: string }[]>("/mp_push_subs?select=email"),
+    ]);
+    const withPush = new Set(subs.map((row) => row.email));
+    return { total: leads.length, celulares_com_aviso: subs.length, cadastros: leads.map((lead) => ({ ...lead, aviso_no_celular: withPush.has(lead.email) })) };
   },
 };
 

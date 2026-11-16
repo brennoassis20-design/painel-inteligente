@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
           has: [{ type: "host", value: "membros.bagencymidia.site" }],
           destination: "/membros/admin",
         },
+        // Link do cadastro grátis (anúncios, bio, WhatsApp): abre direto na tela de criar acesso.
+        {
+          source: "/gratis",
+          has: [{ type: "host", value: "membros.bagencymidia.site" }],
+          destination: "/membros",
+        },
       ],
     };
   },

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isInstalled, platform, refreshPush, registerWorker } from "./app";
+import { Bell, InstallGuide, PushInvite, type NoticeItem } from "./Extras";
 import { captureUtm, readUtm, track } from "./pixel";
 import Login from "./Login";
 import { api, AuthError, brl, readSession, writeSession } from "./session";
@@ -21,6 +23,7 @@ type Item = {
   special: string | null;
   sales_page_url: string | null;
   has_checkout: boolean;
+  is_free?: boolean;
   via?: "cadeado" | "upsell";
   owned: boolean;
   lessons_total: number;
@@ -32,6 +35,7 @@ type Home = {
   hero: Item | null;
   products: Item[];
   continueWatching: { product: Item; lesson_id: string; lesson_title: string }[];
+  notices?: { items: NoticeItem[]; unread: number };
   isAdmin: boolean;
 };
 
@@ -111,6 +115,9 @@ export default function MembrosPage() {
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [locked, setLocked] = useState<Item | null>(null);
   const [trailer, setTrailer] = useState<string | null>(null);
+  const [signupStart, setSignupStart] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
+  const [showInstallLink, setShowInstallLink] = useState(false);
 
   const loadHome = useCallback(async () => {
     try {
@@ -128,11 +135,21 @@ export default function MembrosPage() {
   // Lê a rota (?p=produto&aula=id) e o token de convite/recuperação que o Supabase coloca no #.
   useEffect(() => {
     const hash = new URLSearchParams(window.location.hash.slice(1));
-    const token = hash.get("access_token");
-    if (token && ["invite", "recovery", "signup", "magiclink"].includes(hash.get("type") || "")) {
+    let token = hash.get("access_token");
+    const kind = hash.get("type") || "";
+    if (token && kind === "magiclink") {
+      // Link do e-mail de acesso (cadastro grátis): entra direto, a senha já existe.
+      writeSession({ accessToken: token, refreshToken: hash.get("refresh_token") || undefined });
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      token = null;
+    } else if (token && ["invite", "recovery", "signup"].includes(kind)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- lê o link de convite que o Supabase coloca no #
       setLink({ token, refresh: hash.get("refresh_token") || undefined });
     }
+    const query = new URLSearchParams(window.location.search);
+    setSignupStart(/\/gratis\/?$/.test(window.location.pathname) || query.has("cadastro"));
+    setShowInstallLink(platform() !== "desktop" && !isInstalled());
+    void registerWorker();
     captureUtm();
     const readRoute = () => {
       const params = new URLSearchParams(window.location.search);
@@ -150,6 +167,15 @@ export default function MembrosPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- busca os dados do servidor
     if (logged) void loadHome();
   }, [logged, loadHome]);
+
+  // Celular que já ligou os avisos: mantém a inscrição em dia.
+  useEffect(() => {
+    if (!logged) return;
+    void fetch("/api/membros/avisos", { headers: { Authorization: `Bearer ${readSession()?.accessToken || ""}` } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => data?.vapid && refreshPush(data.vapid))
+      .catch(() => undefined);
+  }, [logged]);
 
   const go = useCallback((nextSlug: string | null, nextLesson?: string | null) => {
     const params = new URLSearchParams();
@@ -189,11 +215,19 @@ export default function MembrosPage() {
           brand={home?.settings.brand_name || "Gênio Play"}
           linkToken={link?.token}
           linkRefresh={link?.refresh}
-          onDone={() => {
+          startSignup={signupStart}
+          onDone={async (info) => {
             setLink(null);
             setLogged(true);
+            // Cadastro grátis: vai direto para a primeira aula gratuita.
+            if (info?.signup) {
+              const data = await loadHome();
+              const free = data?.products.find((product) => product.is_free);
+              if (free) go(free.slug);
+            }
           }}
         />
+        <InstallGuide />
       </div>
     );
   }
@@ -206,8 +240,17 @@ export default function MembrosPage() {
     );
   }
 
-  const owned = home.products.filter((item) => item.owned);
+  const freeItems = home.products.filter((item) => item.is_free);
+  const owned = home.products.filter((item) => item.owned && !item.is_free);
   const store = home.products.filter((item) => !item.owned);
+  const notices = home.notices || { items: [], unread: 0 };
+
+  const openNotice = (notice: NoticeItem) => {
+    const item = home.products.find((product) => product.id === notice.product_id);
+    if (!item) return;
+    if (item.owned) go(item.slug);
+    else open(item);
+  };
   const hero = home.hero;
 
   return (
@@ -222,6 +265,11 @@ export default function MembrosPage() {
           <button type="button" onClick={() => go(null)}>
             Início
           </button>
+          {showInstallLink && (
+            <button type="button" onClick={() => setInstallOpen(true)}>
+              Instalar app
+            </button>
+          )}
           {owned.some((item) => item.special === "painel") && (
             <a href={PAINEL_URL} target="_blank" rel="noreferrer">
               Painel Inteligente
@@ -233,6 +281,13 @@ export default function MembrosPage() {
             </a>
           )}
           {home.isAdmin && <a href={`${window.location.pathname.startsWith("/membros") ? "/membros" : ""}/admin`}>Configurar</a>}
+          <Bell
+            items={notices.items}
+            unread={notices.unread}
+            onOpenItem={openNotice}
+            onSeen={() => setHome({ ...home, notices: { ...notices, unread: 0 } })}
+            onInstall={() => setInstallOpen(true)}
+          />
           <button
             type="button"
             onClick={() => {
@@ -293,6 +348,7 @@ export default function MembrosPage() {
           )}
 
           <div className="gp-wrap">
+            <PushInvite onInstall={() => setInstallOpen(true)} />
             {home.continueWatching.length > 0 && (
               <Row title="Continue assistindo" hint="de onde você parou">
                 {home.continueWatching.map((entry) => (
@@ -302,6 +358,20 @@ export default function MembrosPage() {
                     label={entry.lesson_title}
                     progress={entry.product.lessons_total ? Math.round((entry.product.lessons_done / entry.product.lessons_total) * 100) : 0}
                     onOpen={() => go(entry.product.slug, entry.lesson_id)}
+                  />
+                ))}
+              </Row>
+            )}
+
+            {freeItems.length > 0 && (
+              <Row title="Grátis para você" hint="comece por aqui">
+                {freeItems.map((item) => (
+                  <Tile
+                    key={item.id}
+                    item={item}
+                    label={item.lessons_done ? `${item.lessons_done} de ${item.lessons_total} aulas` : "Grátis · assistir"}
+                    progress={item.lessons_total && item.lessons_done ? Math.round((item.lessons_done / item.lessons_total) * 100) : undefined}
+                    onOpen={() => open(item)}
                   />
                 ))}
               </Row>
@@ -329,7 +399,7 @@ export default function MembrosPage() {
               </Row>
             )}
 
-            {owned.length === 0 && (
+            {owned.length === 0 && freeItems.length === 0 && (
               <p className="gp-muted gp-empty">
                 Ainda não encontramos compras neste e-mail. Se você comprou com outro e-mail, saia e entre com ele, ou fale com o suporte.
               </p>
@@ -349,6 +419,8 @@ export default function MembrosPage() {
           }}
         />
       )}
+
+      <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />
 
       {trailer && (
         <div className="gp-modal" role="dialog" aria-modal="true" aria-label="Trailer">

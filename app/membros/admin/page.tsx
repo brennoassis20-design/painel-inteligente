@@ -27,6 +27,7 @@ type Product = {
   upsell_product_id: string | null;
   upsell_text: string | null;
   special: string | null;
+  is_free?: boolean;
 };
 
 type Lesson = {
@@ -52,6 +53,7 @@ const op = <T,>(name: string, args: Record<string, unknown> = {}) => api<T>("/ap
 const TABS = [
   ["produtos", "Produtos"],
   ["conteudo", "Aulas"],
+  ["gratis", "Grátis e avisos"],
   ["aparencia", "Aparência"],
   ["vendas", "Vendas e integrações"],
   ["ia", "Conectar IA"],
@@ -126,6 +128,7 @@ export default function AdminPage() {
         {error && <p className="gp-error">{error}</p>}
         {tab === "produtos" && <ProductsTab products={products} summary={summary} reload={reload} flash={flash} />}
         {tab === "conteudo" && <ContentTab products={products} flash={flash} />}
+        {tab === "gratis" && <FreeTab products={products} flash={flash} />}
         {tab === "aparencia" && summary && <LookTab summary={summary} products={products} reload={reload} flash={flash} />}
         {tab === "vendas" && <SalesTab summary={summary} flash={flash} />}
         {tab === "ia" && <AiTab flash={flash} />}
@@ -188,6 +191,7 @@ function ProductsTab({ products, summary, reload, flash }: { products: Product[]
                   {product.external_ids.length === 0 && " · falta id da venda"}
                 </small>
               </div>
+              {product.is_free && <span className="gp-pill on">Grátis</span>}
               <span className={`gp-pill ${product.published ? "on" : "warn"}`}>{product.published ? "Publicado" : "Rascunho"}</span>
               <div className="gp-item-actions">
                 <button type="button" className="gp-btn gp-btn-ghost gp-btn-sm" onClick={() => void move(index, -1)} aria-label="Subir">
@@ -245,6 +249,7 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
     publicado: Boolean(initial.published),
     destaque: Boolean(initial.featured),
     especial: initial.special || "",
+    gratuito: Boolean(initial.is_free),
     upsell: initial.upsell_product_id || "",
     upsell_texto: initial.upsell_text || "",
   });
@@ -276,6 +281,7 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
         publicado: form.publicado,
         destaque: form.destaque,
         especial: form.especial,
+        gratuito: form.gratuito,
       };
       const saved = initial.id
         ? await op<Product>("atualizar_produto", { produto: initial.id, ...args })
@@ -337,6 +343,10 @@ function ProductForm({ initial, products, onCancel, onSaved }: { initial: Partia
         </div>
         <label className="gp-check-field">
           <input id="pf-pub" type="checkbox" checked={form.publicado} onChange={set("publicado")} /> Publicado (aparece para os alunos)
+        </label>
+        {!initial.published && form.publicado && <small className="gp-fine">Ao salvar publicado, todos os alunos (grátis e compradores) recebem um aviso no sino e no celular.</small>}
+        <label className="gp-check-field">
+          <input id="pf-gratis" type="checkbox" checked={form.gratuito} onChange={set("gratuito")} /> Conteúdo gratuito (qualquer pessoa cadastrada assiste; os pagos ficam com cadeado)
         </label>
         <label className="gp-check-field">
           <input id="pf-dest" type="checkbox" checked={form.destaque} onChange={set("destaque")} /> Pode aparecer no banner da tela inicial
@@ -803,6 +813,184 @@ function Copy({ text, flash }: { text: string; flash: (t: string) => void }) {
         Copiar
       </button>
     </div>
+  );
+}
+
+// ------------------------------------------------------------------ grátis e avisos
+
+type Lead = { email: string; name: string | null; whatsapp: string | null; utm: Record<string, string>; created_at: string; aviso_no_celular: boolean };
+type SentNotice = { id: string; title: string; body: string | null; kind: string; push_sent: number; created_at: string };
+
+function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) => void }) {
+  const [leads, setLeads] = useState<{ total: number; celulares_com_aviso: number; cadastros: Lead[] } | null>(null);
+  const [sent, setSent] = useState<SentNotice[]>([]);
+  const [form, setForm] = useState({ titulo: "", texto: "", produto: "" });
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    const [list, notices] = await Promise.all([op<typeof leads>("listar_cadastros_gratis", { limite: 1000 }), op<SentNotice[]>("listar_notificacoes")]);
+    setLeads(list);
+    setSent(notices);
+  }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- busca os dados do servidor
+    void load();
+  }, [load]);
+
+  const base = window.location.host.startsWith("membros.") ? `${window.location.origin}` : "https://membros.bagencymidia.site";
+  const free = products.filter((product) => product.is_free);
+
+  function csv() {
+    const rows = [["data", "nome", "email", "whatsapp", "utm_source", "utm_campaign", "utm_content", "aviso_no_celular"]];
+    for (const lead of leads?.cadastros || []) {
+      rows.push([new Date(lead.created_at).toLocaleString("pt-BR"), lead.name || "", lead.email, lead.whatsapp || "", lead.utm.utm_source || "", lead.utm.utm_campaign || "", lead.utm.utm_content || "", lead.aviso_no_celular ? "sim" : "não"]);
+    }
+    const text = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(";")).join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob(["\ufeff" + text], { type: "text/csv;charset=utf-8" }));
+    link.download = `cadastros-gratis-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+  }
+
+  async function send() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await op<{ push_enviados: number }>("enviar_notificacao", { titulo: form.titulo, texto: form.texto, produto: form.produto, confirmar: true });
+      setForm({ titulo: "", texto: "", produto: "" });
+      setConfirming(false);
+      flash(`Aviso enviado. ${result.push_enviados} celular(es) receberam.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível enviar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="gp-panel">
+      <div className="gp-box">
+        <h3>Link do cadastro grátis</h3>
+        <p className="gp-muted">Use nos anúncios, na bio e no WhatsApp. A pessoa coloca e-mail, WhatsApp e senha, entra na hora e cai direto na aula grátis.</p>
+        <Copy text={`${base}/gratis`} flash={flash} />
+        <small className="gp-fine">Para medir a origem, acrescente UTMs: {base}/gratis?utm_source=instagram&utm_campaign=bio</small>
+        {free.length === 0 ? (
+          <p className="gp-error">Nenhum produto está marcado como gratuito ainda. Em Produtos → Editar, marque &quot;Conteúdo gratuito&quot;.</p>
+        ) : (
+          <p className="gp-muted">Gratuito agora: {free.map((product) => product.title).join(", ")}.</p>
+        )}
+      </div>
+
+      <div className="gp-box">
+        <h3>Mandar um aviso para todos</h3>
+        <p className="gp-muted">Aparece no sino da área e chega no celular de quem ligou os avisos. Produto novo publicado já avisa sozinho.</p>
+        <div className="gp-grid2">
+          <label className="gp-field">
+            <span>Título</span>
+            <input id="nt-titulo" maxLength={120} value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} placeholder="Aula nova liberada" />
+          </label>
+          <label className="gp-field">
+            <span>Ao tocar, abrir</span>
+            <select id="nt-produto" value={form.produto} onChange={(e) => setForm({ ...form, produto: e.target.value })}>
+              <option value="">Tela inicial</option>
+              {products
+                .filter((product) => product.published)
+                .map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.title}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </div>
+        <label className="gp-field">
+          <span>Texto (opcional)</span>
+          <input id="nt-texto" maxLength={300} value={form.texto} onChange={(e) => setForm({ ...form, texto: e.target.value })} />
+        </label>
+        {error && <p className="gp-error">{error}</p>}
+        <div className="gp-btns">
+          {confirming ? (
+            <>
+              <button type="button" className="gp-btn gp-btn-gold" disabled={busy} onClick={() => void send()}>
+                {busy ? "Enviando…" : `Confirmar envio para todos (${leads?.celulares_com_aviso ?? 0} celulares)`}
+              </button>
+              <button type="button" className="gp-btn gp-btn-ghost" onClick={() => setConfirming(false)}>
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <button type="button" className="gp-btn gp-btn-gold" disabled={!form.titulo.trim()} onClick={() => setConfirming(true)}>
+              Enviar aviso
+            </button>
+          )}
+        </div>
+        {sent.length > 0 && (
+          <div className="gp-table-wrap">
+            <table className="gp-table">
+              <thead>
+                <tr>
+                  <th>Quando</th>
+                  <th>Aviso</th>
+                  <th>Tipo</th>
+                  <th>Celulares</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sent.map((notice) => (
+                  <tr key={notice.id}>
+                    <td>{new Date(notice.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
+                    <td>{notice.title}</td>
+                    <td>{notice.kind === "produto_novo" ? "Produto novo" : "Manual"}</td>
+                    <td className="n">{notice.push_sent}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="gp-box">
+        <div className="gp-module-head">
+          <b>
+            Cadastros grátis: {leads?.total ?? "…"} · com aviso no celular: {leads?.celulares_com_aviso ?? "…"}
+          </b>
+          <button type="button" className="gp-btn gp-btn-ghost gp-btn-sm" onClick={csv} disabled={!leads?.cadastros.length}>
+            Baixar planilha
+          </button>
+        </div>
+        {leads && leads.cadastros.length === 0 && <p className="gp-muted">Ninguém se cadastrou ainda.</p>}
+        {leads && leads.cadastros.length > 0 && (
+          <div className="gp-table-wrap">
+            <table className="gp-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>E-mail</th>
+                  <th>WhatsApp</th>
+                  <th>Origem</th>
+                  <th>Aviso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads.cadastros.slice(0, 300).map((lead) => (
+                  <tr key={lead.email}>
+                    <td>{new Date(lead.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</td>
+                    <td>{lead.email}</td>
+                    <td>{lead.whatsapp ? <a href={`https://wa.me/${lead.whatsapp}`} target="_blank" rel="noreferrer">{lead.whatsapp}</a> : "—"}</td>
+                    <td>{[lead.utm.utm_source, lead.utm.utm_campaign].filter(Boolean).join(" / ") || "direto"}</td>
+                    <td>{lead.aviso_no_celular ? "sim" : "não"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
