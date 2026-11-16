@@ -42,7 +42,7 @@ type Lesson = {
 type Module = { id: string; title: string; release_days: number; lessons: Lesson[] };
 
 type Summary = {
-  aparencia: { brand_name: string; logo_url: string | null; accent: string; hero_product_id: string | null; hero_title: string | null; hero_text: string | null; support_url: string | null };
+  aparencia: { brand_name: string; logo_url: string | null; accent: string; hero_product_id: string | null; hero_title: string | null; hero_text: string | null; support_url: string | null; meta_pixel_id?: string | null };
   alunos_unicos: number;
   produtos: { id: string; slug: string; titulo: string; publicado: boolean; preco: number | null; checkout: string; tem_checkout: boolean; aulas: number; alunos: number; funil_30d: Record<string, number> }[];
 };
@@ -713,6 +713,7 @@ function LookTab({ summary, products, reload, flash }: { summary: Summary; produ
     titulo_banner: look.hero_title || "",
     texto_banner: look.hero_text || "",
     suporte_url: look.support_url || "",
+    pixel_meta: look.meta_pixel_id || "",
   });
   const [error, setError] = useState("");
 
@@ -762,6 +763,10 @@ function LookTab({ summary, products, reload, flash }: { summary: Summary; produ
           <label className="gp-field">
             <span>Link de suporte (WhatsApp ou página)</span>
             <input id="lk-suporte" value={form.suporte_url} onChange={(e) => setForm({ ...form, suporte_url: e.target.value })} />
+          </label>
+          <label className="gp-field">
+            <span>Pixel da Meta (mede a área: visita, cadeado aberto, início de checkout)</span>
+            <input id="lk-pixel" inputMode="numeric" value={form.pixel_meta} onChange={(e) => setForm({ ...form, pixel_meta: e.target.value })} />
           </label>
         </div>
         <label className="gp-field">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { captureUtm, readUtm, track } from "./pixel";
 import Login from "./Login";
 import { api, AuthError, brl, readSession, writeSession } from "./session";
 
@@ -20,13 +21,14 @@ type Item = {
   special: string | null;
   sales_page_url: string | null;
   has_checkout: boolean;
+  via?: "cadeado" | "upsell";
   owned: boolean;
   lessons_total: number;
   lessons_done: number;
 };
 
 type Home = {
-  settings: { brand_name: string; logo_url: string | null; accent: string; hero_title: string | null; hero_text: string | null; support_url: string | null };
+  settings: { brand_name: string; logo_url: string | null; accent: string; hero_title: string | null; hero_text: string | null; support_url: string | null; meta_pixel_id?: string | null };
   hero: Item | null;
   products: Item[];
   continueWatching: { product: Item; lesson_id: string; lesson_title: string }[];
@@ -131,6 +133,7 @@ export default function MembrosPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- lê o link de convite que o Supabase coloca no #
       setLink({ token, refresh: hash.get("refresh_token") || undefined });
     }
+    captureUtm();
     const readRoute = () => {
       const params = new URLSearchParams(window.location.search);
       setSlug(params.get("p"));
@@ -164,6 +167,13 @@ export default function MembrosPage() {
       if (item.owned) go(item.slug);
       else {
         setLocked(item);
+        track("ViewContent", {
+          content_name: item.title,
+          content_ids: [item.slug],
+          content_type: "product",
+          currency: "BRL",
+          value: item.price_cents ? item.price_cents / 100 : 0,
+        });
         void api("/api/membros/evento", { body: { produto: item.id, tipo: "cadeado_aberto" } }).catch(() => undefined);
       }
     },
@@ -382,7 +392,14 @@ function LockedSheet({
     // Abre a aba já no clique (o navegador bloqueia abas abertas depois de esperar a resposta).
     const tab = window.open("about:blank", "_blank");
     try {
-      const data = await api<{ url: string }>("/api/membros/checkout", { body: { produto: item.id } });
+      track("InitiateCheckout", {
+        content_name: item.title,
+        content_ids: [item.slug],
+        content_type: "product",
+        currency: "BRL",
+        value: item.price_cents ? item.price_cents / 100 : 0,
+      });
+      const data = await api<{ url: string }>("/api/membros/checkout", { body: { produto: item.id, via: item.via, utm: readUtm() } });
       if (tab) tab.location.href = data.url;
       else window.location.href = data.url;
       setState("waiting");
@@ -587,7 +604,7 @@ function ProductScreen({
           )}
 
           {data.upsell && (
-            <button type="button" className="gp-upsell" onClick={() => onLocked({ ...data.upsell!, owned: false })}>
+            <button type="button" className="gp-upsell" onClick={() => onLocked({ ...data.upsell!, owned: false, via: "upsell" })}>
               <span className="gp-upsell-art" style={art(data.upsell)} />
               <span>
                 <span className="gp-eyebrow">{data.upsell.text || "Próximo passo recomendado"}</span>

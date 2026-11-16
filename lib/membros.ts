@@ -20,6 +20,7 @@ export type Settings = {
   support_url: string | null;
   webhook_secret: string;
   hotmart_hottok: string | null;
+  meta_pixel_id: string | null;
   updated_at: string;
 };
 
@@ -252,6 +253,7 @@ export async function studentHome(user: { id: string; email: string }) {
       hero_title: settings.hero_title,
       hero_text: settings.hero_text,
       support_url: settings.support_url,
+      meta_pixel_id: settings.meta_pixel_id,
     },
     hero,
     products: items,
@@ -332,17 +334,30 @@ export async function logEvent(email: string | null, productId: string | null, k
   }).catch(() => undefined);
 }
 
-// Link do checkout com nome e e-mail já preenchidos (Hotmart e Cakto aceitam ?email= e ?name=).
-export async function checkoutLink(user: { email: string; name?: string }, productRef: string) {
+// Link do checkout com nome e e-mail já preenchidos e UTMs para medir a venda que sai da área.
+// Padrão: utm_source=membros, utm_medium=area, utm_campaign={slug}, utm_content={cadeado|upsell}.
+// Se o aluno chegou na área com UTMs (ex.: link de WhatsApp ou e-mail), elas têm prioridade.
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+
+export async function checkoutLink(
+  user: { email: string; name?: string },
+  productRef: string,
+  extra: { via?: string; utm?: Record<string, unknown> } = {},
+) {
   const product = await findProduct(productRef);
   const url = need(product.checkout_url, "Este produto ainda não tem link de pagamento.");
   const link = new URL(url);
   link.searchParams.set("email", user.email);
   if (user.name) link.searchParams.set("name", user.name);
-  if (product.checkout_provider === "hotmart") link.searchParams.set("sck", "membros");
-  else if (product.checkout_provider === "eduzz") link.searchParams.set("utm_source", "membros");
-  else link.searchParams.set("utm_source", "membros");
-  await logEvent(user.email, product.id, "checkout_aberto", { provider: product.checkout_provider });
+  const via = extra.via === "upsell" ? "upsell" : "cadeado";
+  const tags: Record<string, string> = { utm_source: "membros", utm_medium: "area", utm_campaign: product.slug, utm_content: via };
+  for (const key of UTM_KEYS) {
+    const value = extra.utm?.[key];
+    if (typeof value === "string" && value.trim()) tags[key] = value.trim().slice(0, 100);
+  }
+  for (const [key, value] of Object.entries(tags)) link.searchParams.set(key, value);
+  if (product.checkout_provider === "hotmart") link.searchParams.set("sck", `membros_${via}`);
+  await logEvent(user.email, product.id, "checkout_aberto", { provider: product.checkout_provider, ...tags });
   return { url: link.toString(), provider: product.checkout_provider };
 }
 
@@ -624,6 +639,7 @@ export const OPS: Record<string, Op> = {
       titulo_banner: str("Título grande do banner (opcional; padrão = nome do produto)."),
       texto_banner: str("Texto do banner."),
       suporte_url: str("Link de suporte (WhatsApp ou página)."),
+      pixel_meta: str("ID do pixel da Meta (Facebook) que mede a área; vazio desliga."),
     },
     run: async (args) => {
       const body: Record<string, unknown> = { updated_at: now() };
@@ -634,6 +650,7 @@ export const OPS: Record<string, Op> = {
       if (args.titulo_banner !== undefined) body.hero_title = args.titulo_banner || null;
       if (args.texto_banner !== undefined) body.hero_text = args.texto_banner || null;
       if (args.suporte_url !== undefined) body.support_url = args.suporte_url || null;
+      if (args.pixel_meta !== undefined) body.meta_pixel_id = String(args.pixel_meta || "").replace(/\D/g, "") || null;
       await supabaseRest("/mp_settings?id=eq.1", { method: "PATCH", body: JSON.stringify(body) });
       return { ok: true };
     },
