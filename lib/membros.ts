@@ -405,10 +405,25 @@ export async function applySale(event: SaleEvent) {
     });
     await logEvent(event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", { provider: event.provider, order: event.orderId });
 
-    // Produto do Método Gênio vendido fora da Cakto também libera o Painel Inteligente (1 ano + 7 dias).
+    // Produto do Método Gênio vendido fora da Cakto também libera o Painel Inteligente.
+    // Prazo = access_days do produto (padrão 1 ano + 7 dias; 36500+ = vitalício). Nunca encurta um acesso maior.
+    // Reembolso de complemento (produto oculto, ex.: Vitalício) não derruba o Painel do Gênio: fica para revisão.
     if (product.special === "painel" && event.provider !== "cakto") {
+      if (event.kind !== "approved" && !product.published) {
+        await logEvent(event.email, product.id, "reembolso_complemento_revisar", { provider: event.provider, order: event.orderId });
+        continue;
+      }
+      const days = product.access_days || 372;
       const accessStatus = event.kind === "approved" ? "active" : "refunded";
-      const until = event.kind === "approved" ? new Date(Date.now() + 372 * DAY_MS).toISOString() : null;
+      let until: string | null = null;
+      if (event.kind === "approved") {
+        until = days >= 36500 ? "2099-12-31T23:59:59.000Z" : new Date(Date.now() + days * DAY_MS).toISOString();
+        const current = await supabaseRest<{ access_status: string; access_expires_at: string | null }[]>(
+          `/entitlements?email=eq.${enc(event.email)}&select=access_status,access_expires_at`,
+        );
+        const old = current[0];
+        if (old?.access_status === "active" && old.access_expires_at && old.access_expires_at > until) until = old.access_expires_at;
+      }
       await supabaseRest("/entitlements?on_conflict=email", {
         method: "POST",
         headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
