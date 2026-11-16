@@ -18,8 +18,8 @@ export const OFERTA = {
 // Downsell de saída (Saida.tsx): oferta "Downsell 197 - 6 meses" (3d7v3st) do produto Método Gênio.
 // O webhook do painel grava 6 meses + 7 dias para essa oferta. Recusou → Pacote 7 produtos (R$ 27).
 export const DOWNSELL = {
-  // 16/11/2026: oferta de 6 meses R$ 197 não existe na Eduzz → botão vai para a página de vendas do Pacote (antes Cakto 3d7v3st)
-  checkout: "https://produtos.kitsepromocoes.site/?pg=N",
+  // 16/11/2026 (tarde): oferta de 6 meses R$ 197 criada na Eduzz (fsiw6pbj). Antes: Cakto 3d7v3st; de manhã apontou p/ a página do Pacote
+  checkout: "https://chk.eduzz.com/fsiw6pbj",
   preco: "197",
   precoCheio: OFERTA.preco,
   pacote: OFERTA.pacote,
