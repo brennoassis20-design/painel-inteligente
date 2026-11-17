@@ -248,6 +248,23 @@ export default function MembrosPage() {
     [go],
   );
 
+  // App instalado no celular volta do fundo com a versão antiga: se saiu versão nova, recarrega (fora de aula aberta).
+  useEffect(() => {
+    const check = async () => {
+      if (document.visibilityState !== "visible" || lessonId) return;
+      try {
+        const html = await (await fetch(window.location.href, { cache: "no-store" })).text();
+        const fresh = [...html.matchAll(/\/_next\/static\/css\/[\w-]+\.css/g)].map((match) => match[0]);
+        const current = [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].map((link) => new URL(link.href).pathname);
+        if (fresh.length && fresh.some((href) => !current.includes(href))) window.location.reload();
+      } catch {
+        /* sem internet: segue na versão aberta */
+      }
+    };
+    document.addEventListener("visibilitychange", check);
+    return () => document.removeEventListener("visibilitychange", check);
+  }, [lessonId]);
+
   // Promoção no ar: o pop-up da oferta abre sozinho ao entrar na área (uma vez por visita).
   const hasPromoItems = Boolean(home?.promo && home.products.some((product) => product.promo_price_cents && !product.owned));
   useEffect(() => {

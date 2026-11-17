@@ -238,6 +238,7 @@ export function Bell({
   onInstall: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [top, setTop] = useState(64);
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -263,6 +264,8 @@ export function Bell({
         aria-expanded={open}
         onClick={() => {
           const next = !open;
+          // No celular a caixa fica fixa logo abaixo do sino (mesmo com o topo em 2 linhas).
+          if (next && box.current) setTop(Math.round(box.current.getBoundingClientRect().bottom + 8));
           setOpen(next);
           if (next && unread) {
             void api("/api/membros/avisos", { body: { acao: "lidas" } }).catch(() => undefined);
@@ -276,7 +279,7 @@ export function Bell({
         {unread > 0 && <span className="gp-bell-dot">{unread > 9 ? "9+" : unread}</span>}
       </button>
       {open && (
-        <div className="gp-bell-panel" role="dialog" aria-label="Avisos">
+        <div className="gp-bell-panel" role="dialog" aria-label="Avisos" style={{ "--gp-bell-top": `${top}px` } as React.CSSProperties}>
           <div className="gp-bell-head">
             <b>Avisos</b>
             <PushToggle onInstall={onInstall} compact />
