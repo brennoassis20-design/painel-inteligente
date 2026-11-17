@@ -1189,6 +1189,10 @@ OPS.configurar_promocao = {
     if (args.card_no_canto !== undefined) body.promo_card = Boolean(args.card_no_canto);
     if (args.avisos !== undefined) body.promo_notify = Boolean(args.avisos);
     const turningOn = args.ligada === true && !current.promo_enabled;
+    if (args.ligada === true) {
+      const marked = (await listProducts(area, true)).filter((product) => product.on_promo && product.promo_price_cents && product.price_cents && product.promo_price_cents < product.price_cents);
+      if (!marked.length) throw new OpError("Marque pelo menos 1 produto com preço de desconto antes de ligar a promoção.");
+    }
     if (args.ligada !== undefined) body.promo_enabled = Boolean(args.ligada);
     if (turningOn) body.promo_started_at = now();
     await supabaseRest(`/mp_settings?id=eq.${area.id}`, { method: "PATCH", body: JSON.stringify(body) });

@@ -114,9 +114,9 @@ function Tile({ item, label, progress, onOpen }: { item: Item; label: React.Reac
   );
 }
 
-function Row({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
+function Row({ id, title, hint, children }: { id?: string; title: string; hint: string; children: React.ReactNode }) {
   return (
-    <section className="gp-row">
+    <section className="gp-row" id={id}>
       <h2>
         {title} <span>{hint}</span>
       </h2>
@@ -311,9 +311,19 @@ export default function MembrosPage() {
       return;
     }
     const item = home.products.find((product) => product.id === notice.product_id);
-    if (!item) return;
-    if (item.owned) go(item.slug);
-    else open(item);
+    if (item) {
+      if (item.owned) go(item.slug);
+      else open(item);
+      return;
+    }
+    // Aviso geral (ex.: promoção no ar): abre o 1º produto em promoção ou leva até a vitrine.
+    const promoItem = home.products.find((product) => product.promo_price_cents && !product.owned);
+    if (notice.kind?.startsWith("promo") && promoItem) {
+      open(promoItem);
+      return;
+    }
+    go(null);
+    window.setTimeout(() => document.getElementById("gp-loja")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
   const hero = home.hero;
   // Capa da tela inicial: a configurada em Aparência (computador 16:9, celular 4:5) ou o banner do produto em destaque.
@@ -482,7 +492,7 @@ export default function MembrosPage() {
             )}
 
             {store.length > 0 && (
-              <Row title="Desbloqueie agora" hint="toque para ver como liberar">
+              <Row id="gp-loja" title="Desbloqueie agora" hint="toque para ver como liberar">
                 {store.map((item) => (
                   <Tile key={item.id} item={item} label={item.price_cents ? <PriceTag item={item} size="sm" /> : "Ver detalhes"} onOpen={() => open(item)} />
                 ))}

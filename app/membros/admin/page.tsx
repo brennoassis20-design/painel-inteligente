@@ -1332,7 +1332,11 @@ function PromoTab({ summary, products, reload, flash }: { summary: Summary; prod
       {error && <p className="gp-error">{error}</p>}
       <div className="gp-btns">
         {turningOn && form.avisos && !confirmOn ? (
-          <button type="button" className="gp-btn gp-btn-gold" onClick={() => setConfirmOn(true)}>
+          <button
+            type="button"
+            className="gp-btn gp-btn-gold"
+            onClick={() => (inPromo.length ? setConfirmOn(true) : setError("Marque pelo menos 1 produto com preço de desconto antes de ligar a promoção."))}
+          >
             Salvar e ligar a promoção
           </button>
         ) : (

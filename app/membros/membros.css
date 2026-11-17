@@ -227,6 +227,8 @@
   .gp-top { gap: 10px; }
   .gp-nav { gap: 2px; }
   .gp-nav a, .gp-nav button { padding: 6px 7px; font-size: 13px; }
+  /* celular: a caixa de avisos ocupa a largura da tela (antes saía pela esquerda) */
+  .gp-bell-panel { position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 64px); width: auto; max-height: calc(100dvh - 90px); }
 }
 
 /* promoção: preço riscado + preço com desconto em verde */
