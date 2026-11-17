@@ -39,6 +39,7 @@ export type Settings = {
   promo_card: boolean;
   promo_notify: boolean;
   promo_started_at: string | null;
+  offer_popup: boolean;
   vapid_public?: string | null;
   vapid_private?: string | null;
   created_at: string;
@@ -379,6 +380,7 @@ export async function studentHome(user: { id: string; email: string }, area: Are
       bg_color: settings.bg_color,
       hero_image_url: settings.hero_image_url,
       hero_image_mobile_url: settings.hero_image_mobile_url,
+      offer_popup: Boolean(settings.offer_popup),
     },
     promo: promoActive(settings)
       ? { title: settings.promo_title, text: settings.promo_text, ends_at: settings.promo_ends_at, color: settings.promo_color, card: settings.promo_card }
@@ -1244,6 +1246,18 @@ OPS.configurar_promocao = {
   },
 };
 
+OPS.configurar_popup_ofertas = {
+  description: "Liga/desliga o pop-up de ofertas da área: para quem ainda não comprou, abre sozinho 1 vez por visita com os produtos pagos publicados (preço normal, botão de compra). Se a promoção com desconto estiver no ar, ela tem prioridade. Aviso no sino com tipo 'ofertas' (enviar_notificacao) também abre este pop-up.",
+  input: { ligado: bool("true = pop-up de ofertas ligado."), confirmar },
+  required: ["ligado", "confirmar"],
+  run: async (args, area) => {
+    if (args.confirmar !== true) throw new OpError("Confirme com o usuário e envie confirmar=true.");
+    if (typeof args.ligado !== "boolean") throw new OpError("Informe ligado=true ou false.");
+    await supabaseRest(`/mp_settings?id=eq.${area.id}`, { method: "PATCH", body: JSON.stringify({ offer_popup: args.ligado, updated_at: now() }) });
+    return { ok: true, popup_ofertas: args.ligado };
+  },
+};
+
 OPS.enviar_notificacao = {
   description:
     "Manda um aviso para TODOS os alunos (cadastro grátis e compradores): aparece no sino da área, chega no celular de quem ligou os avisos e, com email=true, vai por e-mail. Para live/conteúdo ao vivo use ao_vivo=true + quando + link: aparece também como faixa no topo da área até 3 h depois do início.",
@@ -1254,6 +1268,7 @@ OPS.enviar_notificacao = {
     link: str("Link que abre ao tocar (https://...), ex.: YouTube, Instagram, Meet, grupo de WhatsApp."),
     botao: str("Texto do botão (ex.: Entrar na live). Opcional."),
     ao_vivo: bool("true = é uma live / conteúdo ao vivo."),
+    abre_ofertas: bool("true = ao tocar no aviso, abre o pop-up de ofertas da área (produtos que o aluno ainda não tem)."),
     quando: str("Data e hora da live em ISO com fuso (ex.: 2026-11-20T20:00:00-03:00). Obrigatório se ao_vivo=true."),
     email: bool("true = manda também por e-mail para todos os alunos."),
     confirmar,
@@ -1278,7 +1293,7 @@ OPS.enviar_notificacao = {
       body: args.texto ? String(args.texto) : null,
       productId: product?.id,
       slug: product?.slug,
-      kind: live ? "ao_vivo" : "aviso",
+      kind: live ? "ao_vivo" : args.abre_ofertas === true ? "ofertas" : "aviso",
       url,
       buttonLabel: args.botao ? String(args.botao) : null,
       startsAt,

@@ -50,7 +50,7 @@ type Module = { id: string; title: string; release_days: number; cover_url?: str
 type Summary = {
   aparencia: { brand_name: string; logo_url: string | null; accent: string; hero_product_id: string | null; hero_title: string | null; hero_text: string | null; support_url: string | null; meta_pixel_id?: string | null;
     bg_color?: string; hero_image_url?: string | null; hero_image_mobile_url?: string | null;
-    promo_enabled?: boolean; promo_title?: string; promo_text?: string | null; promo_ends_at?: string | null; promo_color?: string; promo_card?: boolean; promo_notify?: boolean };
+    promo_enabled?: boolean; promo_title?: string; promo_text?: string | null; promo_ends_at?: string | null; promo_color?: string; promo_card?: boolean; promo_notify?: boolean; offer_popup?: boolean };
   alunos_unicos: number;
   produtos: { id: string; slug: string; titulo: string; publicado: boolean; preco: number | null; checkout: string; tem_checkout: boolean; aulas: number; alunos: number; funil_30d: Record<string, number> }[];
 };
@@ -1217,6 +1217,7 @@ function PromoTab({ summary, products, reload, flash }: { summary: Summary; prod
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmOn, setConfirmOn] = useState(false);
+  const [offerOn, setOfferOn] = useState(Boolean(look.offer_popup));
   const turningOn = form.ligada && !look.promo_enabled;
   const inPromo = products.filter((product) => rows[product.id]?.on);
 
@@ -1252,8 +1253,30 @@ function PromoTab({ summary, products, reload, flash }: { summary: Summary; prod
     }
   }
 
+  async function saveOffer(ligado: boolean) {
+    setOfferOn(ligado);
+    try {
+      await op("configurar_popup_ofertas", { ligado, confirmar: true });
+      await reload();
+      flash(ligado ? "Pop-up de ofertas ligado." : "Pop-up de ofertas desligado.");
+    } catch (err) {
+      setOfferOn(!ligado);
+      setError(err instanceof Error ? err.message : "Não foi possível salvar.");
+    }
+  }
+
   return (
     <section className="gp-panel">
+      <div className="gp-box">
+        <h3>Pop-up de ofertas (preço normal)</h3>
+        <label className="gp-switch">
+          <input id="pr-oferta" type="checkbox" checked={offerOn} onChange={(e) => void saveOffer(e.target.checked)} />
+          <span>
+            Mostrar os produtos à venda para quem ainda não comprou
+            <small>Abre sozinho 1 vez por visita, com capa, descrição, preço normal e botão de compra. Se a promoção estiver no ar, ela aparece no lugar. Salva na hora.</small>
+          </span>
+        </label>
+      </div>
       <div className="gp-box">
         <h3>Promoção (Black Friday e ofertas)</h3>
         <label className="gp-switch">

@@ -45,6 +45,7 @@ type Home = {
     bg_color?: string | null;
     hero_image_url?: string | null;
     hero_image_mobile_url?: string | null;
+    offer_popup?: boolean;
   };
   promo?: PromoInfo | null;
   hero: Item | null;
@@ -141,6 +142,7 @@ export default function MembrosPage() {
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [locked, setLocked] = useState<Item | null>(null);
   const [promoOpen, setPromoOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
   const [trailer, setTrailer] = useState<string | null>(null);
   const [signupStart, setSignupStart] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
@@ -291,6 +293,29 @@ export default function MembrosPage() {
     return () => window.clearTimeout(timer);
   }, [hasPromoItems, slug]);
 
+  // Pop-up de ofertas (preço normal): quem ainda não comprou vê os produtos pagos da área, 1 vez por visita.
+  // A promoção com desconto tem prioridade (nunca abrem dois pop-ups).
+  const offerCount = home?.products.filter(isOffer).length || 0;
+  const offerPopup = Boolean(home?.settings.offer_popup) && offerCount > 0 && !hasPromoItems;
+  useEffect(() => {
+    if (!offerPopup || slug) return;
+    const key = `gp_offer_popup_${areaSlug() || "main"}`;
+    try {
+      if (sessionStorage.getItem(key) === "1") return;
+    } catch {
+      /* sem armazenamento: abre mesmo assim */
+    }
+    const timer = window.setTimeout(() => {
+      try {
+        sessionStorage.setItem(key, "1");
+      } catch {
+        /* sem armazenamento */
+      }
+      setOfferOpen(true);
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [offerPopup, slug]);
+
   if (!ready) return <div className="gp" />;
 
   if (areaMissing) {
@@ -364,6 +389,11 @@ export default function MembrosPage() {
     // Aviso geral da promoção: abre o pop-up da oferta com o botão de compra.
     if (notice.kind?.startsWith("promo") && promo && home.products.some((product) => product.promo_price_cents && !product.owned)) {
       setPromoOpen(true);
+      return;
+    }
+    // Aviso de ofertas: abre o pop-up com os produtos que o aluno ainda não tem.
+    if (notice.kind === "ofertas" && home.products.some(isOffer)) {
+      setOfferOpen(true);
       return;
     }
     go(null);
@@ -578,7 +608,19 @@ export default function MembrosPage() {
 
       {promo && !slug && !locked && !promoOpen && <PromoCard promo={promo} items={home.products} onOpen={(item) => open(item)} />}
 
-      {!promoOpen && <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />}
+      {offerOpen && (
+        <OfferSheet
+          items={home.products.filter(isOffer)}
+          onClose={() => setOfferOpen(false)}
+          onRefresh={loadHome}
+          onWatch={(item) => {
+            setOfferOpen(false);
+            go(item.slug);
+          }}
+        />
+      )}
+
+      {!promoOpen && !offerOpen && <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />}
 
       {trailer && (
         <div className="gp-modal" role="dialog" aria-modal="true" aria-label="Trailer">
@@ -683,6 +725,69 @@ function PromoSheet({
         <p className="gp-fine gp-promo-fine">Seu nome e e-mail já vão preenchidos no pagamento.</p>
       </div>
     </div>
+  );
+}
+
+// Produto à venda que o aluno ainda não tem (pop-up de ofertas, preço normal).
+function isOffer(item: Item) {
+  return !item.owned && !item.is_free && item.has_checkout && Boolean(item.price_cents);
+}
+
+// Pop-up de ofertas sem desconto: mesmo fluxo de compra do cadeado.
+function OfferSheet({ items, onClose, onRefresh, onWatch }: { items: Item[]; onClose: () => void; onRefresh: () => Promise<Home | null>; onWatch: (item: Item) => void }) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="gp-modal" role="dialog" aria-modal="true" aria-labelledby="gp-offer-title">
+      <button type="button" className="gp-backdrop" aria-label="Fechar" onClick={onClose} />
+      <div className="gp-sheet gp-promo-sheet">
+        <div className="gp-promo-sheet-head">
+          <button type="button" className="gp-x" onClick={onClose} aria-label="Fechar">
+            ×
+          </button>
+          <span className="gp-eyebrow">Para você</span>
+          <h2 id="gp-offer-title">Continue de onde parou</h2>
+          <p className="gp-muted">Conteúdos desta área que você ainda não tem.</p>
+        </div>
+        <ul className="gp-promo-list">
+          {items.map((item) => (
+            <OfferRow key={item.id} item={item} onRefresh={onRefresh} onWatch={onWatch} />
+          ))}
+        </ul>
+        <p className="gp-fine gp-promo-fine">Seu nome e e-mail já vão preenchidos no pagamento.</p>
+      </div>
+    </div>
+  );
+}
+
+function OfferRow({ item, onRefresh, onWatch }: { item: Item; onRefresh: () => Promise<Home | null>; onWatch: (item: Item) => void }) {
+  const { state, error, buy } = useCheckout(item, onRefresh);
+  const text = item.subtitle || item.description;
+  return (
+    <li className="gp-promo-row">
+      <span className="gp-promo-art" style={item.cover_url ? { backgroundImage: `url("${item.cover_url}")` } : art(item)} />
+      <span className="gp-promo-row-info">
+        <b>{item.title}</b>
+        {text && <span className="gp-muted gp-small gp-offer-text">{text}</span>}
+        <span className="gp-price gp-price-md">{brl(item.price_cents || 0)}</span>
+        {state === "released" ? (
+          <button type="button" className="gp-btn gp-btn-gold" onClick={() => onWatch({ ...item, owned: true })}>
+            ▶ Liberado: assistir agora
+          </button>
+        ) : state === "waiting" ? (
+          <span className="gp-muted gp-small">Pagamento aberto em outra aba. Libera aqui sozinho quando confirmar.</span>
+        ) : (
+          <button type="button" className="gp-btn gp-btn-gold" onClick={() => void buy()} disabled={state === "opening"}>
+            {state === "opening" ? "Abrindo…" : "Quero este"}
+          </button>
+        )}
+        {error && <span className="gp-error gp-small">{error}</span>}
+      </span>
+    </li>
   );
 }
 

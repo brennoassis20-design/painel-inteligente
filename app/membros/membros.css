@@ -320,3 +320,5 @@
 .gp-promo-row-info { display: grid; gap: 6px; justify-items: start; }
 .gp-promo-row-info .gp-btn { width: 100%; }
 .gp-promo-fine { text-align: center; margin: 0; padding: 0 14px; }
+
+.gp-offer-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

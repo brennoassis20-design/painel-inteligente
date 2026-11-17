@@ -200,3 +200,6 @@ alter table public.mp_notification_seen drop constraint if exists mp_notificatio
 alter table public.mp_notification_seen add constraint mp_notification_seen_pkey primary key using index mp_notification_seen_user_area_uidx;
 alter table public.mp_admins drop constraint if exists mp_admins_pkey;
 alter table public.mp_admins add constraint mp_admins_pkey primary key using index mp_admins_email_area_uidx;
+
+-- 17/11 (reforma-app-popup): pop-up de ofertas (preço normal) para quem ainda não comprou. Aditivo.
+alter table public.mp_settings add column if not exists offer_popup boolean not null default false;
