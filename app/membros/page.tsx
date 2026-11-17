@@ -139,6 +139,7 @@ export default function MembrosPage() {
   const [slug, setSlug] = useState<string | null>(null);
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [locked, setLocked] = useState<Item | null>(null);
+  const [promoOpen, setPromoOpen] = useState(false);
   const [trailer, setTrailer] = useState<string | null>(null);
   const [signupStart, setSignupStart] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
@@ -305,6 +306,7 @@ export default function MembrosPage() {
   const store = home.products.filter((item) => !item.owned);
   const notices = home.notices || { items: [], unread: 0 };
 
+  const promo = home.promo || null;
   const openNotice = (notice: NoticeItem) => {
     if (notice.url) {
       window.open(notice.url, "_blank", "noopener");
@@ -316,10 +318,9 @@ export default function MembrosPage() {
       else open(item);
       return;
     }
-    // Aviso geral (ex.: promoção no ar): abre o 1º produto em promoção ou leva até a vitrine.
-    const promoItem = home.products.find((product) => product.promo_price_cents && !product.owned);
-    if (notice.kind?.startsWith("promo") && promoItem) {
-      open(promoItem);
+    // Aviso geral da promoção: abre o pop-up da oferta com o botão de compra.
+    if (notice.kind?.startsWith("promo") && promo && home.products.some((product) => product.promo_price_cents && !product.owned)) {
+      setPromoOpen(true);
       return;
     }
     go(null);
@@ -329,7 +330,6 @@ export default function MembrosPage() {
   // Capa da tela inicial: a configurada em Aparência (computador 16:9, celular 4:5) ou o banner do produto em destaque.
   const heroDesk = home.settings.hero_image_url || hero?.banner_url || null;
   const heroMob = home.settings.hero_image_mobile_url || heroDesk;
-  const promo = home.promo || null;
   const theme = {
     "--gp-accent": home.settings.accent || "#f2b441",
     "--gp-on-accent": onAccent(home.settings.accent || "#f2b441"),
@@ -520,7 +520,20 @@ export default function MembrosPage() {
         />
       )}
 
-      {promo && !slug && !locked && <PromoCard promo={promo} items={home.products} onOpen={(item) => open(item)} />}
+      {promo && promoOpen && (
+        <PromoSheet
+          promo={promo}
+          items={home.products.filter((product) => product.promo_price_cents && !product.owned)}
+          onClose={() => setPromoOpen(false)}
+          onRefresh={loadHome}
+          onWatch={(item) => {
+            setPromoOpen(false);
+            go(item.slug);
+          }}
+        />
+      )}
+
+      {promo && !slug && !locked && !promoOpen && <PromoCard promo={promo} items={home.products} onOpen={(item) => open(item)} />}
 
       <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />
 
@@ -536,29 +549,18 @@ export default function MembrosPage() {
   );
 }
 
-function LockedSheet({
-  item,
-  onClose,
-  onRefresh,
-  onWatch,
-}: {
-  item: Item;
-  onClose: () => void;
-  onRefresh: () => Promise<Home | null>;
-  onWatch: (item: Item) => void;
-}) {
+// Compra: abre o pagamento em outra aba e espera a liberação aqui mesmo.
+function useCheckout(item: Item, onRefresh: () => Promise<Home | null>) {
   const [state, setState] = useState<"idle" | "opening" | "waiting" | "released">("idle");
   const [error, setError] = useState("");
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
+  useEffect(
+    () => () => {
       if (timer.current) clearInterval(timer.current);
-    };
-  }, [onClose]);
+    },
+    [],
+  );
 
   async function buy() {
     setError("");
@@ -593,6 +595,120 @@ function LockedSheet({
       setError(err instanceof Error ? err.message : "Não foi possível abrir o pagamento.");
     }
   }
+
+  return { state, error, buy };
+}
+
+// Pop-up da promoção (abre pelo aviso do sino): produtos em oferta com o botão de compra.
+function PromoSheet({
+  promo,
+  items,
+  onClose,
+  onRefresh,
+  onWatch,
+}: {
+  promo: PromoInfo;
+  items: Item[];
+  onClose: () => void;
+  onRefresh: () => Promise<Home | null>;
+  onWatch: (item: Item) => void;
+}) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="gp-modal" role="dialog" aria-modal="true" aria-labelledby="gp-promo-title">
+      <button type="button" className="gp-backdrop" aria-label="Fechar" onClick={onClose} />
+      <div className="gp-sheet gp-promo-sheet">
+        <div className="gp-promo-sheet-head">
+          <button type="button" className="gp-x" onClick={onClose} aria-label="Fechar">
+            ×
+          </button>
+          <span className="gp-eyebrow">Oferta por tempo limitado</span>
+          <h2 id="gp-promo-title">{promo.title}</h2>
+          {promo.text && <p className="gp-muted">{promo.text}</p>}
+          <PromoCountdown ends={promo.ends_at} />
+        </div>
+        <ul className="gp-promo-list">
+          {items.map((item) => (
+            <PromoRow key={item.id} item={item} onRefresh={onRefresh} onWatch={onWatch} />
+          ))}
+        </ul>
+        <p className="gp-fine gp-promo-fine">Seu nome e e-mail já vão preenchidos no pagamento.</p>
+      </div>
+    </div>
+  );
+}
+
+function PromoCountdown({ ends }: { ends: string | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!ends) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [ends]);
+  if (!ends) return null;
+  const ms = new Date(ends).getTime() - now;
+  if (ms <= 0) return null;
+  const sec = Math.floor(ms / 1000);
+  const two = (n: number) => String(n).padStart(2, "0");
+  const days = Math.floor(sec / 86400);
+  return (
+    <p className="gp-promo-timer">
+      Termina em {days ? `${days}d ` : ""}
+      {two(Math.floor((sec % 86400) / 3600))}h {two(Math.floor((sec % 3600) / 60))}m {two(sec % 60)}s
+    </p>
+  );
+}
+
+function PromoRow({ item, onRefresh, onWatch }: { item: Item; onRefresh: () => Promise<Home | null>; onWatch: (item: Item) => void }) {
+  const { state, error, buy } = useCheckout(item, onRefresh);
+  return (
+    <li className="gp-promo-row">
+      <span className="gp-promo-art" style={item.cover_url ? { backgroundImage: `url("${item.cover_url}")` } : art(item)} />
+      <span className="gp-promo-row-info">
+        <b>{item.title}</b>
+        <PriceTag item={item} size="md" />
+        {state === "released" ? (
+          <button type="button" className="gp-btn gp-btn-gold" onClick={() => onWatch({ ...item, owned: true })}>
+            ▶ Liberado: assistir agora
+          </button>
+        ) : state === "waiting" ? (
+          <span className="gp-muted gp-small">Pagamento aberto em outra aba. Libera aqui sozinho quando confirmar.</span>
+        ) : item.has_checkout ? (
+          <button type="button" className="gp-btn gp-btn-gold" onClick={() => void buy()} disabled={state === "opening"}>
+            {state === "opening" ? "Abrindo…" : `Comprar por ${brl(finalPrice(item))}`}
+          </button>
+        ) : (
+          <span className="gp-muted gp-small">Em breve à venda por aqui.</span>
+        )}
+        {error && <span className="gp-error gp-small">{error}</span>}
+      </span>
+    </li>
+  );
+}
+
+function LockedSheet({
+  item,
+  onClose,
+  onRefresh,
+  onWatch,
+}: {
+  item: Item;
+  onClose: () => void;
+  onRefresh: () => Promise<Home | null>;
+  onWatch: (item: Item) => void;
+}) {
+  const { state, error, buy } = useCheckout(item, onRefresh);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   return (
     <div className="gp-modal" role="dialog" aria-modal="true" aria-labelledby="gp-lock-title">

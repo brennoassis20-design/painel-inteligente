@@ -307,3 +307,16 @@
 }
 .gp-bell-live { font-style: normal; font-size: 10px; letter-spacing: 1px; color: #fff; background: #e5484d; border-radius: 999px; padding: 2px 6px; margin-right: 6px; vertical-align: 2px; }
 .gp-nav .gp-bell-panel li .gp-bell-when { color: var(--gp-gold2); font-weight: 600; }
+
+/* pop-up da promoção (aviso do sino) */
+.gp-promo-sheet { padding: 0 0 14px; }
+.gp-promo-sheet-head { position: relative; padding: 22px 20px 10px; background: linear-gradient(160deg, color-mix(in srgb, var(--gp-promo, #22c55e) 22%, transparent), transparent 70%); border-bottom: 1px solid var(--gp-line); }
+.gp-promo-sheet-head h2 { margin: 4px 0 6px; font-size: 26px; }
+.gp-promo-sheet-head .gp-x { position: absolute; top: 10px; right: 10px; }
+.gp-promo-sheet-head .gp-promo-timer { display: inline-block; width: auto; margin: 6px 0 4px; padding: 4px 10px; border-radius: 99px; font-size: 13px; font-weight: 700; color: var(--gp-promo, #22c55e); background: color-mix(in srgb, var(--gp-promo, #22c55e) 14%, transparent); font-variant-numeric: tabular-nums; }
+.gp-promo-list { list-style: none; margin: 0; padding: 10px 14px; display: grid; gap: 10px; }
+.gp-promo-row { display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: start; padding: 10px; background: var(--gp-card); border: 1px solid var(--gp-line); border-radius: 14px; }
+.gp-promo-row .gp-promo-art { display: block; width: 76px; aspect-ratio: 2 / 3; border-radius: 10px; background-size: cover; background-position: center; }
+.gp-promo-row-info { display: grid; gap: 6px; justify-items: start; }
+.gp-promo-row-info .gp-btn { width: 100%; }
+.gp-promo-fine { text-align: center; margin: 0; padding: 0 14px; }
