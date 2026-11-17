@@ -248,6 +248,26 @@ export default function MembrosPage() {
     [go],
   );
 
+  // Promoção no ar: o pop-up da oferta abre sozinho ao entrar na área (uma vez por visita).
+  const hasPromoItems = Boolean(home?.promo && home.products.some((product) => product.promo_price_cents && !product.owned));
+  useEffect(() => {
+    if (!hasPromoItems || slug) return;
+    try {
+      if (sessionStorage.getItem("gp_promo_popup") === "1") return;
+    } catch {
+      /* sem armazenamento: abre mesmo assim */
+    }
+    const timer = window.setTimeout(() => {
+      try {
+        sessionStorage.setItem("gp_promo_popup", "1");
+      } catch {
+        /* sem armazenamento */
+      }
+      setPromoOpen(true);
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [hasPromoItems, slug]);
+
   if (!ready) return <div className="gp" />;
 
   if (areaMissing) {
@@ -535,7 +555,7 @@ export default function MembrosPage() {
 
       {promo && !slug && !locked && !promoOpen && <PromoCard promo={promo} items={home.products} onOpen={(item) => open(item)} />}
 
-      <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />
+      {!promoOpen && <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />}
 
       {trailer && (
         <div className="gp-modal" role="dialog" aria-modal="true" aria-label="Trailer">
