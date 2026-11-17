@@ -318,8 +318,14 @@ async function emailAll(area: Area, notice: Notice, target: string) {
   const emails = await studentEmails(area);
   const main = isMainArea(area);
   // Remetente: o domínio verificado no Brevo; o nome é o da área (produtor) e a resposta vai para o dono.
-  const sender = { name: main ? process.env.MEMBROS_EMAIL_NOME || "Brenno Lima" : area.brand_name.slice(0, 60), email: process.env.MEMBROS_EMAIL_DE || "material@brennolimaoficial.com" };
-  const replyTo = main || !area.owner_email ? process.env.MEMBROS_EMAIL_RESPOSTA || "contato@brennolimaoficial.com" : area.owner_email;
+  // Área com remetente próprio (email_from, domínio verificado no Brevo) não mostra o domínio nem o e-mail do dono (ex.: Reforma, vendida sem o Brenno aparecer).
+  const ownSender = !main && area.email_from ? area.email_from : null;
+  const sender = { name: main ? process.env.MEMBROS_EMAIL_NOME || "Brenno Lima" : area.brand_name.slice(0, 60), email: ownSender || process.env.MEMBROS_EMAIL_DE || "material@brennolimaoficial.com" };
+  const replyTo = ownSender
+    ? area.email_reply_to || ownSender
+    : main || !area.owner_email
+      ? process.env.MEMBROS_EMAIL_RESPOSTA || "contato@brennolimaoficial.com"
+      : area.owner_email;
   const subject = notice.kind === "ao_vivo" && notice.starts_at ? `🔴 ${notice.title} · ${whenText(notice.starts_at)}` : notice.title;
   const html = noticeEmailHtml(notice, target, area);
   const result = { enviados: 0, falhas: 0, total: emails.length, erro: "" };

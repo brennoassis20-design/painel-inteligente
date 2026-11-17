@@ -203,3 +203,5 @@ alter table public.mp_admins add constraint mp_admins_pkey primary key using ind
 
 -- 17/11 (reforma-app-popup): pop-up de ofertas (preço normal) para quem ainda não comprou. Aditivo.
 alter table public.mp_settings add column if not exists offer_popup boolean not null default false;
+alter table public.mp_settings add column if not exists email_from text;
+alter table public.mp_settings add column if not exists email_reply_to text;

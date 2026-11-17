@@ -18,6 +18,9 @@ export type Settings = {
   owner_email: string | null;
   // E-mail dos avisos (Brevo). Áreas de produtores começam desligadas.
   email_enabled: boolean;
+  // Remetente próprio da área (domínio verificado no Brevo) e para onde vão as respostas; vazio = remetente padrão.
+  email_from: string | null;
+  email_reply_to: string | null;
   brand_name: string;
   logo_url: string | null;
   accent: string;
