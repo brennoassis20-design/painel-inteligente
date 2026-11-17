@@ -351,6 +351,20 @@ export async function studentHome(user: { id: string; email: string }, area: Are
 
   const hero = items.find((product) => product.id === settings.hero_product_id) || items.find((product) => product.featured) || null;
 
+  // Aluno que não tem nada na área 1 mas comprou numa área própria (ex.: Reforma) vai direto para ela:
+  // o comprador da Reforma nunca vê a vitrine do Gênio Play.
+  const admin = await isAdmin(user.email, area);
+  let redirect: string | null = null;
+  if (isMainArea(area) && !admin && !products.some((product) => !product.is_free && access.has(product.id))) {
+    const others = (await ownAreaIds()).filter((id) => id !== MAIN_AREA_ID);
+    if (others.length) {
+      const rows = await supabaseRest<{ mp_products: { area_id: number } }[]>(
+        `/mp_access?email=eq.${enc(cleanEmail(user.email))}&status=eq.active&select=mp_products!inner(area_id)&mp_products.area_id=in.(${others.join(",")})&limit=1`,
+      );
+      if (rows[0]) redirect = areaUrl(await getAreaById(rows[0].mp_products.area_id));
+    }
+  }
+
   return {
     settings: {
       slug: settings.slug,
@@ -374,7 +388,8 @@ export async function studentHome(user: { id: string; email: string }, area: Are
     continueWatching,
     notices: await studentNotices(user.id, area).catch(() => ({ items: [], unread: 0 })),
     live: await nextLive(area).catch(() => null),
-    isAdmin: await isAdmin(user.email, area),
+    isAdmin: admin,
+    redirect,
   };
 }
 
@@ -498,17 +513,30 @@ export type SaleEvent = {
   utmContent?: string | null;
 };
 
-// Venda que chegou pelo link de integração da área: só libera produtos daquela área.
+// Áreas próprias do dono da plataforma (ex.: Reforma Desenhada): o dono é admin da área 1.
+// O link de vendas da área 1 também libera os produtos delas (mesma conta Eduzz/Cakto, um webhook só).
+// Áreas de outros produtores (dono que não é admin da área 1) nunca entram aqui.
+export async function ownAreaIds() {
+  const admins = await supabaseRest<{ email: string }[]>(`/mp_admins?area_id=eq.${MAIN_AREA_ID}&select=email`);
+  if (!admins.length) return [MAIN_AREA_ID];
+  const list = admins.map((row) => `"${row.email.replaceAll('"', "")}"`).join(",");
+  const rows = await supabaseRest<{ id: number }[]>(`/mp_settings?owner_email=in.(${enc(list)})&select=id`);
+  return [MAIN_AREA_ID, ...rows.map((row) => row.id).filter((id) => id !== MAIN_AREA_ID)];
+}
+
+// Venda que chegou pelo link de integração da área: só libera produtos daquela área
+// (na área 1, também os das áreas próprias do dono; cada produto libera na área dele).
 export async function applySale(event: SaleEvent, area: Area) {
   if (!event.email) throw new OpError("Venda sem e-mail do comprador.");
   const ids = event.externalIds.filter(Boolean).map((id) => `${event.provider}:${id}`);
   if (!ids.length) return { matched: [] as string[] };
 
   const filter = `{${ids.map((id) => `"${id.replaceAll('"', "")}"`).join(",")}}`;
-  const products = await supabaseRest<Product[]>(`/mp_products?area_id=eq.${area.id}&external_ids=ov.${enc(filter)}&select=*`);
+  const areaIds = isMainArea(area) ? await ownAreaIds() : [area.id];
+  const products = await supabaseRest<Product[]>(`/mp_products?area_id=in.(${areaIds.join(",")})&external_ids=ov.${enc(filter)}&select=*`);
 
   if (event.kind === "pending") {
-    for (const product of products) await logEvent(area.id, event.email, product.id, "pagamento_gerado", { provider: event.provider });
+    for (const product of products) await logEvent(product.area_id, event.email, product.id, "pagamento_gerado", { provider: event.provider });
     return { matched: products.map((product) => product.slug) };
   }
   if (event.kind === "ignored") return { matched: products.map((product) => product.slug) };
@@ -529,7 +557,7 @@ export async function applySale(event: SaleEvent, area: Area) {
         updated_at: now(),
       }),
     });
-    await logEvent(area.id, event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", {
+    await logEvent(product.area_id, event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", {
       provider: event.provider,
       order: event.orderId,
       ...(event.amount && products.length === 1 ? { valor: event.amount } : {}),
@@ -540,9 +568,9 @@ export async function applySale(event: SaleEvent, area: Area) {
     // Produto do Método Gênio vendido fora da Cakto também libera o Painel Inteligente.
     // Prazo = access_days do produto (padrão 1 ano + 7 dias; 36500+ = vitalício). Nunca encurta um acesso maior.
     // Reembolso de complemento (produto oculto, ex.: Vitalício) não derruba o Painel do Gênio: fica para revisão.
-    if (product.special === "painel" && isMainArea(area) && event.provider !== "cakto") {
+    if (product.special === "painel" && product.area_id === MAIN_AREA_ID && event.provider !== "cakto") {
       if (event.kind !== "approved" && !product.published) {
-        await logEvent(area.id, event.email, product.id, "reembolso_complemento_revisar", { provider: event.provider, order: event.orderId });
+        await logEvent(product.area_id, event.email, product.id, "reembolso_complemento_revisar", { provider: event.provider, order: event.orderId });
         continue;
       }
       const days = product.access_days || 372;
@@ -570,7 +598,11 @@ export async function applySale(event: SaleEvent, area: Area) {
 
   let account = "unchanged";
   if (event.kind === "approved" && products.length) {
-    account = await inviteToArea(area, event.email, event.name).catch(() => "invite_failed");
+    // Convite vai para a área do produto comprado (área 1 se a compra tiver algo dela).
+    const target = products.some((product) => product.area_id === area.id)
+      ? area
+      : await getAreaById(products[0].area_id);
+    account = await inviteToArea(target, event.email, event.name).catch(() => "invite_failed");
   }
   return { matched: products.map((product) => product.slug), account };
 }

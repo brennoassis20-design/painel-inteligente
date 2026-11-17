@@ -53,6 +53,7 @@ type Home = {
   notices?: { items: NoticeItem[]; unread: number };
   live?: NoticeItem | null;
   isAdmin: boolean;
+  redirect?: string | null;
 };
 
 type LessonView = {
@@ -148,6 +149,11 @@ export default function MembrosPage() {
   const loadHome = useCallback(async () => {
     try {
       const data = await api<Home>("/api/membros/inicio");
+      // Comprador só de uma área própria (ex.: Reforma) entrou pelo endereço principal: vai para a área dele.
+      if (data.redirect) {
+        window.location.replace(data.redirect);
+        return null;
+      }
       setHome(data);
       setError("");
       return data;
