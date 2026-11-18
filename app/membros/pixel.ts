@@ -12,16 +12,23 @@ export function track(event: string, params?: Record<string, unknown>) {
   }
 }
 
-// Guarda as UTMs com que o aluno chegou (link de WhatsApp, e-mail, anúncio) para repassar ao checkout.
+// Guarda as UTMs (e o fbclid) com que o aluno chegou (link de WhatsApp, e-mail, anúncio) para repassar ao checkout.
+// Cada gravação leva a data (t); origem com mais de 30 dias é descartada.
+const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
 export function captureUtm() {
   try {
     const params = new URLSearchParams(window.location.search);
     const found: Record<string, string> = {};
-    for (const key of UTM_KEYS) {
+    for (const key of [...UTM_KEYS, "fbclid"]) {
       const value = params.get(key);
-      if (value) found[key] = value.slice(0, 100);
+      if (value) found[key] = value.slice(0, key === "fbclid" ? 200 : 100);
     }
-    if (Object.keys(found).length) localStorage.setItem(STORE, JSON.stringify(found));
+    // Link da própria área (utm_source=membros, ex.: aviso por e-mail) não é origem do aluno: não apaga a original.
+    if (found.utm_source === "membros") {
+      for (const key of UTM_KEYS) delete found[key];
+    }
+    if (Object.keys(found).length) localStorage.setItem(STORE, JSON.stringify({ t: Date.now(), utm: found }));
   } catch {
     /* armazenamento bloqueado */
   }
@@ -29,7 +36,18 @@ export function captureUtm() {
 
 export function readUtm(): Record<string, string> {
   try {
-    return JSON.parse(localStorage.getItem(STORE) || "{}");
+    const saved = JSON.parse(localStorage.getItem(STORE) || "{}") as { t?: number; utm?: Record<string, string> } & Record<string, string>;
+    // Formato antigo (sem data): carimba agora, valendo 30 dias a partir daqui.
+    if (!saved.t || !saved.utm) {
+      const legacy = Object.fromEntries(Object.entries(saved).filter(([, value]) => typeof value === "string"));
+      if (Object.keys(legacy).length) localStorage.setItem(STORE, JSON.stringify({ t: Date.now(), utm: legacy }));
+      return legacy as Record<string, string>;
+    }
+    if (Date.now() - saved.t > MAX_AGE_MS) {
+      localStorage.removeItem(STORE);
+      return {};
+    }
+    return saved.utm;
   } catch {
     return {};
   }

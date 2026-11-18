@@ -4,6 +4,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { inviteBuyer, supabaseRest } from "@/lib/panel-server";
 import { areaStats } from "@/lib/membros-stats";
+import { normalizeMedium, tagLink } from "@/lib/membros-utm";
 import { cleanUrl, createNotice, inviteBuyersWithoutAccount, listLeads, nextLive, noticeNewModule, noticeNewProduct, studentEmails, studentNotices } from "@/lib/membros-avisos";
 
 const enc = encodeURIComponent;
@@ -472,34 +473,34 @@ export async function logEvent(areaId: number, email: string | null, productId: 
 }
 
 // Link do checkout com nome e e-mail já preenchidos e UTMs para medir a venda que sai da área.
-// Padrão: utm_source=membros, utm_medium=area, utm_campaign={slug}, utm_content={cadeado|upsell}.
-// Se o aluno chegou na área com UTMs (ex.: link de WhatsApp ou e-mail), elas têm prioridade.
-const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
-
+// Padrão (18/11/2026): utm_source=membros, utm_medium={cadeado|cadeado-aula|upsell-aula|promo|ofertas|...},
+// utm_campaign={slug}, utm_content={botão}, utm_term={origem do aluno: source.campaign.content}.
+// A origem do aluno nunca sobrescreve os campos da área (ver lib/membros-utm.ts).
 export async function checkoutLink(
   user: { email: string; name?: string },
   area: Area,
   productRef: string,
-  extra: { via?: string; utm?: Record<string, unknown> } = {},
+  extra: { via?: string; content?: string; utm?: Record<string, unknown> } = {},
 ) {
   const settings = area;
   const product = await findProduct(area, productRef);
   // Em promoção: usa o checkout com desconto (se cadastrado).
   const promo = inPromo(product, settings) && product.promo_checkout_url;
   const url = need(promo ? product.promo_checkout_url : product.checkout_url, "Este produto ainda não tem link de pagamento.");
-  const link = new URL(url);
-  link.searchParams.set("email", user.email);
-  if (user.name) link.searchParams.set("name", user.name);
-  const via = extra.via === "upsell" ? "upsell" : "cadeado";
-  const tags: Record<string, string> = { utm_source: "membros", utm_medium: "area", utm_campaign: product.slug, utm_content: via };
-  for (const key of UTM_KEYS) {
-    const value = extra.utm?.[key];
-    if (typeof value === "string" && value.trim()) tags[key] = value.trim().slice(0, 100);
-  }
-  for (const [key, value] of Object.entries(tags)) link.searchParams.set(key, value);
-  if (product.checkout_provider === "hotmart") link.searchParams.set("sck", `membros_${via}`);
+  const medium = normalizeMedium(extra.via);
+  const { fbclid, ...origin } = (extra.utm || {}) as Record<string, unknown>;
+  const { url: finalUrl, tags } = tagLink(url, {
+    medium,
+    campaign: product.slug,
+    content: String(extra.content || "").slice(0, 40) || medium,
+    origin,
+    provider: product.checkout_provider,
+    email: user.email,
+    name: user.name,
+    fbclid: typeof fbclid === "string" ? fbclid : undefined,
+  });
   await logEvent(area.id, user.email, product.id, "checkout_aberto", { provider: product.checkout_provider, promo: Boolean(promo), ...tags });
-  return { url: link.toString(), provider: product.checkout_provider };
+  return { url: finalUrl, provider: product.checkout_provider };
 }
 
 // ---------------------------------------------------------------- vendas (webhook universal)
@@ -516,6 +517,9 @@ export type SaleEvent = {
   amount?: number | null;
   utmSource?: string | null;
   utmContent?: string | null;
+  utmCampaign?: string | null;
+  utmMedium?: string | null;
+  utmTerm?: string | null;
 };
 
 // Áreas próprias do dono da plataforma (ex.: Reforma Desenhada): o dono é admin da área 1.
@@ -568,6 +572,9 @@ export async function applySale(event: SaleEvent, area: Area) {
       ...(event.amount && products.length === 1 ? { valor: event.amount } : {}),
       ...(event.utmSource ? { utm_source: event.utmSource } : {}),
       ...(event.utmContent ? { utm_content: event.utmContent } : {}),
+      ...(event.utmCampaign ? { utm_campaign: event.utmCampaign } : {}),
+      ...(event.utmMedium ? { utm_medium: event.utmMedium } : {}),
+      ...(event.utmTerm ? { utm_term: event.utmTerm } : {}),
     });
 
     // Produto do Método Gênio vendido fora da Cakto também libera o Painel Inteligente.

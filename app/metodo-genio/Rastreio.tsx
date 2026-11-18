@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { compactOrigin } from "@/lib/membros-utm";
 
 const CHAVES = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "utm_id", "fbclid", "gclid", "src", "sck", "coupon"];
 const GUARDA = "mg-origem";
@@ -52,10 +53,15 @@ export function Rastreio({ valor, prefixo = "pagina-vendas" }: { valor: string; 
       const botao = link.dataset.checkout || "botao";
       const url = new URL(link.href);
       url.searchParams.set("utm_source", fonte);
-      url.searchParams.set("utm_medium", origem.utm_medium || prefixo);
+      // Padrão 18/11/2026: medium fixo da página (pagina-vendas ou vsl), content = botão clicado,
+      // origem original (source.campaign.content) no utm_term. utm_id (anúncio) e fbclid/gclid seguem como vieram.
+      url.searchParams.set("utm_medium", prefixo);
       url.searchParams.set("utm_campaign", origem.utm_campaign || "metodo-genio");
-      url.searchParams.set("utm_content", origem.utm_content || botao);
-      ["utm_term", "utm_id", "fbclid", "gclid", "coupon"].forEach((chave) => {
+      url.searchParams.set("utm_content", botao);
+      const termo = compactOrigin(origem);
+      if (termo) url.searchParams.set("utm_term", termo);
+      else url.searchParams.delete("utm_term");
+      ["utm_id", "fbclid", "gclid", "coupon"].forEach((chave) => {
         if (origem[chave]) url.searchParams.set(chave, origem[chave]);
       });
       url.searchParams.set("src", origem.src || fonte);

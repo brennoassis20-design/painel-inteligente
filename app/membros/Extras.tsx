@@ -1,6 +1,7 @@
 "use client";
 
 // Instrução para instalar o app no celular, sino de avisos e convite para ligar os avisos.
+import { tagPlainLink } from "@/lib/membros-utm";
 import { useEffect, useRef, useState } from "react";
 import { canPromptInstall, enablePush, iosNotSafari, inAppBrowser, isInstalled, onInstallChange, platform, promptInstall, pushPermission, pushSupported, type Platform } from "./app";
 import { api } from "./session";
@@ -204,7 +205,7 @@ export function LiveBar({ live }: { live: NoticeItem }) {
   if (now > start + 3 * 3600 * 1000) return null;
   const onAir = now >= start - 5 * 60 * 1000;
   return (
-    <a className={`gp-live${onAir ? " is-on" : ""}`} href={live.url} target="_blank" rel="noreferrer">
+    <a className={`gp-live${onAir ? " is-on" : ""}`} href={tagPlainLink(live.url, { medium: "link", content: "live" })} target="_blank" rel="noreferrer">
       <span className="gp-live-tag">{onAir ? "AO VIVO AGORA" : "AO VIVO"}</span>
       <span className="gp-live-text">
         <b>{live.title}</b>

@@ -14,6 +14,14 @@ const money = (value: unknown, cents = false) => {
   return cents ? n / 100 : n;
 };
 
+function hotmartOrigin(origin: Json) {
+  const src = txt(origin.src);
+  const sck = txt(origin.sck);
+  const match = /^membros_([a-z-]+)_(.+)$/.exec(sck);
+  if (match) return { utmSource: "membros", utmMedium: match[1], utmContent: match[2], utmTerm: src || null };
+  return { utmSource: src || sck || null };
+}
+
 function hotmart(payload: Json): SaleEvent {
   const data = obj(payload.data);
   const product = obj(data.product);
@@ -36,7 +44,8 @@ function hotmart(payload: Json): SaleEvent {
     externalIds: [txt(product.id), txt(product.ucode)],
     orderId: txt(purchase.transaction) || txt(payload.id),
     amount: money(obj(purchase.price).value) ?? money(obj(purchase.full_price).value),
-    utmSource: txt(obj(purchase.origin).src) || txt(obj(purchase.origin).sck) || null,
+    // Link da área: sck=membros_<medium>_<content> e src=<origem do aluno> (utm_term).
+    ...hotmartOrigin(obj(purchase.origin)),
   };
 }
 
@@ -57,6 +66,9 @@ function eduzz(payload: Json): SaleEvent {
       amount: money(fields.edz_valorpago),
       utmSource: txt(fields.edz_gtr_param1) || null,
       utmContent: txt(fields.edz_gtr_param4) || null,
+      utmCampaign: txt(fields.edz_gtr_param2) || null,
+      utmMedium: txt(fields.edz_gtr_param3) || null,
+      utmTerm: txt(fields.edz_gtr_param5) || null,
     };
   }
   const data = obj(payload.data);
@@ -85,6 +97,9 @@ function eduzz(payload: Json): SaleEvent {
     amount: money(obj(data.paid).value) ?? money(obj(data.price).value),
     utmSource: txt(obj(data.utm).source) || null,
     utmContent: txt(obj(data.utm).content) || null,
+    utmCampaign: txt(obj(data.utm).campaign) || null,
+    utmMedium: txt(obj(data.utm).medium) || null,
+    utmTerm: txt(obj(data.utm).term) || null,
   };
 }
 
@@ -113,6 +128,9 @@ function generic(provider: string, payload: Json): SaleEvent {
     amount: money(data.amount) ?? money(data.baseAmount),
     utmSource: txt(data.utm_source || payload.utm_source) || null,
     utmContent: txt(data.utm_content || payload.utm_content) || null,
+    utmCampaign: txt(data.utm_campaign || payload.utm_campaign) || null,
+    utmMedium: txt(data.utm_medium || payload.utm_medium) || null,
+    utmTerm: txt(data.utm_term || payload.utm_term) || null,
   };
 }
 

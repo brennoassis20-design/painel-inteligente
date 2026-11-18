@@ -1,4 +1,5 @@
 // Gênio Play: cadastro grátis (lead), notificações (sino) e avisos no celular (web push).
+import { tagPlainLink } from "@/lib/membros-utm";
 import webpush from "web-push";
 import { supabaseAdminAuthRequest, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
 import { type Area, areaUrl, getAreaById, inviteToArea, isMainArea, MAIN_AREA_ID, MEMBROS_URL, OpError } from "@/lib/membros";
@@ -220,7 +221,11 @@ export async function createNotice(input: NewNotice) {
   const notice = rows[0];
   const area = await getAreaById(input.areaId);
   const home = areaUrl(area);
-  const target = notice.url || (input.slug ? `${home}/?p=${enc(input.slug)}` : home);
+  const baseTarget = notice.url || (input.slug ? `${home}/?p=${enc(input.slug)}` : home);
+  // UTM do padrão: e-mail e push saem com medium próprio; campaign = produto (ou tipo do aviso); content = id do aviso.
+  const campaign = input.slug || notice.kind || "aviso";
+  const tag = (medium: "aviso-email" | "aviso-push") => tagPlainLink(baseTarget, { medium, campaign, content: notice.id });
+  const target = tag("aviso-push");
   const when = notice.starts_at ? `${whenText(notice.starts_at)}. ` : "";
   const sent = await pushAll(area.id, {
     title: notice.kind === "ao_vivo" ? `🔴 ${notice.title}` : notice.title,
@@ -231,7 +236,7 @@ export async function createNotice(input: NewNotice) {
     console.error("push", error);
     return 0;
   });
-  const mail = input.email ? await emailAll(area, notice, target).catch((error) => ({ enviados: 0, falhas: 0, erro: String(error?.message || error) })) : null;
+  const mail = input.email ? await emailAll(area, notice, tag("aviso-email")).catch((error) => ({ enviados: 0, falhas: 0, erro: String(error?.message || error) })) : null;
   await supabaseRest(`/mp_notifications?id=eq.${notice.id}`, {
     method: "PATCH",
     body: JSON.stringify({ push_sent: sent, email_sent: mail?.enviados || 0 }),

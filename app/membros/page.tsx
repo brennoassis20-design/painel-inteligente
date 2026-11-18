@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isInstalled, platform, refreshPush, registerWorker } from "./app";
 import { Bell, InstallGuide, LiveBar, PushInvite, type NoticeItem } from "./Extras";
 import { captureUtm, loadPixel, readUtm, track } from "./pixel";
+import { compactOrigin, tagPlainLink, type UtmMedium } from "@/lib/membros-utm";
 import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Promo";
 import Login from "./Login";
 import { api, areaBase, areaHeaders, areaSlug, AuthError, brl, readSession, writeSession } from "./session";
@@ -27,7 +28,8 @@ type Item = {
   sales_page_url: string | null;
   has_checkout: boolean;
   is_free?: boolean;
-  via?: "cadeado" | "upsell";
+  via?: UtmMedium;
+  via_content?: string;
   owned: boolean;
   lessons_total: number;
   lessons_done: number;
@@ -376,14 +378,19 @@ export default function MembrosPage() {
 
   const promo = home.promo || null;
   const openNotice = (notice: NoticeItem) => {
+    const item = home.products.find((product) => product.id === notice.product_id);
     if (notice.url) {
-      window.open(notice.url, "_blank", "noopener");
+      // Aviso com link: UTM da área (membros / aviso / produto ou tipo / id do aviso) sem apagar o que o link já tiver.
+      window.open(
+        tagPlainLink(notice.url, { medium: "aviso", campaign: item?.slug || notice.kind || "geral", content: notice.id, term: compactOrigin(readUtm()) || undefined }),
+        "_blank",
+        "noopener",
+      );
       return;
     }
-    const item = home.products.find((product) => product.id === notice.product_id);
     if (item) {
       if (item.owned) go(item.slug);
-      else open(item);
+      else open({ ...item, via: "cadeado", via_content: "aviso-sino" });
       return;
     }
     // Aviso geral da promoção: abre o pop-up da oferta com o botão de compra.
@@ -428,12 +435,12 @@ export default function MembrosPage() {
             </button>
           )}
           {owned.some((item) => item.special === "painel") && (
-            <a href={PAINEL_URL} target="_blank" rel="noreferrer">
+            <a href={tagPlainLink(PAINEL_URL, { medium: "link", content: "painel-inteligente" })} target="_blank" rel="noreferrer">
               Painel Inteligente
             </a>
           )}
           {home.settings.support_url && (
-            <a href={home.settings.support_url} target="_blank" rel="noreferrer">
+            <a href={tagPlainLink(home.settings.support_url, { medium: "link", content: "suporte" })} target="_blank" rel="noreferrer">
               Suporte
             </a>
           )}
@@ -606,7 +613,7 @@ export default function MembrosPage() {
         />
       )}
 
-      {promo && !slug && !locked && !promoOpen && <PromoCard promo={promo} items={home.products} onOpen={(item) => open(item)} />}
+      {promo && !slug && !locked && !promoOpen && <PromoCard promo={promo} items={home.products} onOpen={(item) => open({ ...item, via: "promo", via_content: "card-promo" })} />}
 
       {offerOpen && (
         <OfferSheet
@@ -635,7 +642,7 @@ export default function MembrosPage() {
 }
 
 // Compra: abre o pagamento em outra aba e espera a liberação aqui mesmo.
-function useCheckout(item: Item, onRefresh: () => Promise<Home | null>) {
+function useCheckout(item: Item, onRefresh: () => Promise<Home | null>, via?: UtmMedium, content?: string) {
   const [state, setState] = useState<"idle" | "opening" | "waiting" | "released">("idle");
   const [error, setError] = useState("");
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -660,7 +667,7 @@ function useCheckout(item: Item, onRefresh: () => Promise<Home | null>) {
         currency: "BRL",
         value: finalPrice(item) ? (finalPrice(item) || 0) / 100 : 0,
       });
-      const data = await api<{ url: string }>("/api/membros/checkout", { body: { produto: item.id, via: item.via, utm: readUtm() } });
+      const data = await api<{ url: string }>("/api/membros/checkout", { body: { produto: item.id, via: via || item.via || "cadeado", content: content || item.via_content, utm: readUtm() } });
       if (tab) tab.location.href = data.url;
       else window.location.href = data.url;
       setState("waiting");
@@ -765,7 +772,7 @@ function OfferSheet({ items, onClose, onRefresh, onWatch }: { items: Item[]; onC
 }
 
 function OfferRow({ item, onRefresh, onWatch }: { item: Item; onRefresh: () => Promise<Home | null>; onWatch: (item: Item) => void }) {
-  const { state, error, buy } = useCheckout(item, onRefresh);
+  const { state, error, buy } = useCheckout(item, onRefresh, "ofertas", "quero-este");
   const text = item.subtitle || item.description;
   return (
     <li className="gp-promo-row">
@@ -813,7 +820,7 @@ function PromoCountdown({ ends }: { ends: string | null }) {
 }
 
 function PromoRow({ item, onRefresh, onWatch }: { item: Item; onRefresh: () => Promise<Home | null>; onWatch: (item: Item) => void }) {
-  const { state, error, buy } = useCheckout(item, onRefresh);
+  const { state, error, buy } = useCheckout(item, onRefresh, "promo", "comprar-por");
   return (
     <li className="gp-promo-row">
       <span className="gp-promo-art" style={item.cover_url ? { backgroundImage: `url("${item.cover_url}")` } : art(item)} />
@@ -906,7 +913,7 @@ function LockedSheet({
             </>
           )}
           {item.sales_page_url && state !== "released" && (
-            <a className="gp-link" href={item.sales_page_url} target="_blank" rel="noreferrer">
+            <a className="gp-link" href={tagPlainLink(item.sales_page_url, { medium: "pagina-produto", campaign: item.slug, content: "ver-tudo", term: compactOrigin(readUtm()) || undefined })} target="_blank" rel="noreferrer">
               Ver tudo o que vem no produto
             </a>
           )}
@@ -1009,7 +1016,7 @@ function ProductScreen({
       {!data.product.owned && (
         <div className="gp-banner-lock">
           <Lock /> Você ainda não tem este produto.{" "}
-          <button type="button" className="gp-btn gp-btn-gold" onClick={() => onLocked(data.product)}>
+          <button type="button" className="gp-btn gp-btn-gold" onClick={() => onLocked({ ...data.product, via: "cadeado-aula", via_content: "banner-desbloquear" })}>
             Desbloquear {data.product.price_cents ? <>por <PriceTag item={data.product} size="md" /></> : ""}
           </button>
         </div>
@@ -1063,7 +1070,7 @@ function ProductScreen({
           )}
 
           {data.upsell && (
-            <button type="button" className="gp-upsell" onClick={() => onLocked({ ...data.upsell!, owned: false, via: "upsell" })}>
+            <button type="button" className="gp-upsell" onClick={() => onLocked({ ...data.upsell!, owned: false, via: "upsell-aula", via_content: "proximo-passo" })}>
               <span className="gp-upsell-art" style={art(data.upsell)} />
               <span>
                 <span className="gp-eyebrow">{data.upsell.text || "Próximo passo recomendado"}</span>
@@ -1089,7 +1096,7 @@ function ProductScreen({
                     <button
                       type="button"
                       className={`${lesson.id === current?.id ? "is-current" : ""} ${lesson.locked ? "is-locked" : ""}`}
-                      onClick={() => (lesson.locked ? (data.product.owned ? undefined : onLocked(data.product)) : onLesson(lesson.id))}
+                      onClick={() => (lesson.locked ? (data.product.owned ? undefined : onLocked({ ...data.product, via: "cadeado-aula", via_content: "aula-bloqueada" })) : onLesson(lesson.id))}
                       disabled={lesson.locked && data.product.owned}
                     >
                       <span className="gp-check">{lesson.completed ? "✓" : lesson.locked ? <Lock /> : ""}</span>
