@@ -14,7 +14,7 @@ git checkout -q main
 git merge -q --ff-only origin/main
 git merge -q --no-edit utm-padrao-2026-11-18
 git push -q origin main
-echo "Enviado. Esperando a Vercel publicar a área (procura 'pagina-produto' no JavaScript)..."
+echo "Enviado. Esperando a Vercel publicar a área ( no JavaScript)..."
 area_ok=0
 for i in {1..36}; do
   sleep 10
@@ -34,7 +34,7 @@ vercel deploy --prod --yes
 echo "Conferindo o HTML publicado..."
 site_ok=1
 for pagina in oferta oferta-2; do
-  if curl -s "https://reforma.kitsepromocoes.site/$pagina/?v=$RANDOM" | grep -q "upsell-pos-compra"; then echo "OK /$pagina/: upsell-pos-compra"; else echo "ATENCAO /$pagina/: não achei upsell-pos-compra"; site_ok=0; fi
+  if curl -s "https://reforma.kitsepromocoes.site/$pagina/?v=$RANDOM" | grep -q "upsell-oferta"; then echo "OK /$pagina/: upsell-oferta"; else echo "ATENCAO /$pagina/: não achei upsell-oferta"; site_ok=0; fi
 done
 for entrega in reforma-desenhada tabelas 30-casos calculadora; do
   if curl -s "https://reforma.kitsepromocoes.site/e-c90db2fdbcbd/entrega/$entrega/?v=$RANDOM" | grep -q "padrao UTM"; then echo "OK entrega/$entrega: faixa com origem"; else echo "ATENCAO entrega/$entrega: script novo não encontrado"; site_ok=0; fi

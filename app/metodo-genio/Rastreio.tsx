@@ -58,7 +58,8 @@ export function Rastreio({ valor, prefixo = "pagina-vendas" }: { valor: string; 
       url.searchParams.set("utm_medium", prefixo);
       url.searchParams.set("utm_campaign", origem.utm_campaign || "metodo-genio");
       url.searchParams.set("utm_content", botao);
-      const termo = compactOrigin(origem);
+      // utm_term numérico = id de conjunto (os agentes atribuem a venda por ele): preserva. Senão, origem compacta.
+      const termo = /^\d+$/.test(origem.utm_term || "") ? origem.utm_term : compactOrigin(origem);
       if (termo) url.searchParams.set("utm_term", termo);
       else url.searchParams.delete("utm_term");
       ["utm_id", "fbclid", "gclid", "coupon"].forEach((chave) => {
