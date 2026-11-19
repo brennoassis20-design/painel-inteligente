@@ -87,6 +87,6 @@ export function accessEmailHtml(input: AccessEmailInput) {
 <tr><td style="padding:6px 36px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0">${items}</table></td></tr>
 <tr><td align="center" style="padding:28px 36px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" bgcolor="#f2b441" style="border-radius:14px;background-color:#f2b441;">
 <a href="${esc(input.link)}" target="_blank" style="display:inline-block;padding:18px 44px;${font}font-size:17px;font-weight:700;color:#1b1405;text-decoration:none;border-radius:14px;">Entrar na área &rarr;</a></td></tr></table></td></tr>
-<tr><td align="center" style="padding:24px 36px 32px;${font}font-size:12px;line-height:19px;color:#6b7390;">${input.newAccount ? "Ao entrar pela primeira vez, você cria a sua senha.<br>" : ""}Use este e-mail (${esc(input.email)}) para entrar. Se o botão expirar, abra <a href="${esc(input.areaUrl)}" style="color:#ffd27a;">${esc(site)}</a> e clique em "Esqueci a senha / receber link".</td></tr>
+<tr><td align="center" style="padding:24px 36px 32px;${font}font-size:12px;line-height:19px;color:#6b7390;">${input.newAccount ? "Ao entrar pela primeira vez, você cria a sua senha.<br>" : ""}Use este e-mail (${esc(input.email)}) para entrar. Se o botão expirar, abra <a href="${esc(input.areaUrl)}" style="color:#ffd27a;">${esc(site)}</a> e clique em "Esqueci minha senha / primeiro acesso".</td></tr>
 </table></td></tr></table></body></html>`;
 }
