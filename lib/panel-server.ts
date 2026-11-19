@@ -278,19 +278,19 @@ export type AuthAccount = {
   created_at?: string;
   last_sign_in_at?: string | null;
   email_confirmed_at?: string | null;
+  invited_at?: string | null;
   user_metadata?: Record<string, unknown>;
 };
 
-// Conta do Supabase Auth pelo e-mail (null = não existe). Usa generate_link (não envia e-mail; a resposta traz o usuário).
+// Conta do Supabase Auth pelo e-mail (null = não existe). Só LÊ (função auth_account_by_email, só service_role).
+// NUNCA usar generate_link para isso: ele conta como pedido de recuperação, bloqueia o /recover seguinte por 60 s
+// (o e-mail de "esqueci a senha" não saía, caso Luciana 19/11) e invalida o link de recuperação que o aluno já recebeu.
 export async function findAuthAccount(email: string): Promise<AuthAccount | null> {
-  const response = await supabaseAdminAuthRequest("/admin/generate_link", {
+  const account = await supabaseRest<AuthAccount | null>("/rpc/auth_account_by_email", {
     method: "POST",
-    body: JSON.stringify({ type: "recovery", email }),
+    body: JSON.stringify({ p_email: email.trim().toLowerCase() }),
   });
-  if (response.ok) return (await response.json()) as AuthAccount;
-  const text = await response.text();
-  if (/not.?found|no user/i.test(text) || response.status === 404) return null;
-  throw new Error(text || `Auth ${response.status}`);
+  return account && account.id ? account : null;
 }
 
 // Dados do usuário (user_metadata) pelo id.

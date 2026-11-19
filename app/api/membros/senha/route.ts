@@ -60,10 +60,19 @@ export async function POST(request: Request) {
     // O modelo de e-mail do Supabase lê area_nome/area_url do usuário: atualiza antes de mandar.
     if (account?.id) await tagAccountWithArea(account.id, target);
 
-    await supabaseAuthRequest(`/recover?redirect_to=${enc(redirectTo)}`, {
+    // Se o envio falhar, o aluno precisa saber (antes a tela dizia "enviado" mesmo com erro).
+    const sent = await supabaseAuthRequest(`/recover?redirect_to=${enc(redirectTo)}`, {
       method: "POST",
       body: JSON.stringify({ email }),
     });
+    if (!sent.ok) {
+      const detail = (await sent.text()).slice(0, 200);
+      console.error("recover-falhou", sent.status, detail);
+      if (sent.status === 429) {
+        return Response.json({ ok: true, message: "Acabamos de enviar um link para este e-mail. Confira a caixa de entrada, Promoções e Spam. Se precisar de outro, aguarde 1 minuto e peça de novo." });
+      }
+      return jsonError("Não foi possível enviar o link agora. Tente de novo em 1 minuto.", 502);
+    }
     return Response.json({ ok: true, message: MESSAGE });
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Erro ao enviar o link.", 500);
