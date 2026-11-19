@@ -87,7 +87,7 @@ ok(invitedRecently(undefined, now, now - HOUR) && !invitedRecently(undefined, no
   ok(accessSubject([{ title: "x".repeat(300) }]).length <= 150, "assunto até 150");
   ok(platformName("eduzz") === "Eduzz" && platformName("cakto") === "Cakto" && platformName("ticto") === "Ticto", "nomes das plataformas");
   const html = accessEmailHtml({ brandName: "Reforma Desenhada", areaUrl: "https://membros.bagencymidia.site/reforma", iconUrl: "https://x/i.png", link: "https://sb/verify?a=1&b=2", email: "a@x.com", products: reforma, platform: "Eduzz", newAccount: true });
-  ok(html.includes("O conteúdo NÃO fica na Eduzz") && html.includes("Entrar na área") && html.includes("Esqueci a senha") && html.includes("a=1&amp;b=2"), "html tem aviso, botão e plano B");
+  ok(html.includes("O conteúdo NÃO fica na Eduzz") && html.includes("Entrar na área") && html.includes("Esqueci minha senha / primeiro acesso") && html.includes("a=1&amp;b=2"), "html tem aviso, botão e plano B");
 }
 if (falhas) { console.log(`${falhas} falha(s)`); process.exit(1); }
 console.log("tudo certo");
