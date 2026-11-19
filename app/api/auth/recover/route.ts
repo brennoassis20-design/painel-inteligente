@@ -1,4 +1,5 @@
-import { getPublicAppUrl, inviteBuyer, jsonError, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
+import { findAuthAccount, getPublicAppUrl, inviteBuyer, jsonError, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
+import { areaUrl, panelAreaFor, tagAccountWithArea } from "@/lib/membros";
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
       return jsonError("Informe seu email.", 400);
     }
 
-    const redirectTo = getPublicAppUrl(request);
+    let redirectTo = getPublicAppUrl(request);
 
     // Comprador cujo convite nao chegou ainda nao tem conta: cria e envia o convite agora.
     const entitlements = await supabaseRest<{ access_status: string }[]>(
@@ -23,6 +24,16 @@ export async function POST(request: Request) {
           ok: true,
           message: "Se este email tiver acesso, voce vai receber um link para definir a senha.",
         });
+      }
+    }
+
+    // Aluno de uma área de membros sem acesso ao Painel: o link volta para a área dele, com o nome dela no e-mail.
+    const account = await findAuthAccount(email).catch(() => null);
+    if (account) {
+      const own = await panelAreaFor({ id: account.id, email }, account.user_metadata || null).catch(() => null);
+      if (own) {
+        redirectTo = areaUrl(own);
+        await tagAccountWithArea(account.id, own);
       }
     }
 

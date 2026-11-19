@@ -1,4 +1,67 @@
-<!doctype html>
+{{ if .Data.area_nome }}<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Seu acesso a {{ .Data.area_nome }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0c12;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">Seu acesso está liberado. Toque para entrar.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0c12;">
+  <tr>
+    <td align="center" style="padding:40px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background-color:#121622;border:1px solid #262c3d;border-radius:24px;">
+        <tr>
+          <td align="center" style="padding:40px 36px 0;font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:4px;color:#f2b441;text-transform:uppercase;">
+            {{ .Data.area_nome }}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:14px 36px 0;font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:32px;font-weight:700;color:#eef0f6;">
+            Seu acesso está liberado
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:12px 36px 0;font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#9aa2b8;">
+            Seu conteúdo em {{ .Data.area_nome }} já está esperando por você. Toque no botão para entrar direto.
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:28px 36px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" bgcolor="#f2b441" style="border-radius:14px;background-color:#f2b441;">
+                  <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:16px 34px;font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1b1405;text-decoration:none;border-radius:14px;">Entrar na minha área &rarr;</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:20px 36px 0;font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:19px;color:#6b7390;">
+            Este botão vale por pouco tempo. Se ele já tiver vencido, entre com e-mail e senha ou use &quot;Esqueci minha senha&quot; na própria área.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 36px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #262c3d;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:18px 36px 32px;font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:19px;color:#6b7390;">
+            Se o botão não abrir, copie e cole este endereço no navegador:<br>
+            <a href="{{ .ConfirmationURL }}" style="color:#ffd27a;word-break:break-all;">{{ .ConfirmationURL }}</a><br>Sua área: <a href="{{ .Data.area_url }}" style="color:#ffd27a;">{{ .Data.area_url }}</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+{{ else }}<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -68,3 +131,4 @@
 </table>
 </body>
 </html>
+{{ end }}

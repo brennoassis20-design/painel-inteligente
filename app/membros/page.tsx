@@ -129,7 +129,7 @@ function Row({ id, title, hint, children }: { id?: string; title: string; hint: 
   );
 }
 
-type PublicArea = { slug: string; main: boolean; brand_name: string; logo_url: string | null; accent: string; bg_color: string | null; meta_pixel_id: string | null };
+type PublicArea = { slug: string; main: boolean; brand_name: string; logo_url: string | null; accent: string; bg_color: string | null; meta_pixel_id: string | null; has_free?: boolean };
 
 export default function MembrosPage() {
   const [ready, setReady] = useState(false);
@@ -342,6 +342,8 @@ export default function MembrosPage() {
     return (
       <div className="gp" style={loginTheme}>
         <Login
+          key={area ? "area" : "carregando"}
+          canSignup={Boolean(area?.has_free)}
           brand={home?.settings.brand_name || area?.brand_name || (areaSlug() ? "" : "Gênio Play")}
           logo={area?.logo_url || null}
           linkToken={link?.token}

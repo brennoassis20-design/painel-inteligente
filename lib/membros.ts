@@ -2,7 +2,7 @@
 // Todas as operações de configuração passam pelo registro OPS abaixo, usado pelo
 // painel de administração e pelo conector de IA (MCP). Assim os dois fazem sempre o mesmo.
 import { createHash, randomBytes } from "node:crypto";
-import { inviteBuyer, supabaseRest } from "@/lib/panel-server";
+import { getAuthAccount, inviteBuyer, setAuthMetadata, supabaseRest } from "@/lib/panel-server";
 import { areaStats } from "@/lib/membros-stats";
 import { normalizeMedium, tagLink } from "@/lib/membros-utm";
 import { cleanUrl, createNotice, inviteBuyersWithoutAccount, listLeads, nextLive, noticeNewModule, noticeNewProduct, studentEmails, studentNotices } from "@/lib/membros-avisos";
@@ -207,6 +207,81 @@ export function publicArea(area: Area) {
   };
 }
 
+// A área tem produto publicado e gratuito? Só então existe "cadastro grátis" nela.
+export async function areaHasFree(area: Pick<Area, "id">) {
+  const rows = await supabaseRest<{ id: string }[]>(`/mp_products?area_id=eq.${area.id}&published=eq.true&is_free=eq.true&select=id&limit=1`);
+  return rows.length > 0;
+}
+
+// Dados públicos + se a tela de entrada pode oferecer "criar acesso grátis".
+export async function publicAreaInfo(area: Area) {
+  return { ...publicArea(area), has_free: await areaHasFree(area) };
+}
+
+// Área do endereço guardado no cadastro (user_metadata.area_url). Área 1 ou endereço desconhecido = null.
+async function areaFromUrl(url: unknown) {
+  const text = String(url || "").trim();
+  if (!text.startsWith(`${MEMBROS_URL}/`)) return null;
+  const slug = text.slice(MEMBROS_URL.length + 1).split(/[/?#]/)[0].toLowerCase();
+  if (!slug) return null;
+  try {
+    const found = await getArea(slug);
+    return isMainArea(found) ? null : found;
+  } catch {
+    return null;
+  }
+}
+
+// Grava no usuário a área dele (o modelo de e-mail do Supabase lê area_nome/area_url) antes de mandar link de entrada.
+// Área 1 não grava nada: o e-mail padrão é o do Gênio Play. Nunca derruba quem chama.
+export async function tagAccountWithArea(userId: string, area: Area) {
+  if (isMainArea(area)) return false;
+  return setAuthMetadata(userId, { area_nome: area.brand_name, area_url: areaUrl(area) }).catch(() => false);
+}
+
+// Painel Inteligente: usuário sem acesso ao Painel que é aluno de uma área vai para a área dele (nunca vê "Pagamento pendente").
+// Fica no Painel quem tem registro de acesso lá (ativo, vencido, reembolsado, bloqueado) e o admin da plataforma.
+// panelAreaFor devolve a área; panelRedirectFor, o endereço (ou null).
+export async function panelAreaFor(user: { id: string; email: string }, meta?: Record<string, unknown> | null) {
+  const email = cleanEmail(user.email);
+  const [entitlements, profiles] = await Promise.all([
+    supabaseRest<{ access_status: string }[]>(`/entitlements?email=eq.${enc(email)}&select=access_status&limit=1`),
+    supabaseRest<{ access_status: string }[]>(`/profiles?email=eq.${enc(email)}&select=access_status&limit=1`),
+  ]);
+  if (entitlements.some((row) => row.access_status !== "pending") || profiles.some((row) => row.access_status !== "pending")) return null;
+  if (await isPlatformAdmin(email)) return null;
+  return otherAreaFor({ id: user.id, email }, meta === undefined ? {} : { meta });
+}
+
+export async function panelRedirectFor(user: { id: string; email: string }, meta?: Record<string, unknown> | null) {
+  const own = await panelAreaFor(user, meta);
+  return own ? areaUrl(own) : null;
+}
+
+// Em qual área (que não é a 1) este aluno é de verdade? Ordem: acesso ativo (compra) em qualquer área,
+// depois o endereço do cadastro (user_metadata.area_url) e por fim o cadastro grátis (mp_leads) numa área != 1.
+// Quem tem cadastro grátis na própria área 1 não cai nos dois últimos (é aluno do Gênio Play).
+export async function otherAreaFor(user: { id?: string; email: string }, opts: { meta?: Record<string, unknown> | null } = {}) {
+  const email = cleanEmail(user.email);
+  const nowMs = Date.now();
+  const rows = await supabaseRest<{ expires_at: string | null; mp_products: { area_id: number } }[]>(
+    `/mp_access?email=eq.${enc(email)}&status=eq.active&select=expires_at,mp_products!inner(area_id)&mp_products.area_id=neq.${MAIN_AREA_ID}&order=updated_at.desc`,
+  );
+  const bought = rows.find((row) => !row.expires_at || new Date(row.expires_at).getTime() > nowMs);
+  if (bought) return getAreaById(bought.mp_products.area_id);
+
+  const leads = await supabaseRest<{ area_id: number }[]>(`/mp_leads?email=eq.${enc(email)}&select=area_id&order=created_at.desc`);
+  if (leads.some((lead) => lead.area_id === MAIN_AREA_ID)) return null;
+
+  let meta = opts.meta;
+  if (meta === undefined && user.id) meta = (await getAuthAccount(user.id).catch(() => null))?.user_metadata || null;
+  const fromMeta = await areaFromUrl(meta?.area_url);
+  if (fromMeta) return fromMeta;
+
+  const lead = leads.find((row) => row.area_id !== MAIN_AREA_ID);
+  return lead ? getAreaById(lead.area_id) : null;
+}
+
 // ---------------------------------------------------------------- leitura
 
 export async function listProducts(area: Pick<Area, "id">, onlyPublished = false) {
@@ -356,18 +431,13 @@ export async function studentHome(user: { id: string; email: string }, area: Are
 
   const hero = items.find((product) => product.id === settings.hero_product_id) || items.find((product) => product.featured) || null;
 
-  // Aluno que não tem nada na área 1 mas comprou numa área própria (ex.: Reforma) vai direto para ela:
-  // o comprador da Reforma nunca vê a vitrine do Gênio Play.
+  // Aluno que não tem nada na área 1 mas é aluno de outra área (compra, cadastro feito lá ou lead) vai direto para ela:
+  // cada aluno só vê a área dele. Admin da plataforma não é desviado.
   const admin = await isAdmin(user.email, area);
   let redirect: string | null = null;
   if (isMainArea(area) && !admin && !products.some((product) => !product.is_free && access.has(product.id))) {
-    const others = (await ownAreaIds()).filter((id) => id !== MAIN_AREA_ID);
-    if (others.length) {
-      const rows = await supabaseRest<{ mp_products: { area_id: number } }[]>(
-        `/mp_access?email=eq.${enc(cleanEmail(user.email))}&status=eq.active&select=mp_products!inner(area_id)&mp_products.area_id=in.(${others.join(",")})&limit=1`,
-      );
-      if (rows[0]) redirect = areaUrl(await getAreaById(rows[0].mp_products.area_id));
-    }
+    const own = await otherAreaFor(user);
+    if (own) redirect = areaUrl(own);
   }
 
   return {
@@ -614,7 +684,12 @@ export async function applySale(event: SaleEvent, area: Area) {
     const target = products.some((product) => product.area_id === area.id)
       ? area
       : await getAreaById(products[0].area_id);
-    account = await inviteToArea(target, event.email, event.name).catch(() => "invite_failed");
+    account = await inviteToArea(target, event.email, event.name).catch((error) => {
+      console.error("convite-falhou", event.provider, event.email, error instanceof Error ? error.message : error);
+      return "invite_failed";
+    });
+    // O lembrete de acesso (api/membros/lembrete-acesso) refaz o convite de quem não conseguiu entrar.
+    if (account === "invite_failed") await logEvent(target.id, event.email, null, "convite_falhou", { provider: event.provider, order: event.orderId });
   }
   return { matched: products.map((product) => product.slug), account };
 }

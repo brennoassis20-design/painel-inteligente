@@ -1,8 +1,8 @@
 // Gênio Play: cadastro grátis (lead), notificações (sino) e avisos no celular (web push).
 import { tagPlainLink } from "@/lib/membros-utm";
 import webpush from "web-push";
-import { supabaseAdminAuthRequest, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
-import { type Area, areaUrl, getAreaById, inviteToArea, isMainArea, MAIN_AREA_ID, MEMBROS_URL, OpError } from "@/lib/membros";
+import { findAuthAccount, supabaseAdminAuthRequest, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
+import { type Area, areaHasFree, areaUrl, getAreaById, inviteToArea, isMainArea, MAIN_AREA_ID, MEMBROS_URL, OpError, tagAccountWithArea } from "@/lib/membros";
 
 const enc = encodeURIComponent;
 
@@ -18,7 +18,11 @@ export function cleanWhatsapp(value: unknown) {
 
 type Signup = { nome?: string; email?: string; whatsapp?: string; senha?: string; utm?: Record<string, unknown> };
 
+export const NO_FREE_MESSAGE = "Esta área não tem conteúdo grátis. Use o mesmo e-mail da compra para entrar ou fale com o suporte.";
+
 export async function signupFree(input: Signup, area: Area) {
+  // Cadastro grátis só existe em área com produto publicado e gratuito (checado no servidor, não só na tela).
+  if (!(await areaHasFree(area))) throw new OpError(NO_FREE_MESSAGE);
   const home = areaUrl(area);
   // Áreas de produtores: o e-mail de acesso mostra o nome da área (modelo do Supabase lê area_nome).
   const areaData = isMainArea(area) ? {} : { area_nome: area.brand_name, area_url: home };
@@ -55,6 +59,9 @@ export async function signupFree(input: Signup, area: Area) {
         headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
         body: JSON.stringify({ area_id: area.id, email, name: name || null, whatsapp, source: "gratis_conta_existente", utm }),
       }).catch(() => undefined);
+      // O e-mail de entrada mostra o nome da área certa: atualiza antes de mandar.
+      const account = await findAuthAccount(email).catch(() => null);
+      if (account) await tagAccountWithArea(account.id, area);
       await supabaseAuthRequest(`/otp?redirect_to=${enc(home)}`, {
         method: "POST",
         body: JSON.stringify({ email, create_user: false }),
@@ -98,16 +105,13 @@ export async function signupFree(input: Signup, area: Area) {
   };
 }
 
-// Existe conta com este e-mail? (gera um link de recuperação sem enviar; 404/422 = não existe)
+// Existe conta com este e-mail? (não envia nada; erro inesperado = na dúvida, segue o fluxo normal)
 export async function accountExists(email: string) {
-  const response = await supabaseAdminAuthRequest("/admin/generate_link", {
-    method: "POST",
-    body: JSON.stringify({ type: "recovery", email }),
-  });
-  if (response.ok) return true;
-  const text = await response.text();
-  if (/not.?found|no user/i.test(text) || response.status === 404) return false;
-  return true; // na dúvida, segue o fluxo normal
+  try {
+    return Boolean(await findAuthAccount(email));
+  } catch {
+    return true;
+  }
 }
 
 // Convite para todo comprador com acesso ativo que ainda não criou a conta (máx. por vez por causa do limite de e-mails/hora).

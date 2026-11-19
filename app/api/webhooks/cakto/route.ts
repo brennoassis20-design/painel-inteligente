@@ -1,4 +1,5 @@
 import { getPublicAppUrl, inviteBuyer, jsonError, supabaseRest } from "@/lib/panel-server";
+import { getAreaById, inviteToArea } from "@/lib/membros";
 
 type CaktoPayload = {
   id?: string;
@@ -131,17 +132,44 @@ export async function POST(request: Request) {
 
     if (accessStatus === "active") {
       const name = payload.customer?.name || payload.buyer?.name || payload.client?.name || stringFrom(dataCustomer, "name");
-      // O acesso ja foi gravado; se o email falhar, o comprador recupera por "Esqueci minha senha".
-      account = await inviteBuyer(email, name || undefined, getPublicAppUrl(request)).catch((error) => {
-        console.error("cakto-invite-failed", email, error instanceof Error ? error.message : error);
-        return "invite_failed";
-      });
+      // Produto de uma área de membros (ex.: Academia do Dollar): conta e convite saem pela área, nunca pelo Painel.
+      const areaIds = await caktoAreaIds(payload).catch(() => [] as number[]);
+      if (areaIds.length) {
+        const results: string[] = [];
+        for (const id of areaIds) {
+          const area = await getAreaById(id);
+          results.push(
+            await inviteToArea(area, email, name || undefined).catch((error) => {
+              console.error("cakto-invite-area-failed", email, id, error instanceof Error ? error.message : error);
+              return "invite_failed";
+            }),
+          );
+        }
+        account = results.includes("invited") ? "invited" : results[0];
+      } else {
+        // O acesso ja foi gravado; se o email falhar, o comprador recupera por "Esqueci minha senha".
+        account = await inviteBuyer(email, name || undefined, getPublicAppUrl(request)).catch((error) => {
+          console.error("cakto-invite-failed", email, error instanceof Error ? error.message : error);
+          return "invite_failed";
+        });
+      }
     }
 
     return Response.json({ ok: true, email, accessStatus, account });
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Erro no webhook.", 500);
   }
+}
+
+// Áreas de membros (que não são a 1) dona do produto/oferta desta compra: ids gravados em mp_products.external_ids como "cakto:<id>".
+async function caktoAreaIds(payload: CaktoPayload) {
+  const product = stringFrom(objectFromData(payload.data, "product"), "id");
+  const offer = stringFrom(objectFromData(payload.data, "offer"), "id");
+  const ids = [product ? `cakto:${product}` : "", offer ? `cakto:oferta:${offer}` : ""].filter(Boolean);
+  if (!ids.length) return [];
+  const filter = `{${ids.map((id) => `"${id.replaceAll('"', "")}"`).join(",")}}`;
+  const rows = await supabaseRest<{ area_id: number }[]>(`/mp_products?area_id=neq.1&external_ids=ov.${encodeURIComponent(filter)}&select=area_id`);
+  return [...new Set(rows.map((row) => row.area_id))];
 }
 
 function normalizeEventType(payload: CaktoPayload) {

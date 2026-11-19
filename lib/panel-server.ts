@@ -272,7 +272,45 @@ export async function supabaseAdminAuthRequest(path: string, init: RequestInit =
   });
 }
 
+export type AuthAccount = {
+  id: string;
+  email: string;
+  created_at?: string;
+  last_sign_in_at?: string | null;
+  email_confirmed_at?: string | null;
+  user_metadata?: Record<string, unknown>;
+};
+
+// Conta do Supabase Auth pelo e-mail (null = não existe). Usa generate_link (não envia e-mail; a resposta traz o usuário).
+export async function findAuthAccount(email: string): Promise<AuthAccount | null> {
+  const response = await supabaseAdminAuthRequest("/admin/generate_link", {
+    method: "POST",
+    body: JSON.stringify({ type: "recovery", email }),
+  });
+  if (response.ok) return (await response.json()) as AuthAccount;
+  const text = await response.text();
+  if (/not.?found|no user/i.test(text) || response.status === 404) return null;
+  throw new Error(text || `Auth ${response.status}`);
+}
+
+// Dados do usuário (user_metadata) pelo id.
+export async function getAuthAccount(userId: string): Promise<AuthAccount | null> {
+  const response = await supabaseAdminAuthRequest(`/admin/users/${encodeURIComponent(userId)}`);
+  if (!response.ok) return null;
+  return (await response.json()) as AuthAccount;
+}
+
+// Atualiza user_metadata (o Supabase junta com o que já existe). Falha não derruba o fluxo de quem chama.
+export async function setAuthMetadata(userId: string, data: Record<string, unknown>) {
+  const response = await supabaseAdminAuthRequest(`/admin/users/${encodeURIComponent(userId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ user_metadata: data }),
+  });
+  return response.ok;
+}
+
 // extra vai para os dados do usuário e o modelo do e-mail lê (ex.: area_nome / area_url das áreas de produtores).
+// Retorna "invited" (convite enviado), "existing" (já tinha conta) ou lança erro.
 export async function inviteBuyer(email: string, name: string | undefined, redirectTo: string, extra?: Record<string, string>) {
   const response = await supabaseAdminAuthRequest(`/invite?redirect_to=${encodeURIComponent(redirectTo)}`, {
     method: "POST",
@@ -283,8 +321,20 @@ export async function inviteBuyer(email: string, name: string | undefined, redir
 
   const text = await response.text();
 
+  const exists = /already|exists|registered/i.test(text) && !/duplicate key/i.test(text);
   // Quem ja tem conta continua entrando com a propria senha.
-  if (response.status === 422 || /already|exists|registered/i.test(text)) return "existing";
+  if (exists) return "existing";
+
+  // Corrida: o webhook chegou 2-3 vezes no mesmo segundo e o Supabase devolve 500 "duplicate key users_email_partial_key"
+  // (ou 422) para as chamadas repetidas. Se a conta já existe, a primeira chamada fez o convite: não reenvia em loop.
+  if ([500, 409, 422].includes(response.status) || /duplicate key|users_email_partial_key/i.test(text)) {
+    const account = await findAuthAccount(email).catch(() => null);
+    if (account) {
+      const age = account.created_at ? Date.now() - new Date(account.created_at).getTime() : Infinity;
+      return !account.last_sign_in_at && age < 5 * 60 * 1000 ? "invited" : "existing";
+    }
+    if (response.status === 422) return "existing";
+  }
 
   throw new Error(text || `Convite falhou (${response.status}).`);
 }

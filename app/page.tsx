@@ -2172,6 +2172,13 @@ export default function Home() {
       throw new Error(data.error || "Sessão invalida.");
     }
 
+    // Aluno de uma área de membros sem acesso ao Painel: segue para a área dele.
+    if (data.redirect) {
+      window.localStorage.removeItem(sessionKey);
+      window.location.replace(data.redirect);
+      return;
+    }
+
     setName(data.user.name || data.profile.name || "Usuário");
     setEmail(data.user.email);
     setAccessStatus(data.profile.access_status);
@@ -2315,6 +2322,11 @@ export default function Home() {
       if (!response.ok) {
         setLoginFailed(true);
         throw new Error(data.error || "Não foi possível acessar.");
+      }
+
+      if (data.redirect) {
+        window.location.replace(data.redirect as string);
+        return;
       }
 
       const token = data.session.accessToken as string;

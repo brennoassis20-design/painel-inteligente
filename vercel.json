@@ -8,6 +8,10 @@
     {
       "path": "/api/trends/refresh?market=latam",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/membros/lembrete-acesso",
+      "schedule": "0 13 * * *"
     }
   ]
 }

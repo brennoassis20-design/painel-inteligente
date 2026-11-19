@@ -21,6 +21,7 @@ export default function Login({
   linkToken,
   linkRefresh,
   startSignup,
+  canSignup = false,
   onDone,
 }: {
   brand: string;
@@ -28,9 +29,11 @@ export default function Login({
   linkToken?: string;
   linkRefresh?: string;
   startSignup?: boolean;
+  // Só áreas com produto grátis publicado oferecem cadastro grátis.
+  canSignup?: boolean;
   onDone: (info?: { signup?: boolean }) => void;
 }) {
-  const [mode, setMode] = useState<Mode>(linkToken ? "set-password" : startSignup ? "signup" : "login");
+  const [mode, setMode] = useState<Mode>(linkToken ? "set-password" : startSignup && canSignup ? "signup" : "login");
   const [whatsapp, setWhatsapp] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,7 +90,7 @@ export default function Login({
         if (password !== confirm) throw new Error("As duas senhas não são iguais.");
         const response = await fetch("/api/auth/password", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${linkToken}` },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${linkToken}`, ...areaHeaders() },
           body: JSON.stringify({ password }),
         });
         const data = await response.json();
@@ -100,7 +103,7 @@ export default function Login({
 
       const response = await fetch("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Membros": "1", ...areaHeaders() },
         body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
       const data = await response.json();
@@ -188,7 +191,7 @@ export default function Login({
             Já tenho acesso: entrar
           </button>
         )}
-        {mode === "login" && (
+        {mode === "login" && canSignup && (
           <button type="button" className="gp-link gp-link-strong" onClick={() => setMode("signup")}>
             Ainda não tem acesso? Criar acesso grátis
           </button>
@@ -199,7 +202,7 @@ export default function Login({
             Esqueci minha senha / primeiro acesso
           </button>
         )}
-        {mode === "recover" && error && (
+        {mode === "recover" && error && canSignup && (
           <button type="button" className="gp-link gp-link-strong" onClick={() => { setError(""); setMode("signup"); }}>
             Criar acesso grátis com este e-mail
           </button>

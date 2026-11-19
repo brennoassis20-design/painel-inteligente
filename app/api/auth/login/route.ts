@@ -1,4 +1,6 @@
 import { jsonError, supabaseAuthRequest, syncProfileAccess } from "@/lib/panel-server";
+import { panelRedirectFor } from "@/lib/membros";
+import { areaSlugFrom } from "@/lib/membros-http";
 
 export async function POST(request: Request) {
   try {
@@ -28,6 +30,19 @@ export async function POST(request: Request) {
       email: String(data.user.email || "").toLowerCase(),
       name: data.user.user_metadata?.name,
     };
+    // Entrada pela área de membros (cabeçalho X-Area ou X-Membros): não cria perfil do Painel.
+    if (request.headers.get("x-membros") === "1" || areaSlugFrom(request)) {
+      return Response.json({
+        session: { accessToken: data.access_token, refreshToken: data.refresh_token, expiresIn: data.expires_in },
+        user,
+        profile: null,
+      });
+    }
+
+    // Painel: quem é aluno de uma área e não tem acesso ao Painel vai para a área dele (sem criar perfil "pendente").
+    const redirect = await panelRedirectFor(user, data.user.user_metadata || null).catch(() => null);
+    if (redirect) return Response.json({ redirect });
+
     const profile = await syncProfileAccess(user);
 
     return Response.json({
