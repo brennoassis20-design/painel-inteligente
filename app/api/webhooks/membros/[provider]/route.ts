@@ -109,6 +109,10 @@ function generic(provider: string, payload: Json): SaleEvent {
   const product = obj(data.product || payload.product);
   const offer = obj(data.offer || payload.offer);
   const customer = obj(data.customer || payload.customer || payload.buyer || data.buyer);
+  // Order bumps (Ticto manda em "bumps": [{ product_id, product_code }]): cada bump libera o produto dele.
+  const bumps = [payload.bumps, data.bumps].flatMap((list) => (Array.isArray(list) ? list.map(obj) : []));
+  const item = obj(payload.item);
+  const order = obj(payload.order);
   const type = txt(payload.event || payload.event_type || payload.type || data.status || payload.status).toLowerCase();
   const kind: SaleEvent["kind"] = /approved|paid|complete|aprovad/.test(type) && !/refund/.test(type)
     ? "approved"
@@ -123,8 +127,14 @@ function generic(provider: string, payload: Json): SaleEvent {
     rawType: type,
     email: txt(customer.email || data.email || payload.email).toLowerCase().trim(),
     name: txt(customer.name) || undefined,
-    externalIds: [txt(product.id), offer.id ? `oferta:${txt(offer.id)}` : ""],
-    orderId: txt(data.id || payload.id),
+    externalIds: [
+      txt(product.id),
+      offer.id ? `oferta:${txt(offer.id)}` : "",
+      txt(item.product_id),
+      txt(item.product_code),
+      ...bumps.flatMap((bump) => [txt(bump.product_id), txt(bump.product_code)]),
+    ],
+    orderId: txt(data.id || payload.id || order.hash || order.id),
     amount: money(data.amount) ?? money(data.baseAmount),
     utmSource: txt(data.utm_source || payload.utm_source) || null,
     utmContent: txt(data.utm_content || payload.utm_content) || null,
