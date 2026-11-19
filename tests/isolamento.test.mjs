@@ -1,6 +1,6 @@
 // Teste rápido: node tests/isolamento.test.mjs
 import { readFileSync, readdirSync } from "node:fs";
-import { pickCandidates, maskEmail, HOUR } from "../lib/membros-lembrete-regra.ts";
+import { pickCandidates, maskEmail, HOUR, suspiciousEmail, invitedRecently } from "../lib/membros-lembrete-regra.ts";
 
 let falhas = 0;
 const ok = (c, m) => { if (!c) { falhas++; console.log("FALHOU:", m); } else console.log("ok:", m); };
@@ -45,6 +45,19 @@ for (const f of readdirSync("supabase/emails")) {
   const branch = s.slice(start, s.slice(start).search(/\{\{ else/) + start);
   ok(!/Painel Inteligente|Gênio|aula gratuita|icone-192|lampada/.test(branch), `${f}: ramo de área sem Painel/Gênio/aula gratuita`);
   ok(branch.includes("{{ .ConfirmationURL }}") && branch.includes("{{ .Data.area_nome }}"), `${f}: ramo de área usa ConfirmationURL e area_nome`);
+}
+
+// --- e-mail suspeito e convite recente (19/11)
+ok(suspiciousEmail("leudete@outlok.com"), "outlok.com é pulado");
+ok(suspiciousEmail("fulano@gmail.cim"), "gmail.cim é pulado");
+ok(suspiciousEmail("sem-arroba.com"), "formato ruim é pulado");
+ok(!suspiciousEmail("fulano@gmail.com") && !suspiciousEmail("x@uil.com.br") && !suspiciousEmail("y@sege.srv.br"), "e-mails normais passam");
+ok(invitedRecently({ invited_at: ago(23) }, now), "convite há 23h = recente");
+ok(!invitedRecently({ invited_at: ago(49) }, now) && !invitedRecently(undefined, now), "convite há 49h ou sem conta = não recente");
+{
+  const acc = new Map([["recente@gmail.com", { email: "recente@gmail.com", invited_at: ago(23) }]]);
+  const c = pickCandidates([row("recente@gmail.com", 30), row("typo@outlok.com", 30), row("novo@gmail.com", 30)], acc, [], now).map((x) => x.email);
+  ok(c.length === 1 && c[0] === "novo@gmail.com", "lembrete pula convite recente e e-mail com erro");
 }
 if (falhas) { console.log(`${falhas} falha(s)`); process.exit(1); }
 console.log("tudo certo");

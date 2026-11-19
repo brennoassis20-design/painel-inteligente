@@ -3,6 +3,8 @@ import { tagPlainLink } from "@/lib/membros-utm";
 import webpush from "web-push";
 import { findAuthAccount, supabaseAdminAuthRequest, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
 import { type Area, areaHasFree, areaUrl, getAreaById, inviteToArea, isMainArea, MAIN_AREA_ID, MEMBROS_URL, OpError, tagAccountWithArea } from "@/lib/membros";
+import { authAccountsByEmail } from "@/lib/membros-lembrete";
+import { maskEmail, suspiciousEmail } from "@/lib/membros-lembrete-regra";
 
 const enc = encodeURIComponent;
 
@@ -115,11 +117,22 @@ export async function accountExists(email: string) {
 }
 
 // Convite para todo comprador com acesso ativo que ainda não criou a conta (máx. por vez por causa do limite de e-mails/hora).
+// Só para quem NÃO tem conta: quem já tem (mesmo sem ter criado a senha) não recebe e-mail repetido.
+// E-mail com erro de digitação no domínio fica de fora (o link iria para a caixa de um estranho).
 export async function inviteBuyersWithoutAccount(area: Area, limit = 80) {
   const rows = await supabaseRest<{ email: string }[]>(`/mp_access?status=eq.active&select=email,mp_products!inner(area_id)&mp_products.area_id=eq.${area.id}`);
   const emails = [...new Set(rows.map((row) => row.email.trim().toLowerCase()))];
-  const result = { convidados: [] as string[], ja_tinham_conta: 0, falhas: [] as string[], restantes: 0 };
+  const accounts = await authAccountsByEmail();
+  const result = { convidados: [] as string[], ja_tinham_conta: 0, falhas: [] as string[], restantes: 0, pulados_email_suspeito: [] as string[] };
   for (const email of emails) {
+    if (accounts.has(email)) {
+      result.ja_tinham_conta += 1;
+      continue;
+    }
+    if (suspiciousEmail(email)) {
+      result.pulados_email_suspeito.push(maskEmail(email));
+      continue;
+    }
     if (result.convidados.length >= limit) {
       result.restantes += 1;
       continue;

@@ -1132,7 +1132,7 @@ function FreeTab({ products, flash }: { products: Product[]; flash: (t: string) 
 function InviteBox({ flash }: { flash: (t: string) => void }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ convidados: string[]; ja_tinham_conta: number; falhas: string[]; restantes: number; total_compradores: number } | null>(null);
+  const [result, setResult] = useState<{ convidados: string[]; ja_tinham_conta: number; falhas: string[]; restantes: number; total_compradores: number; pulados_email_suspeito?: string[] } | null>(null);
   const [error, setError] = useState("");
 
   async function send() {
@@ -1153,7 +1153,7 @@ function InviteBox({ flash }: { flash: (t: string) => void }) {
   return (
     <div className="gp-box">
       <h3>Convidar compradores que ainda não criaram a senha</h3>
-      <p className="gp-muted">Manda o e-mail &quot;Sua área de membros chegou · Criar minha senha&quot; para quem tem produto liberado e ainda não tem conta. Quem já tem conta não recebe nada. Até 80 por vez.</p>
+      <p className="gp-muted">Manda o e-mail &quot;Sua área de membros chegou · Criar minha senha&quot; para quem tem produto liberado e ainda não tem conta. Quem já tem conta não recebe nada (mesmo sem ter criado a senha). E-mail com erro de digitação no domínio fica de fora. Até 80 por vez.</p>
       {error && <p className="gp-error">{error}</p>}
       <div className="gp-btns">
         {confirming ? (
@@ -1173,7 +1173,7 @@ function InviteBox({ flash }: { flash: (t: string) => void }) {
       </div>
       {result && (
         <p className="gp-ok">
-          {result.convidados.length} convidados · {result.ja_tinham_conta} já tinham conta · {result.falhas.length} falhas
+          {result.convidados.length} convidados · {result.ja_tinham_conta} já tinham conta · {result.falhas.length} falhas{result.pulados_email_suspeito?.length ? ` · ${result.pulados_email_suspeito.length} e-mail(s) com erro de digitação pulado(s): ${result.pulados_email_suspeito.join(", ")}` : ""}
           {result.restantes ? ` · ${result.restantes} ficaram para a próxima rodada (daqui a 1 hora)` : ""}
           {result.falhas.length ? ` (falhou: ${result.falhas.join(", ")})` : ""}
         </p>

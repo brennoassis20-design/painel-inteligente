@@ -12,8 +12,31 @@ export function maskEmail(email: string) {
   return `${user.slice(0, 2)}${"*".repeat(Math.max(1, Math.min(user.length - 2, 5)))}@${domain}`;
 }
 
+// Convite recebido há menos disso: não manda outro e-mail (nem lembrete nem convite em lote).
+export const RECENT_INVITE_H = 48;
+
+// Domínios com erro de digitação comum: o link de acesso iria para a caixa de um estranho.
+const TYPO_DOMAINS = new Set([
+  "outlok.com", "outloo.com", "outlook.co", "outlook.con", "otlook.com",
+  "gmail.cim", "gmail.co", "gmail.con", "gmail.cm", "gmial.com", "gmai.com", "gamil.com", "gnail.com", "gmaill.com", "gmal.com",
+  "hotmial.com", "hotmai.com", "hotmail.co", "hotmail.con", "hotmil.com", "hotamil.com", "hotmal.com",
+  "yahoo.co", "yahoo.con", "yaho.com", "yahho.com", "icloud.co", "icloud.con", "iclod.com",
+]);
+
+// E-mail que não deve receber link de acesso (formato ruim ou domínio com erro de digitação).
+export function suspiciousEmail(email: string) {
+  const value = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(value)) return true;
+  return TYPO_DOMAINS.has(value.split("@")[1] || "");
+}
+
+export function invitedRecently(account: Account | undefined, now = Date.now()) {
+  const at = account?.invited_at ? new Date(account.invited_at).getTime() : 0;
+  return Boolean(at) && now - at < RECENT_INVITE_H * HOUR;
+}
+
 export type AccessRow = { email: string; created_at: string; mp_products: { area_id: number; title: string } };
-export type Account = { email?: string; last_sign_in_at?: string | null; email_confirmed_at?: string | null };
+export type Account = { email?: string; last_sign_in_at?: string | null; email_confirmed_at?: string | null; invited_at?: string | null };
 export type Reminder = { email: string; area_id: number | null; created_at: string };
 
 export type Candidate = { email: string; areaId: number; product: string; bought_at: string; has_account: boolean; reminders: number };
@@ -31,8 +54,10 @@ export function pickCandidates(
     const email = row.email.trim().toLowerCase();
     const age = now - new Date(row.created_at).getTime();
     if (age < MIN_AGE_H * HOUR || age > MAX_AGE_DAYS * 24 * HOUR) continue;
+    if (suspiciousEmail(email)) continue;
     const account = accounts.get(email);
     if (account?.last_sign_in_at) continue;
+    if (invitedRecently(account, now)) continue;
     const key = `${email}|${row.mp_products.area_id}`;
     if (out.has(key)) continue;
     const mine = reminders.filter((item) => item.email.toLowerCase() === email && item.area_id === row.mp_products.area_id);
