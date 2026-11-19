@@ -25,7 +25,7 @@
         </tr>
         <tr>
           <td align="center" style="padding:12px 36px 0;font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#9aa2b8;">
-            Sua compra foi aprovada. Crie sua senha para entrar em {{ .Data.area_nome }}.
+            Sua compra foi aprovada. Crie sua senha para entrar em {{ .Data.area_nome }}.{{ if .Data.produto_nome }}<br><strong style="color:#eef0f6;">{{ if .Data.plataforma }}O conteúdo não fica na {{ .Data.plataforma }}, fica aqui.{{ end }}</strong>{{ end }}
           </td>
         </tr>
         <tr>
@@ -93,7 +93,7 @@
         </tr>
         <tr>
           <td align="center" style="padding:12px 36px 0;font-family:Sora,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#a39fc4;">
-            Sua compra do Método Gênio foi aprovada. Defina sua senha para entrar no Painel Inteligente e fazer o seu primeiro pedido.
+            Sua compra do Método Gênio foi aprovada. Defina sua senha para entrar no Painel Inteligente e fazer o seu primeiro pedido.{{ if .Data.produto_nome }}<br><strong style="color:#eef0f6;">{{ if .Data.plataforma }}O conteúdo não fica na {{ .Data.plataforma }}, fica aqui.{{ end }}</strong>{{ end }}
           </td>
         </tr>
         <tr>

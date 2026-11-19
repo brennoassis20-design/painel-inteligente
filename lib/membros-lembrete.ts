@@ -1,7 +1,8 @@
-// Lembrete de acesso: comprador com acesso ativo que nunca entrou recebe o link de novo (máx. 2, com 48 h entre eles).
+// Lembrete de acesso: comprador com acesso ativo que nunca entrou recebe o link de novo (máx. 2: com 3 h e com 24 h da compra; o cron roda a cada 3 h).
 import { findAuthAccount, supabaseAdminAuthRequest, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
 import { areaUrl, getAreaById, inviteToArea, logEvent, tagAccountWithArea } from "@/lib/membros";
-import { type AccessRow, type Account, type Reminder, GAP_H, HOUR, MAX_AGE_DAYS, MAX_REMINDERS, MIN_AGE_H, maskEmail, pickCandidates, REMINDER_KIND } from "@/lib/membros-lembrete-regra";
+import { brevoReady, sendAccessViaBrevo } from "@/lib/membros-acesso-email";
+import { type AccessEmailEvent, type AccessRow, type Account, type Reminder, GAP_H, HOUR, MAX_AGE_DAYS, MAX_REMINDERS, MIN_AGE_H, maskEmail, pickCandidates, REMINDER_KIND, ACCESS_EMAIL_KIND } from "@/lib/membros-lembrete-regra";
 
 const enc = encodeURIComponent;
 export { GAP_H, MAX_AGE_DAYS, MAX_REMINDERS, MIN_AGE_H, maskEmail, pickCandidates, REMINDER_KIND };
@@ -24,14 +25,15 @@ export async function runAccessReminders({ dry = false, limit = 40 }: { dry?: bo
   const now = Date.now();
   const from = new Date(now - MAX_AGE_DAYS * 24 * HOUR).toISOString();
   const to = new Date(now - MIN_AGE_H * HOUR).toISOString();
-  const [access, reminders, accounts] = await Promise.all([
+  const [access, reminders, accessEmails, accounts] = await Promise.all([
     supabaseRest<AccessRow[]>(
-      `/mp_access?status=eq.active&created_at=gte.${enc(from)}&created_at=lte.${enc(to)}&select=email,created_at,mp_products!inner(area_id,title)&order=created_at.asc`,
+      `/mp_access?status=eq.active&created_at=gte.${enc(from)}&created_at=lte.${enc(to)}&select=email,created_at,provider,mp_products!inner(area_id,title)&order=created_at.asc`,
     ),
     supabaseRest<Reminder[]>(`/mp_events?kind=eq.${REMINDER_KIND}&select=email,area_id,created_at&limit=5000`),
+    supabaseRest<AccessEmailEvent[]>(`/mp_events?kind=eq.${ACCESS_EMAIL_KIND}&created_at=gte.${enc(from)}&select=email,area_id,created_at&limit=5000`),
     authAccountsByEmail(),
   ]);
-  const all = pickCandidates(access, accounts, reminders, now);
+  const all = pickCandidates(access, accounts, reminders, now, accessEmails);
   const batch = all.slice(0, limit);
 
   if (dry) {
@@ -47,8 +49,17 @@ export async function runAccessReminders({ dry = false, limit = 40 }: { dry?: bo
     try {
       const area = await getAreaById(item.areaId);
       const account = await findAuthAccount(item.email).catch(() => null);
-      let via: string;
-      if (account && accounts.get(item.email)?.email_confirmed_at) {
+      let via = "";
+      // Mesmo e-mail novo da compra ("Lembrete: seu acesso a <produto> está esperando"); sem Brevo, segue o jeito antigo.
+      if (brevoReady(area)) {
+        try {
+          await sendAccessViaBrevo(area, item.email, { provider: item.provider, products: item.products.map((title) => ({ title })), reminder: true });
+          via = "brevo";
+        } catch (error) {
+          console.error("lembrete-acesso-brevo", maskEmail(item.email), error instanceof Error ? error.message : error);
+        }
+      }
+      if (!via && account && accounts.get(item.email)?.email_confirmed_at) {
         // Já confirmou o e-mail mas nunca entrou: link de acesso (otp) que volta para a área.
         await tagAccountWithArea(account.id, area);
         const response = await supabaseAuthRequest(`/otp?redirect_to=${enc(areaUrl(area))}`, {
@@ -57,7 +68,7 @@ export async function runAccessReminders({ dry = false, limit = 40 }: { dry?: bo
         });
         if (!response.ok) throw new Error(`otp ${response.status}`);
         via = "otp";
-      } else {
+      } else if (!via) {
         // Sem conta ou convite não aberto: gera convite novo pela área certa.
         const status = await inviteToArea(area, item.email);
         via = `convite:${status}`;

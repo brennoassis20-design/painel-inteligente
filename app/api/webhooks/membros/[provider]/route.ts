@@ -63,6 +63,7 @@ function eduzz(payload: Json): SaleEvent {
       name: txt(fields.edz_cli_rsocial) || undefined,
       externalIds: [txt(fields.edz_cnt_cod), fields.edz_cnt_paicod ? txt(fields.edz_cnt_paicod) : ""],
       orderId: txt(fields.edz_fat_cod) || undefined,
+      bumpIds: ["1", "true"].includes(txt(fields.edz_order_bump_item).toLowerCase()) ? [txt(fields.edz_cnt_cod)] : [],
       amount: money(fields.edz_valorpago),
       utmSource: txt(fields.edz_gtr_param1) || null,
       utmContent: txt(fields.edz_gtr_param4) || null,
@@ -135,6 +136,7 @@ function generic(provider: string, payload: Json): SaleEvent {
       ...bumps.flatMap((bump) => [txt(bump.product_id), txt(bump.product_code)]),
     ],
     orderId: txt(data.id || payload.id || order.hash || order.id),
+    bumpIds: bumps.flatMap((bump) => [txt(bump.product_id), txt(bump.product_code)]).filter(Boolean),
     amount: money(data.amount) ?? money(data.baseAmount),
     utmSource: txt(data.utm_source || payload.utm_source) || null,
     utmContent: txt(data.utm_content || payload.utm_content) || null,
@@ -168,6 +170,8 @@ function parseBody(raw: string): Json {
   if (!out.fields && Object.keys(out).some((key) => key.startsWith("edz_"))) out.fields = { ...out };
   return out;
 }
+
+export const maxDuration = 60;
 
 export async function POST(request: Request, { params }: { params: Promise<{ provider: string }> }) {
   try {

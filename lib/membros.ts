@@ -3,6 +3,7 @@
 // painel de administração e pelo conector de IA (MCP). Assim os dois fazem sempre o mesmo.
 import { createHash, randomBytes } from "node:crypto";
 import { getAuthAccount, inviteBuyer, setAuthMetadata, supabaseRest } from "@/lib/panel-server";
+import { deliverSaleAccess } from "@/lib/membros-acesso-email";
 import { areaStats } from "@/lib/membros-stats";
 import { normalizeMedium, tagLink } from "@/lib/membros-utm";
 import { cleanUrl, createNotice, inviteBuyersWithoutAccount, listLeads, nextLive, noticeNewModule, noticeNewProduct, studentEmails, studentNotices } from "@/lib/membros-avisos";
@@ -583,6 +584,8 @@ export type SaleEvent = {
   name?: string;
   externalIds: string[];
   orderId?: string;
+  // IDs (externos) dos itens que a plataforma marca como order bump, quando ela informa.
+  bumpIds?: string[];
   // Valor pago (R$) e origem da venda (utm_source), quando a plataforma manda.
   amount?: number | null;
   utmSource?: string | null;
@@ -620,6 +623,9 @@ export async function applySale(event: SaleEvent, area: Area) {
   }
   if (event.kind === "ignored") return { matched: products.map((product) => product.slug) };
 
+  const bumpSet = new Set((event.bumpIds || []).filter(Boolean).map((id) => `${event.provider}:${id}`));
+  const isBump = (product: Product) => Boolean(product.external_ids?.some((id) => bumpSet.has(id)));
+
   for (const product of products) {
     const status = event.kind === "approved" ? "active" : "refunded";
     const expires = event.kind === "approved" && product.access_days ? new Date(Date.now() + product.access_days * DAY_MS).toISOString() : null;
@@ -639,6 +645,7 @@ export async function applySale(event: SaleEvent, area: Area) {
     await logEvent(product.area_id, event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", {
       provider: event.provider,
       order: event.orderId,
+      ...(isBump(product) ? { bump: true } : {}),
       ...(event.amount && products.length === 1 ? { valor: event.amount } : {}),
       ...(event.utmSource ? { utm_source: event.utmSource } : {}),
       ...(event.utmContent ? { utm_content: event.utmContent } : {}),
@@ -684,12 +691,20 @@ export async function applySale(event: SaleEvent, area: Area) {
     const target = products.some((product) => product.area_id === area.id)
       ? area
       : await getAreaById(products[0].area_id);
-    account = await inviteToArea(target, event.email, event.name).catch((error) => {
+    // E-mail "seu acesso chegou" (Brevo, quando a área tem e-mail ligado) ou, se não der, o convite do Supabase.
+    // Um e-mail por e-mail + pedido; falha total registra convite_falhou (o lembrete de acesso tenta de novo).
+    const listed = products.filter((product) => product.area_id === target.id);
+    account = await deliverSaleAccess(target, {
+      email: event.email,
+      name: event.name,
+      provider: event.provider,
+      orderId: event.orderId,
+      products: listed.map((product) => ({ id: product.id, title: product.title, position: product.position, bump: isBump(product) })),
+    }).catch(async (error) => {
       console.error("convite-falhou", event.provider, event.email, error instanceof Error ? error.message : error);
+      await logEvent(target.id, event.email, null, "convite_falhou", { provider: event.provider, order: event.orderId });
       return "invite_failed";
     });
-    // O lembrete de acesso (api/membros/lembrete-acesso) refaz o convite de quem não conseguiu entrar.
-    if (account === "invite_failed") await logEvent(target.id, event.email, null, "convite_falhou", { provider: event.provider, order: event.orderId });
   }
   return { matched: products.map((product) => product.slug), account };
 }
@@ -732,8 +747,10 @@ export async function verifyApiKey(key: string) {
 }
 
 // Convite (criar senha) que leva para a área certa, com o nome dela no e-mail.
-export async function inviteToArea(area: Area, email: string, name?: string, path = "") {
-  const extra = isMainArea(area) && !path ? undefined : { area_nome: area.brand_name, area_url: areaUrl(area) };
+export async function inviteToArea(area: Area, email: string, name?: string, path = "", more?: { produto_nome?: string; plataforma?: string }) {
+  const base = isMainArea(area) && !path ? undefined : { area_nome: area.brand_name, area_url: areaUrl(area) };
+  const extras = Object.fromEntries(Object.entries(more || {}).filter(([, value]) => value)) as Record<string, string>;
+  const extra = base || Object.keys(extras).length ? { ...(base || {}), ...extras } : undefined;
   return inviteBuyer(email, name, `${areaUrl(area)}${path}`, extra);
 }
 

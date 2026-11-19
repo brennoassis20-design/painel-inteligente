@@ -11,7 +11,7 @@ function authorized(request: Request) {
   return bearer === secret || new URL(request.url).searchParams.get("secret") === secret;
 }
 
-// Reenvia o acesso a quem comprou há 20 h a 7 dias e nunca entrou (máx. 2 lembretes, 48 h entre eles). ?dry=1 só lista.
+// Reenvia o acesso a quem comprou há 3 h a 7 dias e nunca entrou (máx. 2: com 3 h e com 24 h; cron a cada 3 h). ?dry=1 só lista.
 export async function GET(request: Request) {
   if (!authorized(request)) return jsonError("Não autorizado.", 401);
   try {
