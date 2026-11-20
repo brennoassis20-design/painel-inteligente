@@ -151,6 +151,9 @@ export default function MembrosPage() {
   const [installOpen, setInstallOpen] = useState(false);
   const [showInstallLink, setShowInstallLink] = useState(false);
 
+  // Volta do checkout com ?transactionkey= (ver efeito abaixo).
+  const [buy, setBuy] = useState<{ key: string; status: "waiting" | "email"; email?: string } | null>(null);
+
   const loadHome = useCallback(async () => {
     try {
       const data = await api<Home>("/api/membros/inicio");
@@ -184,6 +187,8 @@ export default function MembrosPage() {
       setLink({ token, refresh: hash.get("refresh_token") || undefined });
     }
     const query = new URLSearchParams(window.location.search);
+    const buyKey = query.get("transactionkey") || "";
+    if (/^[a-f0-9]{32}$/i.test(buyKey)) setBuy({ key: buyKey, status: "waiting" });
     setSignupStart(/\/gratis\/?$/.test(window.location.pathname) || query.has("cadastro"));
     setShowInstallLink(platform() !== "desktop" && !isInstalled());
     void registerWorker();
@@ -220,6 +225,63 @@ export default function MembrosPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- busca os dados do servidor
     if (logged) void loadHome();
   }, [logged, loadHome]);
+
+  // Volta do checkout da Eduzz (?transactionkey=): espera o webhook e entra sozinho, sem pedir e-mail e senha.
+  useEffect(() => {
+    if (!buy || buy.status !== "waiting") return;
+    const clearKey = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("transactionkey");
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    };
+    let stop = false;
+    let tries = 0;
+    let timer = 0;
+    const tick = async () => {
+      if (stop) return;
+      tries += 1;
+      try {
+        const response = await fetch("/api/membros/entrar-compra", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...areaHeaders() },
+          body: JSON.stringify({ key: buy.key }),
+        });
+        const data = (await response.json().catch(() => ({}))) as { status?: string; email?: string; accessToken?: string; refreshToken?: string };
+        if (stop) return;
+        if (data.status === "ok" && data.accessToken) {
+          writeSession({ accessToken: data.accessToken, refreshToken: data.refreshToken });
+          clearKey();
+          setBuy(null);
+          setLogged(true);
+          void loadHome();
+          return;
+        }
+        if (data.status === "email") {
+          clearKey();
+          setBuy({ key: buy.key, status: "email", email: data.email });
+          return;
+        }
+        if (data.status === "expired" || response.status === 400 || response.status === 404) {
+          clearKey();
+          setBuy(null);
+          return;
+        }
+      } catch {
+        /* sem internet: tenta de novo */
+      }
+      if (tries >= 75) {
+        clearKey();
+        setBuy(null);
+        return;
+      }
+      timer = window.setTimeout(tick, 2000);
+    };
+    timer = window.setTimeout(tick, 0);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+    };
+  }, [buy, loadHome]);
 
   // Recém-comprado: a plataforma redireciona antes de o webhook chegar (Eduzz leva ~30 s).
   // Sem nenhum produto liberado, procura de novo a cada 5 s por 2 min antes de dizer que não achou.
@@ -357,6 +419,39 @@ export default function MembrosPage() {
         ...(area.bg_color ? { "--gp-bg": area.bg_color } : {}),
       } as React.CSSProperties)
     : undefined;
+
+  if (buy) {
+    return (
+      <div className="gp" style={loginTheme}>
+        <div className="gp-wrap gp-center">
+          {buy.status === "waiting" ? (
+            <>
+              <h2>Pagamento aprovado!</h2>
+              <p className="gp-muted">Liberando o seu acesso… leva poucos segundos. Não feche esta página.</p>
+            </>
+          ) : (
+            <>
+              <h2>Seu acesso está no seu e-mail</h2>
+              <p className="gp-muted">
+                Enviamos para <strong>{buy.email}</strong>. Abra o e-mail e toque em &quot;Entrar na área&quot;. Se não achar, olhe no spam ou em Promoções.
+              </p>
+              <button
+                type="button"
+                className="gp-btn gp-btn-gold"
+                onClick={() => {
+                  writeSession(null);
+                  setBuy(null);
+                  setLogged(false);
+                }}
+              >
+                Entrar com e-mail e senha
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!logged || link) {
     return (
