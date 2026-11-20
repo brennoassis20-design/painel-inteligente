@@ -36,6 +36,7 @@ type Item = {
 };
 
 type Home = {
+  email?: string;
   settings: {
     brand_name: string;
     logo_url: string | null;
@@ -605,6 +606,12 @@ export default function MembrosPage() {
                 {searchDone
                   ? "Ainda não encontramos compras neste e-mail. Se você comprou com outro e-mail, saia e entre com ele, ou fale com o suporte."
                   : "Procurando a sua compra… Se você acabou de pagar, ela aparece aqui em até 1 minuto. Não precisa fazer nada, esta página atualiza sozinha."}
+                {home.email && (
+                  <>
+                    {" "}
+                    Você entrou como <strong>{home.email}</strong>.
+                  </>
+                )}
               </p>
             )}
           </div>

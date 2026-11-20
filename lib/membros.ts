@@ -467,6 +467,7 @@ export async function studentHome(user: { id: string; email: string }, area: Are
     live: await nextLive(area).catch(() => null),
     isAdmin: admin,
     redirect,
+    email: user.email,
   };
 }
 
