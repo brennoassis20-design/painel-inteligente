@@ -220,6 +220,25 @@ export default function MembrosPage() {
     if (logged) void loadHome();
   }, [logged, loadHome]);
 
+  // Recém-comprado: a plataforma redireciona antes de o webhook chegar (Eduzz leva ~30 s).
+  // Sem nenhum produto liberado, procura de novo a cada 5 s por 2 min antes de dizer que não achou.
+  const [searchDone, setSearchDone] = useState(false);
+  const nothingYet = Boolean(home) && !home?.products.some((item) => item.owned);
+  useEffect(() => {
+    if (!logged || !nothingYet) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      if (tries > 24) {
+        window.clearInterval(timer);
+        setSearchDone(true);
+        return;
+      }
+      void loadHome();
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [logged, nothingYet, loadHome]);
+
   // Celular que já ligou os avisos: mantém a inscrição em dia.
   useEffect(() => {
     if (!logged) return;
@@ -583,7 +602,9 @@ export default function MembrosPage() {
 
             {owned.length === 0 && freeItems.length === 0 && (
               <p className="gp-muted gp-empty">
-                Ainda não encontramos compras neste e-mail. Se você comprou com outro e-mail, saia e entre com ele, ou fale com o suporte.
+                {searchDone
+                  ? "Ainda não encontramos compras neste e-mail. Se você comprou com outro e-mail, saia e entre com ele, ou fale com o suporte."
+                  : "Procurando a sua compra… Se você acabou de pagar, ela aparece aqui em até 1 minuto. Não precisa fazer nada, esta página atualiza sozinha."}
               </p>
             )}
           </div>
