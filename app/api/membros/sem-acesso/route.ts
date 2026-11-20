@@ -20,7 +20,7 @@ type Row = {
   mp_products: { title: string; area_id: number };
 };
 type Ev = { email: string; area_id: number | null; created_at: string; meta?: { via?: string } | null };
-type Area = { id: number; slug: string | null; brand_name: string | null };
+type Area = { id: number; slug: string | null; brand_name: string | null; owner_email?: string | null };
 
 // POST {email, area_id, n}: o Carteiro avisa que mandou um lembrete. Vira evento lembrete_acesso (via=carteiro): o cron do app
 // também passa a contá-lo e não manda lembrete a mais (máximo 2 no total).
@@ -44,13 +44,16 @@ export async function GET(request: Request) {
     const dias = Math.max(1, Math.min(Number(params.get("dias")) || 7, 30));
     const desde = new Date(Date.now() - dias * 86400000).toISOString();
     const filtro = email ? `email=eq.${enc(email)}` : `created_at=gte.${enc(desde)}`;
-    const [rows, areas, accounts, acessoMail, lembretes] = await Promise.all([
+    const [rows, areas, accounts, acessoMail, lembretes, admins] = await Promise.all([
       supabaseRest<Row[]>(`/mp_access?${filtro}&select=email,status,provider,order_id,created_at,mp_products!inner(title,area_id)&order=created_at.asc&limit=2000`),
-      supabaseRest<Area[]>(`/mp_settings?select=id,slug,brand_name`),
+      supabaseRest<Area[]>(`/mp_settings?select=id,slug,brand_name,owner_email`),
       authAccountsByEmail(),
       supabaseRest<Ev[]>(`/mp_events?kind=eq.${ACCESS_EMAIL_KIND}&${email ? `email=eq.${enc(email)}` : `created_at=gte.${enc(desde)}`}&select=email,area_id,created_at&limit=5000`),
       supabaseRest<Ev[]>(`/mp_events?kind=eq.${REMINDER_KIND}&${email ? `email=eq.${enc(email)}` : `created_at=gte.${enc(desde)}`}&select=email,area_id,created_at,meta&limit=5000`),
+      supabaseRest<{ email: string; area_id: number }[]>(`/mp_admins?select=email,area_id&limit=500`).catch(() => []),
     ]);
+    // equipe/dono/admin da área: nunca recebe lembrete
+    const internos = new Set<string>([...admins.map((a) => a.email.toLowerCase()), ...areas.map((a) => (a.owner_email || "").toLowerCase()).filter(Boolean)]);
     const slugs = new Map(areas.map((a) => [a.id, a]));
     const por = new Map<string, any>();
     for (const r of rows) {
@@ -63,6 +66,7 @@ export async function GET(request: Request) {
         area_id: r.mp_products.area_id, area_slug: area?.slug || null, area_nome: area?.brand_name || null,
         provider: r.provider || "", order_id: r.order_id || "", comprou_em: r.created_at, produtos: [] as string[], status: [] as string[],
         entrou: Boolean(conta?.last_sign_in_at), confirmou: Boolean(conta?.email_confirmed_at), tem_conta: Boolean(conta),
+        interno: internos.has(e),
         convidado_em: conta?.invited_at || null,
         emails_acesso: acessoMail.filter((x) => x.email.toLowerCase() === e).length,
         // lembretes_app = os do cron do app (o Carteiro conta os dele à parte); lembretes_total = todos
