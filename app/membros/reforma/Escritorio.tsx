@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { Escritorio } from "@/lib/reforma-app/modelo";
 import { reduzirLogo } from "@/lib/reforma-app/logo";
+import { POLITICA_PRIVACIDADE, TERMO_DE_USO, TERMO_EMPRESA, TERMO_SUPORTE, TERMO_VERSAO } from "@/lib/reforma-app/termo";
 import { Caixa, CampoTexto } from "./Campos";
 
 const CORES = ["#1F4E79", "#0F766E", "#7C3AED", "#B45309", "#BE123C", "#111827"];
@@ -104,11 +105,26 @@ export function FormEscritorio({ inicial, rotulo, comTermos, onSalvar }: { inici
           <div className="rf-termos">
             <details>
               <summary>Ler o termo de uso e a política de privacidade</summary>
-              <p>
-                O app é uma ferramenta de apoio à decisão: os resultados são estimativas feitas com as regras da Reforma Tributária conhecidas na data indicada em cada simulação, e não substituem a análise do contador.
-              </p>
-              <p>
-                Os dados das empresas dos seus clientes ficam guardados na sua conta e só você os vê. Você é o responsável por ter o direito de usar esses dados (LGPD). Não vendemos nem compartilhamos esses dados. Você pode apagar qualquer cliente quando quiser.
+              <h3>Termo de uso</h3>
+              {TERMO_DE_USO.map((s) => (
+                <section key={s.titulo}>
+                  <h4>{s.titulo}</h4>
+                  {s.itens.map((t) => (
+                    <p key={t}>{t}</p>
+                  ))}
+                </section>
+              ))}
+              <h3>Política de privacidade</h3>
+              {POLITICA_PRIVACIDADE.map((s) => (
+                <section key={s.titulo}>
+                  <h4>{s.titulo}</h4>
+                  {s.itens.map((t) => (
+                    <p key={t}>{t}</p>
+                  ))}
+                </section>
+              ))}
+              <p className="gp-muted">
+                Versão {TERMO_VERSAO} · {TERMO_EMPRESA} · {TERMO_SUPORTE}
               </p>
             </details>
             <Caixa marcado={aceite} onChange={setAceite}>

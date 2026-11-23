@@ -359,3 +359,8 @@
 .rf-grafico .valor { fill: var(--navy); font-weight: 800; }
 .rf-grafico .foco .ano { fill: var(--navy); font-weight: 800; }
 .rf .gp-ok { color: var(--verde); font-weight: 800; text-align: center; margin: 0; }
+/* Termo de uso v1 (23/11): caixa rolável com títulos */
+.rf .rf-termos details[open] { max-height: 360px; overflow-y: auto; padding: 4px 12px 12px; border: 2px dashed #c9d1e6; border-radius: 12px; background: #fff; }
+.rf .rf-termos h3 { font-size: 16px; margin: 14px 0 4px; color: #17213A; }
+.rf .rf-termos h4 { font-size: 14px; margin: 10px 0 2px; color: #17213A; font-weight: 800; }
+.rf .rf-termos section p { margin: 0 0 6px; }
