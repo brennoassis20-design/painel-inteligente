@@ -159,7 +159,7 @@ export function Resultado({ cliente, escritorio, onEditar, onVoltar }: { cliente
       {/* 2. Hoje x 2027 x 2033 */}
       <section className="rf-card" aria-label="Hoje, 2027 e 2033">
         <h2>{simples ? "Preço para manter a margem" : mei ? "Guia mensal do MEI" : "Imposto sobre consumo por mês"}</h2>
-        <p className="gp-muted">Hoje × {ANO_PADRAO} × {ANO_FINAL}</p>
+        <p className="gp-muted">Hoje × {ANO_PADRAO} × {ANO_FINAL}{simples ? " · valores em R$ por mês" : ""}</p>
         <div className="rf-tabela-rol">
           {simples ? (
             <table className="rf-tabela">
@@ -181,7 +181,7 @@ export function Resultado({ cliente, escritorio, onEditar, onVoltar }: { cliente
                       const o = opcao(res.anos[y], id)!;
                       return (
                         <td key={y} data-g={gDado(id === "das" ? "p_dentro" : "preco_hib", y)}>
-                          {r$(o.precoNecessario)}
+                          {r$(o.precoNecessario).replace("R$ ", "")}
                           <small>{y === ANO_HOJE ? "" : reaj(o.reajustePreco)}</small>
                         </td>
                       );

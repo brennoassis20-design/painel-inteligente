@@ -178,6 +178,10 @@
 .rf-pdf p { margin-bottom: 12px; }
 .rf-tabela-rol { overflow-x: auto; max-width: 100%; }
 .rf-tabela { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.rf-tabela td { white-space: nowrap; }
+.rf-tabela:not(.rf-duas) { font-size: 12.5px; }
+.rf-tabela:not(.rf-duas) th, .rf-tabela:not(.rf-duas) td { padding-inline: 3px; }
+.rf-tabela:not(.rf-duas) tbody th { width: 22%; font-size: 12.5px; }
 .rf-tabela th, .rf-tabela td { padding: 10px 6px; border-bottom: 1px solid var(--rf-linha); text-align: right; vertical-align: top; }
 .rf-tabela thead th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gp-muted); }
 .rf-tabela tbody th { text-align: left; font-weight: 600; width: 34%; }
@@ -229,7 +233,8 @@
   .rf-res-topo { grid-template-columns: auto 1fr auto; align-items: start; gap: 16px; }
   .rf-anos { grid-template-columns: auto 1fr; align-items: center; }
   .rf-anos > div { grid-template-columns: repeat(8, 1fr); }
-  .rf-tabela { font-size: 15px; }
+  .rf-tabela, .rf-tabela:not(.rf-duas), .rf-tabela:not(.rf-duas) tbody th { font-size: 15px; }
+  .rf-tabela:not(.rf-duas) th, .rf-tabela:not(.rf-duas) td { padding-inline: 6px; }
   .rf-modal { align-items: center; }
   .rf-rodape-passos { position: static; background: none; padding-top: 18px; }
   .rf-rodape-in { max-width: 420px; }
