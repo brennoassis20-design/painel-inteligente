@@ -122,7 +122,8 @@ export function recomendar(res: ResultadoReforma, ano: number, pctPJ: string): R
   }
   const proximosPassos: string[] = [];
   if (escolha === "hibrido") {
-    proximosPassos.push("Para entrar no híbrido: " + prazo("opcao_set_2026") + " " + prazo("proxima_janela"));
+    proximosPassos.push("Se a empresa já optou pelo híbrido em set/out de 2026: manter a opção (não cancelar). " + prazo("cancelamento_2026"));
+    proximosPassos.push("Se ainda não optou: " + prazo("opcao_set_2026") + " " + prazo("proxima_janela"));
   } else {
     proximosPassos.push("Se a empresa já optou pelo híbrido e a conta indica o DAS: " + prazo("cancelamento_2026"));
     if (escolha === "empate") proximosPassos.push(prazo("proxima_janela"));
@@ -145,8 +146,15 @@ export function frase(res: ResultadoReforma, ano: number, nome: string, pctPJ: s
     const das = opcao(a, "das") as OpcaoPreco;
     const hib = opcao(a, "hibrido") as OpcaoPreco;
     const rec = recomendar(res, ano, pctPJ);
-    const fim = rec ? ` ${rec.escolha === "hibrido" ? "O híbrido tende a compensar." : rec.escolha === "das" ? "O DAS tende a compensar." : "As duas opções ficam praticamente iguais."}` : "";
-    return `Em ${ano}, para manter a margem, ${empresa} precisaria cobrar ${r$(das.precoNecessario)} dentro do DAS ou ${r$(hib.precoNecessario)} no híbrido (reajuste de ${reaj(das.reajustePreco)} e ${reaj(hib.reajustePreco)}).${fim}`;
+    const economiaPJ = D(das.custoRealClientePJ).menos(D(hib.custoRealClientePJ));
+    const fatiaPJ = pct(D(pctPJ), 0);
+    if (rec?.escolha === "hibrido" && economiaPJ.sinal() > 0) {
+      return `Em ${ano}, no híbrido o preço de ${empresa} sobe ${reaj(hib.reajustePreco)}, mas o cliente empresa paga ${r$(economiaPJ.texto(2))} a menos por mês depois do crédito (${r$(hib.custoRealClientePJ)} contra ${r$(das.custoRealClientePJ)} no DAS). Com ${fatiaPJ} das vendas para empresas, o híbrido tende a compensar.`;
+    }
+    if (rec?.escolha === "das") {
+      return `Em ${ano}, ficar no DAS mantém o preço de ${empresa} sem reajuste (${reaj(das.reajustePreco)}), e o custo médio para os clientes fica menor do que no híbrido, que pediria ${reaj(hib.reajustePreco)} de reajuste. O DAS tende a compensar.`;
+    }
+    return `Em ${ano}, DAS e híbrido ficam praticamente iguais para os clientes de ${empresa} (no híbrido o preço sobe ${reaj(hib.reajustePreco)} e o cliente empresa recupera o imposto como crédito). O DAS é mais simples.`;
   }
   const b = bloco(a);
   const hoje = bloco(res.anos[ANO_HOJE]);
