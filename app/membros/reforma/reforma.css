@@ -45,6 +45,7 @@
 .rf-campo > label, .rf-rotulo, .rf-escolha legend, .rf-cores legend { font-size: 14.5px; font-weight: 600; color: var(--gp-fg); }
 .rf-campo > label em { font-weight: 400; color: var(--gp-muted); font-style: normal; }
 .rf-campo input, .rf-campo select { width: 100%; min-height: 52px; background: var(--gp-bg); color: var(--gp-fg); border: 1.5px solid var(--rf-linha); border-radius: 12px; padding: 0 14px; font-size: 16px; font-family: inherit; }
+.rf-campo input, .rf-campo select { scroll-margin-block: 90px 150px; }
 .rf-campo.tem-erro input, .rf-campo.tem-erro select { border-color: var(--rf-erro); }
 .rf-campo input:focus, .rf-campo select:focus, .rf-busca input:focus { outline: 2px solid var(--gp-gold2); outline-offset: 1px; }
 .rf-dica { color: var(--gp-muted); font-size: 13.5px; line-height: 1.4; }

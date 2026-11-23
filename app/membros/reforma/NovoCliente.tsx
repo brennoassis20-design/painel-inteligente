@@ -144,7 +144,7 @@ export function NovoCliente({ inicial, onSalvar, onSair, onResultado }: {
       </nav>
 
       <div className="rf-passo">
-        {passo === 1 && <Passo1 form={form} set={set} erros={erros} />}
+        {passo === 1 && <Passo1 form={form} set={set} setForm={setForm} erros={erros} />}
         {passo === 2 && <Passo2 form={form} set={set} erros={erros} />}
         {passo === 3 && <Passo3 form={form} setForm={setForm} set={set} erros={erros} />}
         {passo === 4 && <Passo4 form={form} set={set} erros={erros} />}
@@ -218,7 +218,7 @@ export function NovoCliente({ inicial, onSalvar, onSair, onResultado }: {
 
 type PassoProps = { form: ClienteForm; set: <K extends keyof ClienteForm>(k: K, v: ClienteForm[K]) => void; erros: Erros };
 
-function Passo1({ form, set, erros }: PassoProps) {
+function Passo1({ form, set, setForm, erros }: PassoProps & { setForm: React.Dispatch<React.SetStateAction<ClienteForm>> }) {
   const [busca, setBusca] = useState("");
   const [trocando, setTrocando] = useState(!form.setorId);
   const setor = acharSetor(form.setorId);
@@ -308,7 +308,7 @@ function Passo1({ form, set, erros }: PassoProps) {
               <div className="rf-checklist">
                 <h4>Condições do art. 127 (todas precisam valer)</h4>
                 {CHECKLIST_127.map((c) => (
-                  <Caixa key={c.id} marcado={form.checklist[c.id] === true} onChange={(v) => set("checklist", { ...form.checklist, [c.id]: v })}>
+                  <Caixa key={c.id} marcado={form.checklist[c.id] === true} onChange={(v) => setForm((f) => ({ ...f, checklist: { ...f.checklist, [c.id]: v } }))}>
                     {c.texto}
                   </Caixa>
                 ))}
