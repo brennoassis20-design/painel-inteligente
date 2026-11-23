@@ -7,6 +7,7 @@ import { captureUtm, loadPixel, readUtm, track } from "./pixel";
 import { compactOrigin, tagPlainLink, type UtmMedium } from "@/lib/membros-utm";
 import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Promo";
 import Login from "./Login";
+import { ReformaApp, type AcessoReforma } from "./reforma/ReformaApp";
 import { api, areaBase, areaHeaders, areaSlug, AuthError, brl, readSession, writeSession } from "./session";
 
 type Item = {
@@ -58,6 +59,8 @@ type Home = {
   live?: NoticeItem | null;
   isAdmin: boolean;
   redirect?: string | null;
+  // App da Reforma: só vem preenchido na área dele.
+  reforma?: AcessoReforma | null;
 };
 
 type LessonView = {
@@ -143,6 +146,7 @@ export default function MembrosPage() {
   const [error, setError] = useState("");
   const [slug, setSlug] = useState<string | null>(null);
   const [lessonId, setLessonId] = useState<string | null>(null);
+  const [reformaAberto, setReformaAberto] = useState(false);
   const [locked, setLocked] = useState<Item | null>(null);
   const [promoOpen, setPromoOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
@@ -213,6 +217,7 @@ export default function MembrosPage() {
       const params = new URLSearchParams(window.location.search);
       setSlug(params.get("p"));
       setLessonId(params.get("aula"));
+      setReformaAberto(params.get("reforma") === "1");
     };
     readRoute();
     window.addEventListener("popstate", readRoute);
@@ -302,6 +307,18 @@ export default function MembrosPage() {
     return () => window.clearInterval(timer);
   }, [logged, nothingYet, loadHome]);
 
+  // App da Reforma instalado (start_url com ?app=1): abre direto no app para quem tem acesso.
+  const temReforma = Boolean(home?.reforma?.app);
+  useEffect(() => {
+    if (!temReforma) return;
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("app") === "1" && !query.get("p") && !query.get("reforma")) {
+      window.history.replaceState(null, "", `${window.location.pathname}?reforma=1`);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- lê o endereço de abertura do app instalado
+      setReformaAberto(true);
+    }
+  }, [temReforma]);
+
   // Celular que já ligou os avisos: mantém a inscrição em dia.
   useEffect(() => {
     if (!logged) return;
@@ -317,6 +334,7 @@ export default function MembrosPage() {
     if (nextLesson) params.set("aula", nextLesson);
     const query = params.toString();
     window.history.pushState(null, "", query ? `?${query}` : window.location.pathname);
+    setReformaAberto(false);
     setSlug(nextSlug);
     setLessonId(nextLesson || null);
     window.scrollTo({ top: 0 });
@@ -588,7 +606,17 @@ export default function MembrosPage() {
         </div>
       )}
 
-      {slug ? (
+      {reformaAberto && home.reforma?.app && !slug ? (
+        <main className="gp-wrap">
+          <ReformaApp
+            acesso={home.reforma}
+            chaveLocal={home.email || "local"}
+            chamar={(path, init) => api(path, init)}
+            marca={home.settings.brand_name}
+            onAbrirProduto={(produto) => go(produto)}
+          />
+        </main>
+      ) : slug ? (
         <ProductScreen
           slug={slug}
           lessonId={lessonId}
@@ -645,6 +673,24 @@ export default function MembrosPage() {
           )}
 
           <div className="gp-wrap">
+            {home.reforma?.app && (
+              <button
+                type="button"
+                className="gp-invite"
+                style={{ width: "100%", textAlign: "left", cursor: "pointer" }}
+                onClick={() => {
+                  window.history.pushState(null, "", "?reforma=1");
+                  setReformaAberto(true);
+                  window.scrollTo({ top: 0 });
+                }}
+              >
+                <div>
+                  <b>App da Reforma</b>
+                  <span className="gp-muted">Simule o imposto dos seus clientes e gere o PDF com a sua logo.</span>
+                </div>
+                <span className="gp-btn gp-btn-gold">Abrir o app</span>
+              </button>
+            )}
             <PushInvite onInstall={() => setInstallOpen(true)} />
             {home.continueWatching.length > 0 && (
               <Row title="Continue assistindo" hint="de onde você parou">
