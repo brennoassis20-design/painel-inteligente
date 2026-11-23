@@ -6,6 +6,7 @@ import { getAuthAccount, inviteBuyer, setAuthMetadata, supabaseRest } from "@/li
 import { deliverSaleAccess } from "@/lib/membros-acesso-email";
 import { areaStats } from "@/lib/membros-stats";
 import { normalizeMedium, tagLink } from "@/lib/membros-utm";
+import { calcularAcesso } from "@/lib/reforma-app-acesso-regra";
 import { cleanUrl, createNotice, inviteBuyersWithoutAccount, listLeads, nextLive, noticeNewModule, noticeNewProduct, studentEmails, studentNotices } from "@/lib/membros-avisos";
 
 const enc = encodeURIComponent;
@@ -468,6 +469,8 @@ export async function studentHome(user: { id: string; email: string }, area: Are
     isAdmin: admin,
     redirect,
     email: user.email,
+    // App da Reforma (só na área dele): quem tem o app/kit, escolhido por variável de ambiente.
+    reforma: calcularAcesso({ areaSlug: settings.slug, produtos: items.map((item) => ({ slug: item.slug, owned: item.owned })), admin }),
   };
 }
 
