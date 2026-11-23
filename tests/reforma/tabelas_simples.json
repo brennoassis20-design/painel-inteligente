@@ -1,0 +1,4497 @@
+[
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2026,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.04",
+  "deduzir": "0",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo I); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XVIII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"1ª Faixa Até 180.000,00 4,00% -\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2026,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.073",
+  "deduzir": "5940.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo I); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XVIII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"2ª Faixa De 180.000,01 a 360.000,00 7,30% 5.940,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2026,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.095",
+  "deduzir": "13860.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo I); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XVIII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"3ª Faixa De 360.000,01 a 720.000,00 9,50% 13.860,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2026,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.107",
+  "deduzir": "22500.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo I); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XVIII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"4ª Faixa De 720.000,01 a 1.800.000,00 10,70% 22.500,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2026,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.143",
+  "deduzir": "87300.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo I); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XVIII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,30% 87.300,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2026,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.19",
+  "deduzir": "378000.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo I); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XVIII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 19,00% 378.000,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2027,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.04",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.415",
+   "ICMS": "0.34",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 4,00% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2027,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.073",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.415",
+   "ICMS": "0.34",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,30% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2027,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.095",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.42",
+   "ICMS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 9,50% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2027,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.107",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.42",
+   "ICMS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 10,70% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2027,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.143",
+  "deduzir": "87300.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.42",
+   "ICMS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,30% 87.300,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2027,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.189",
+  "deduzir": "378000.00",
+  "partilha": {
+   "IRPJ": "0.1358",
+   "CSLL": "0.1006",
+   "CBS": "0.3402",
+   "CPP": "0.4234"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 18,90% 378.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2028,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.04",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.415",
+   "ICMS": "0.34",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 4,00% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2028,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.073",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.415",
+   "ICMS": "0.34",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,30% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2028,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.095",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.42",
+   "ICMS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 9,50% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2028,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.107",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.42",
+   "ICMS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 10,70% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2028,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.143",
+  "deduzir": "87300.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1533",
+   "CPP": "0.42",
+   "ICMS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,30% 87.300,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2028,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.189",
+  "deduzir": "378000.00",
+  "partilha": {
+   "IRPJ": "0.1358",
+   "CSLL": "0.1006",
+   "CBS": "0.3402",
+   "CPP": "0.4234"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 18,90% 378.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2029,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.04",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "ICMS": "0.306",
+   "IBS": "0.034"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"1ª Faixa Até 180.000,00 4,00% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2029,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.073",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "ICMS": "0.306",
+   "IBS": "0.034"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,30% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2029,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.095",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.3015",
+   "IBS": "0.0335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 9,50% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2029,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.107",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.3015",
+   "IBS": "0.0335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 10,70% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2029,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.143",
+  "deduzir": "87300.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.3015",
+   "IBS": "0.0335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,30% 87.300,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2029,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.19",
+  "deduzir": "378000.00",
+  "partilha": {
+   "IRPJ": "0.135",
+   "CSLL": "0.10",
+   "CBS": "0.344",
+   "CPP": "0.421"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 19,00% 378.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2030,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.04",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "ICMS": "0.272",
+   "IBS": "0.068"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"1ª Faixa Até 180.000,00 4,00% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2030,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.073",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "ICMS": "0.272",
+   "IBS": "0.068"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,30% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2030,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.095",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.268",
+   "IBS": "0.067"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 9,50% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2030,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.107",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.268",
+   "IBS": "0.067"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 10,70% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2030,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.143",
+  "deduzir": "87300.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.268",
+   "IBS": "0.067"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,30% 87.300,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2030,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.19",
+  "deduzir": "378000.00",
+  "partilha": {
+   "IRPJ": "0.135",
+   "CSLL": "0.10",
+   "CBS": "0.344",
+   "CPP": "0.421"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 19,00% 378.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2031,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.04",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "ICMS": "0.238",
+   "IBS": "0.102"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"1ª Faixa Até 180.000,00 4,00% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2031,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.073",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "ICMS": "0.238",
+   "IBS": "0.102"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,30% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2031,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.095",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.2345",
+   "IBS": "0.1005"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 9,50% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2031,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.107",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.2345",
+   "IBS": "0.1005"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 10,70% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2031,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.143",
+  "deduzir": "87300.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.2345",
+   "IBS": "0.1005"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,30% 87.300,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2031,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.19",
+  "deduzir": "378000.00",
+  "partilha": {
+   "IRPJ": "0.135",
+   "CSLL": "0.10",
+   "CBS": "0.344",
+   "CPP": "0.421"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 19,00% 378.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2032,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.04",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "ICMS": "0.204",
+   "IBS": "0.136"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"1ª Faixa Até 180.000,00 4,00% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2032,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.073",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "ICMS": "0.204",
+   "IBS": "0.136"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,30% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2032,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.095",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.201",
+   "IBS": "0.134"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 9,50% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2032,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.107",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.201",
+   "IBS": "0.134"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 10,70% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2032,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.143",
+  "deduzir": "87300.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "ICMS": "0.201",
+   "IBS": "0.134"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,30% 87.300,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2032,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.19",
+  "deduzir": "378000.00",
+  "partilha": {
+   "IRPJ": "0.135",
+   "CSLL": "0.10",
+   "CBS": "0.344",
+   "CPP": "0.421"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 19,00% 378.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2033,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.04",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "IBS": "0.34"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"1ª Faixa Até 180.000,00 4,00% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2033,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.073",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.415",
+   "IBS": "0.34"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,30% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2033,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.095",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "IBS": "0.335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 9,50% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2033,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.107",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "IBS": "0.335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 10,70% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2033,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.143",
+  "deduzir": "87300.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.155",
+   "CPP": "0.42",
+   "IBS": "0.335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,30% 87.300,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "I",
+  "anexo_lei": "XVIII",
+  "ano": 2033,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.19",
+  "deduzir": "378000.00",
+  "partilha": {
+   "IRPJ": "0.135",
+   "CSLL": "0.10",
+   "CBS": "0.344",
+   "CPP": "0.421"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XVIII (altera o Anexo I da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 19,00% 378.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2026,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo II); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XIX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2026,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.078",
+  "deduzir": "5940.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo II); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XIX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"2ª Faixa De 180.000,01 a 360.000,00 7,80% 5.940,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2026,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.10",
+  "deduzir": "13860.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo II); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XIX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"3ª Faixa De 360.000,01 a 720.000,00 10,00% 13.860,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2026,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.112",
+  "deduzir": "22500.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo II); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XIX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"4ª Faixa De 720.000,01 a 1.800.000,00 11,20% 22.500,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2026,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.147",
+  "deduzir": "85500.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo II); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XIX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,70% 85.500,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2026,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.30",
+  "deduzir": "720000.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo II); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XIX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,00% 720.000,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2027,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2027,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.078",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,80% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2027,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.10",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,00% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2027,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.112",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 11,20% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2027,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.147",
+  "deduzir": "85500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,70% 85.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2027,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.299",
+  "deduzir": "720000.00",
+  "partilha": {
+   "IRPJ": "0.0853",
+   "CSLL": "0.0753",
+   "CBS": "0.2522",
+   "CPP": "0.2359",
+   "IPI": "0.3513"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 29,90% 720.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2028,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2028,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.078",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,80% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2028,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.10",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,00% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2028,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.112",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 11,20% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2028,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.147",
+  "deduzir": "85500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.1385",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.32",
+   "IBS": "0.0015"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,70% 85.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2028,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.299",
+  "deduzir": "720000.00",
+  "partilha": {
+   "IRPJ": "0.0853",
+   "CSLL": "0.0753",
+   "CBS": "0.2522",
+   "CPP": "0.2359",
+   "IPI": "0.3513"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 29,90% 720.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2029,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.288",
+   "IBS": "0.032"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2029,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.078",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.288",
+   "IBS": "0.032"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,80% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2029,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.10",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.288",
+   "IBS": "0.032"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,00% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2029,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.112",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.288",
+   "IBS": "0.032"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 11,20% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2029,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.147",
+  "deduzir": "85500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.288",
+   "IBS": "0.032"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,70% 85.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2029,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.30",
+  "deduzir": "720000.00",
+  "partilha": {
+   "IRPJ": "0.085",
+   "CSLL": "0.075",
+   "CBS": "0.255",
+   "CPP": "0.235",
+   "IPI": "0.35"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,00% 720.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2030,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.256",
+   "IBS": "0.064"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2030,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.078",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.256",
+   "IBS": "0.064"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,80% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2030,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.10",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.256",
+   "IBS": "0.064"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,00% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2030,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.112",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.256",
+   "IBS": "0.064"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 11,20% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2030,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.147",
+  "deduzir": "85500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.256",
+   "IBS": "0.064"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,70% 85.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2030,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.30",
+  "deduzir": "720000.00",
+  "partilha": {
+   "IRPJ": "0.085",
+   "CSLL": "0.075",
+   "CBS": "0.255",
+   "CPP": "0.235",
+   "IPI": "0.35"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,00% 720.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2031,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.224",
+   "IBS": "0.096"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2031,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.078",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.224",
+   "IBS": "0.096"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,80% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2031,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.10",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.224",
+   "IBS": "0.096"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,00% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2031,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.112",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.224",
+   "IBS": "0.096"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 11,20% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2031,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.147",
+  "deduzir": "85500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.224",
+   "IBS": "0.096"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,70% 85.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2031,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.30",
+  "deduzir": "720000.00",
+  "partilha": {
+   "IRPJ": "0.085",
+   "CSLL": "0.075",
+   "CBS": "0.255",
+   "CPP": "0.235",
+   "IPI": "0.35"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,00% 720.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2032,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.192",
+   "IBS": "0.128"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2032,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.078",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.192",
+   "IBS": "0.128"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,80% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2032,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.10",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.192",
+   "IBS": "0.128"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,00% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2032,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.112",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.192",
+   "IBS": "0.128"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 11,20% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2032,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.147",
+  "deduzir": "85500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "ICMS": "0.192",
+   "IBS": "0.128"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,70% 85.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2032,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.30",
+  "deduzir": "720000.00",
+  "partilha": {
+   "IRPJ": "0.085",
+   "CSLL": "0.075",
+   "CBS": "0.255",
+   "CPP": "0.235",
+   "IPI": "0.35"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,00% 720.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2033,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "IBS": "0.32"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2033,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.078",
+  "deduzir": "5940.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "IBS": "0.32"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 7,80% 5.940,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2033,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.10",
+  "deduzir": "13860.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "IBS": "0.32"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,00% 13.860,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2033,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.112",
+  "deduzir": "22500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "IBS": "0.32"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 11,20% 22.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2033,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.147",
+  "deduzir": "85500.00",
+  "partilha": {
+   "IRPJ": "0.055",
+   "CSLL": "0.035",
+   "CBS": "0.14",
+   "CPP": "0.375",
+   "IPI": "0.075",
+   "IBS": "0.32"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 14,70% 85.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "II",
+  "anexo_lei": "XIX",
+  "ano": 2033,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.30",
+  "deduzir": "720000.00",
+  "partilha": {
+   "IRPJ": "0.085",
+   "CSLL": "0.075",
+   "CBS": "0.255",
+   "CPP": "0.235",
+   "IPI": "0.35"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XIX (altera o Anexo II da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,00% 720.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2026,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.06",
+  "deduzir": "0",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo III); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"1ª Faixa Até 180.000,00 6,00% –\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2026,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.112",
+  "deduzir": "9360.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo III); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"2ª Faixa De 180.000,01 a 360.000,00 11,20% 9.360,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2026,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.135",
+  "deduzir": "17640.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo III); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"3ª Faixa De 360.000,01 a 720.000,00 13,50% 17.640,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2026,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.16",
+  "deduzir": "35640.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo III); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"4ª Faixa De 720.000,01 a 1.800.000,00 16,00% 35.640,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2026,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.21",
+  "deduzir": "125640.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo III); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 21,00% 125.640,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2026,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "648000.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo III); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XX da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 648.000,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2027,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.06",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1543",
+   "CPP": "0.434",
+   "ISS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 6,00% –\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2027,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.112",
+  "deduzir": "9360.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1691",
+   "CPP": "0.434",
+   "ISS": "0.32",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 11,20% 9.360,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2027,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.135",
+  "deduzir": "17640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1641",
+   "CPP": "0.434",
+   "ISS": "0.325",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 13,50% 17.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2027,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.16",
+  "deduzir": "35640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1641",
+   "CPP": "0.434",
+   "ISS": "0.325",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 16,00% 35.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2027,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.21",
+  "deduzir": "125640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1543",
+   "CPP": "0.434",
+   "ISS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 21,00% 125.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2027,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.329",
+  "deduzir": "648000.00",
+  "partilha": {
+   "IRPJ": "0.3509",
+   "CSLL": "0.1504",
+   "CBS": "0.1929",
+   "CPP": "0.3058"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 32,90% 648.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2028,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.06",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1543",
+   "CPP": "0.434",
+   "ISS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 6,00% –\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2028,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.112",
+  "deduzir": "9360.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1691",
+   "CPP": "0.434",
+   "ISS": "0.32",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 11,20% 9.360,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2028,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.135",
+  "deduzir": "17640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1641",
+   "CPP": "0.434",
+   "ISS": "0.325",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 13,50% 17.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2028,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.16",
+  "deduzir": "35640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1641",
+   "CPP": "0.434",
+   "ISS": "0.325",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 16,00% 35.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2028,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.21",
+  "deduzir": "125640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.1543",
+   "CPP": "0.434",
+   "ISS": "0.335",
+   "IBS": "0.0017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 21,00% 125.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2028,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.329",
+  "deduzir": "648000.00",
+  "partilha": {
+   "IRPJ": "0.3509",
+   "CSLL": "0.1504",
+   "CBS": "0.1929",
+   "CPP": "0.3058"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 32,90% 648.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2029,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.06",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "ISS": "0.3015",
+   "IBS": "0.0335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"1ª Faixa Até 180.000,00 6,00% –\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2029,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.112",
+  "deduzir": "9360.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.171",
+   "CPP": "0.434",
+   "ISS": "0.288",
+   "IBS": "0.032"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 11,20% 9.360,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2029,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.135",
+  "deduzir": "17640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "ISS": "0.2925",
+   "IBS": "0.0325"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 13,50% 17.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2029,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.16",
+  "deduzir": "35640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "ISS": "0.2925",
+   "IBS": "0.0325"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 16,00% 35.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2029,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.21",
+  "deduzir": "125640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "ISS": "0.3015",
+   "IBS": "0.0335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 21,00% 125.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2029,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "648000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.15",
+   "CBS": "0.195",
+   "CPP": "0.305"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 648.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2030,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.06",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "ISS": "0.268",
+   "IBS": "0.067"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"1ª Faixa Até 180.000,00 6,00% –\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2030,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.112",
+  "deduzir": "9360.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.171",
+   "CPP": "0.434",
+   "ISS": "0.256",
+   "IBS": "0.064"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 11,20% 9.360,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2030,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.135",
+  "deduzir": "17640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "ISS": "0.26",
+   "IBS": "0.065"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 13,50% 17.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2030,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.16",
+  "deduzir": "35640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "ISS": "0.26",
+   "IBS": "0.065"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 16,00% 35.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2030,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.21",
+  "deduzir": "125640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "ISS": "0.268",
+   "IBS": "0.067"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 21,00% 125.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2030,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "648000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.15",
+   "CBS": "0.195",
+   "CPP": "0.305"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 648.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2031,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.06",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "ISS": "0.2345",
+   "IBS": "0.1005"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"1ª Faixa Até 180.000,00 6,00% –\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2031,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.112",
+  "deduzir": "9360.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.171",
+   "CPP": "0.434",
+   "ISS": "0.224",
+   "IBS": "0.096"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 11,20% 9.360,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2031,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.135",
+  "deduzir": "17640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "ISS": "0.2275",
+   "IBS": "0.0975"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 13,50% 17.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2031,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.16",
+  "deduzir": "35640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "ISS": "0.2275",
+   "IBS": "0.0975"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 16,00% 35.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2031,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.21",
+  "deduzir": "125640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "ISS": "0.2345",
+   "IBS": "0.1005"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 21,00% 125.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2031,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "648000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.15",
+   "CBS": "0.195",
+   "CPP": "0.305"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 648.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2032,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.06",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "ISS": "0.201",
+   "IBS": "0.134"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"1ª Faixa Até 180.000,00 6,00% –\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2032,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.112",
+  "deduzir": "9360.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.171",
+   "CPP": "0.434",
+   "ISS": "0.192",
+   "IBS": "0.128"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 11,20% 9.360,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2032,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.135",
+  "deduzir": "17640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "ISS": "0.195",
+   "IBS": "0.13"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 13,50% 17.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2032,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.16",
+  "deduzir": "35640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "ISS": "0.195",
+   "IBS": "0.13"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 16,00% 35.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2032,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.21",
+  "deduzir": "125640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "ISS": "0.201",
+   "IBS": "0.134"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 21,00% 125.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2032,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "648000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.15",
+   "CBS": "0.195",
+   "CPP": "0.305"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 648.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2033,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.06",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "IBS": "0.335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"1ª Faixa Até 180.000,00 6,00% –\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2033,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.112",
+  "deduzir": "9360.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.171",
+   "CPP": "0.434",
+   "IBS": "0.32"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 11,20% 9.360,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2033,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.135",
+  "deduzir": "17640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "IBS": "0.325"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 13,50% 17.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2033,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.16",
+  "deduzir": "35640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.166",
+   "CPP": "0.434",
+   "IBS": "0.325"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 16,00% 35.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2033,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.21",
+  "deduzir": "125640.00",
+  "partilha": {
+   "IRPJ": "0.04",
+   "CSLL": "0.035",
+   "CBS": "0.156",
+   "CPP": "0.434",
+   "IBS": "0.335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 21,00% 125.640,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "III",
+  "anexo_lei": "XX",
+  "ano": 2033,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "648000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.15",
+   "CBS": "0.195",
+   "CPP": "0.305"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XX (altera o Anexo III da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 648.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2026,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo IV); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXI da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2026,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.09",
+  "deduzir": "8100.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo IV); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXI da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"2ª Faixa De 180.000,01 a 360.000,00 9,00% 8.100,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2026,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.102",
+  "deduzir": "12420.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo IV); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXI da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"3ª Faixa De 360.000,01 a 720.000,00 10,20% 12.420,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2026,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.14",
+  "deduzir": "39780.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo IV); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXI da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"4ª Faixa De 720.000,01 a 1.800.000,00 14,00% 39.780,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2026,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.22",
+  "deduzir": "183780.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo IV); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXI da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 22,00% 183.780,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2026,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "828000.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo IV); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXI da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 828.000,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2027,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.152",
+   "CBS": "0.2126",
+   "ISS": "0.445",
+   "IBS": "0.0024"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2027,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.09",
+  "deduzir": "8100.00",
+  "partilha": {
+   "IRPJ": "0.198",
+   "CSLL": "0.152",
+   "CBS": "0.2473",
+   "ISS": "0.40",
+   "IBS": "0.0027"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 9,00% 8.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2027,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.102",
+  "deduzir": "12420.00",
+  "partilha": {
+   "IRPJ": "0.208",
+   "CSLL": "0.152",
+   "CBS": "0.2374",
+   "ISS": "0.40",
+   "IBS": "0.0026"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,20% 12.420,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2027,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.14",
+  "deduzir": "39780.00",
+  "partilha": {
+   "IRPJ": "0.178",
+   "CSLL": "0.192",
+   "CBS": "0.2275",
+   "ISS": "0.40",
+   "IBS": "0.0025"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 14,00% 39.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2027,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.22",
+  "deduzir": "183780.00",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.192",
+   "CBS": "0.2176",
+   "ISS": "0.40",
+   "IBS": "0.0024"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 22,00% 183.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2027,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.329",
+  "deduzir": "828000.00",
+  "partilha": {
+   "IRPJ": "0.5371",
+   "CSLL": "0.2159",
+   "CBS": "0.247"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 32,90% 828.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2028,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.152",
+   "CBS": "0.2126",
+   "ISS": "0.445",
+   "IBS": "0.0024"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2028,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.09",
+  "deduzir": "8100.00",
+  "partilha": {
+   "IRPJ": "0.198",
+   "CSLL": "0.152",
+   "CBS": "0.2473",
+   "ISS": "0.40",
+   "IBS": "0.0027"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 9,00% 8.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2028,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.102",
+  "deduzir": "12420.00",
+  "partilha": {
+   "IRPJ": "0.208",
+   "CSLL": "0.152",
+   "CBS": "0.2374",
+   "ISS": "0.40",
+   "IBS": "0.0026"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,20% 12.420,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2028,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.14",
+  "deduzir": "39780.00",
+  "partilha": {
+   "IRPJ": "0.178",
+   "CSLL": "0.192",
+   "CBS": "0.2275",
+   "ISS": "0.40",
+   "IBS": "0.0025"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 14,00% 39.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2028,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.22",
+  "deduzir": "183780.00",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.192",
+   "CBS": "0.2176",
+   "ISS": "0.40",
+   "IBS": "0.0024"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 22,00% 183.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2028,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.329",
+  "deduzir": "828000.00",
+  "partilha": {
+   "IRPJ": "0.5371",
+   "CSLL": "0.2159",
+   "CBS": "0.247"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 32,90% 828.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2029,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.152",
+   "CBS": "0.215",
+   "ISS": "0.4005",
+   "IBS": "0.0445"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2029,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.09",
+  "deduzir": "8100.00",
+  "partilha": {
+   "IRPJ": "0.198",
+   "CSLL": "0.152",
+   "CBS": "0.25",
+   "ISS": "0.36",
+   "IBS": "0.04"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 9,00% 8.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2029,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.102",
+  "deduzir": "12420.00",
+  "partilha": {
+   "IRPJ": "0.208",
+   "CSLL": "0.152",
+   "CBS": "0.24",
+   "ISS": "0.36",
+   "IBS": "0.04"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,20% 12.420,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2029,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.14",
+  "deduzir": "39780.00",
+  "partilha": {
+   "IRPJ": "0.178",
+   "CSLL": "0.192",
+   "CBS": "0.23",
+   "ISS": "0.36",
+   "IBS": "0.04"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 14,00% 39.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2029,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.22",
+  "deduzir": "183780.00",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.192",
+   "CBS": "0.22",
+   "ISS": "0.36",
+   "IBS": "0.04"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 22,00% 183.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2029,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "828000.00",
+  "partilha": {
+   "IRPJ": "0.535",
+   "CSLL": "0.215",
+   "CBS": "0.25"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 828.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2030,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.152",
+   "CBS": "0.215",
+   "ISS": "0.356",
+   "IBS": "0.089"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2030,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.09",
+  "deduzir": "8100.00",
+  "partilha": {
+   "IRPJ": "0.198",
+   "CSLL": "0.152",
+   "CBS": "0.25",
+   "ISS": "0.32",
+   "IBS": "0.08"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 9,00% 8.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2030,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.102",
+  "deduzir": "12420.00",
+  "partilha": {
+   "IRPJ": "0.208",
+   "CSLL": "0.152",
+   "CBS": "0.24",
+   "ISS": "0.32",
+   "IBS": "0.08"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,20% 12.420,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2030,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.14",
+  "deduzir": "39780.00",
+  "partilha": {
+   "IRPJ": "0.178",
+   "CSLL": "0.192",
+   "CBS": "0.23",
+   "ISS": "0.32",
+   "IBS": "0.08"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 14,00% 39.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2030,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.22",
+  "deduzir": "183780.00",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.192",
+   "CBS": "0.22",
+   "ISS": "0.32",
+   "IBS": "0.08"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 22,00% 183.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2030,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "828000.00",
+  "partilha": {
+   "IRPJ": "0.535",
+   "CSLL": "0.215",
+   "CBS": "0.25"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 828.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2031,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.152",
+   "CBS": "0.215",
+   "ISS": "0.3115",
+   "IBS": "0.1335"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2031,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.09",
+  "deduzir": "8100.00",
+  "partilha": {
+   "IRPJ": "0.198",
+   "CSLL": "0.152",
+   "CBS": "0.25",
+   "ISS": "0.28",
+   "IBS": "0.12"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 9,00% 8.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2031,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.102",
+  "deduzir": "12420.00",
+  "partilha": {
+   "IRPJ": "0.208",
+   "CSLL": "0.152",
+   "CBS": "0.24",
+   "ISS": "0.28",
+   "IBS": "0.12"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,20% 12.420,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2031,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.14",
+  "deduzir": "39780.00",
+  "partilha": {
+   "IRPJ": "0.178",
+   "CSLL": "0.192",
+   "CBS": "0.23",
+   "ISS": "0.28",
+   "IBS": "0.12"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 14,00% 39.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2031,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.22",
+  "deduzir": "183780.00",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.192",
+   "CBS": "0.22",
+   "ISS": "0.28",
+   "IBS": "0.12"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 22,00% 183.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2031,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "828000.00",
+  "partilha": {
+   "IRPJ": "0.535",
+   "CSLL": "0.215",
+   "CBS": "0.25"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 828.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2032,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.152",
+   "CBS": "0.215",
+   "ISS": "0.267",
+   "IBS": "0.178"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2032,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.09",
+  "deduzir": "8100.00",
+  "partilha": {
+   "IRPJ": "0.198",
+   "CSLL": "0.152",
+   "CBS": "0.25",
+   "ISS": "0.24",
+   "IBS": "0.16"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 9,00% 8.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2032,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.102",
+  "deduzir": "12420.00",
+  "partilha": {
+   "IRPJ": "0.208",
+   "CSLL": "0.152",
+   "CBS": "0.24",
+   "ISS": "0.24",
+   "IBS": "0.16"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,20% 12.420,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2032,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.14",
+  "deduzir": "39780.00",
+  "partilha": {
+   "IRPJ": "0.178",
+   "CSLL": "0.192",
+   "CBS": "0.23",
+   "ISS": "0.24",
+   "IBS": "0.16"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 14,00% 39.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2032,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.22",
+  "deduzir": "183780.00",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.192",
+   "CBS": "0.22",
+   "ISS": "0.24",
+   "IBS": "0.16"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 22,00% 183.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2032,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "828000.00",
+  "partilha": {
+   "IRPJ": "0.535",
+   "CSLL": "0.215",
+   "CBS": "0.25"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 828.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2033,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.045",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.152",
+   "CBS": "0.215",
+   "IBS": "0.445"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"1ª Faixa Até 180.000,00 4,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2033,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.09",
+  "deduzir": "8100.00",
+  "partilha": {
+   "IRPJ": "0.198",
+   "CSLL": "0.152",
+   "CBS": "0.25",
+   "IBS": "0.40"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 9,00% 8.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2033,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.102",
+  "deduzir": "12420.00",
+  "partilha": {
+   "IRPJ": "0.208",
+   "CSLL": "0.152",
+   "CBS": "0.24",
+   "IBS": "0.40"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 10,20% 12.420,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2033,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.14",
+  "deduzir": "39780.00",
+  "partilha": {
+   "IRPJ": "0.178",
+   "CSLL": "0.192",
+   "CBS": "0.23",
+   "IBS": "0.40"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 14,00% 39.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2033,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.22",
+  "deduzir": "183780.00",
+  "partilha": {
+   "IRPJ": "0.188",
+   "CSLL": "0.192",
+   "CBS": "0.22",
+   "IBS": "0.40"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 22,00% 183.780,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "IV",
+  "anexo_lei": "XXI",
+  "ano": 2033,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.33",
+  "deduzir": "828000.00",
+  "partilha": {
+   "IRPJ": "0.535",
+   "CSLL": "0.215",
+   "CBS": "0.25"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXI (altera o Anexo IV da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 33,00% 828.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2026,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.155",
+  "deduzir": "0",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo V); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"1ª Faixa Até 180.000,00 15,50% -\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2026,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.18",
+  "deduzir": "4500.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo V); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"2ª Faixa De 180.000,01 a 360.000,00 18,00% 4.500,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2026,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.195",
+  "deduzir": "9900.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo V); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"3ª Faixa De 360.000,01 a 720.000,00 19,50% 9.900,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2026,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.205",
+  "deduzir": "17100.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo V); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"4ª Faixa De 720.000,01 a 1.800.000,00 20,50% 17.100,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2026,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.23",
+  "deduzir": "62100.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo V); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 23,00% 62.100,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2026,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.305",
+  "deduzir": "540000.00",
+  "partilha": null,
+  "fonte": "Alíquota/dedução = LC 123 vigente (Anexo V); NÃO consta dos arquivos de lei; faixas 1-5 idênticas à tabela do Anexo XXII da LC 214 (2027-28) e faixa 6 = tabela 2029+. Sem acesso à internet para conferir no planalto. Trecho-base: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,50% 540.000,00\"",
+  "status": "FATO* (conferir no planalto)"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2027,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.155",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.25",
+   "CSLL": "0.15",
+   "CBS": "0.1696",
+   "CPP": "0.2885",
+   "ISS": "0.14",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 15,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2027,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.18",
+  "deduzir": "4500.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.15",
+   "CBS": "0.1696",
+   "CPP": "0.2785",
+   "ISS": "0.17",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 18,00% 4.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2027,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.195",
+  "deduzir": "9900.00",
+  "partilha": {
+   "IRPJ": "0.24",
+   "CSLL": "0.15",
+   "CBS": "0.1795",
+   "CPP": "0.2385",
+   "ISS": "0.19",
+   "IBS": "0.002"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3a Faixa De 360.000,01 a 720.000,00 19,50% 9.900,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2027,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.205",
+  "deduzir": "17100.00",
+  "partilha": {
+   "IRPJ": "0.21",
+   "CSLL": "0.15",
+   "CBS": "0.1894",
+   "CPP": "0.2385",
+   "ISS": "0.21",
+   "IBS": "0.0021"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 20,50% 17.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2027,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.23",
+  "deduzir": "62100.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.125",
+   "CBS": "0.1696",
+   "CPP": "0.2385",
+   "ISS": "0.235",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 23,00% 62.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2027,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.304",
+  "deduzir": "540000.00",
+  "partilha": {
+   "IRPJ": "0.351",
+   "CSLL": "0.1554",
+   "CBS": "0.1978",
+   "CPP": "0.2958"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,40% 540.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2028,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.155",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.25",
+   "CSLL": "0.15",
+   "CBS": "0.1696",
+   "CPP": "0.2885",
+   "ISS": "0.14",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"1ª Faixa Até 180.000,00 15,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2028,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.18",
+  "deduzir": "4500.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.15",
+   "CBS": "0.1696",
+   "CPP": "0.2785",
+   "ISS": "0.17",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 18,00% 4.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2028,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.195",
+  "deduzir": "9900.00",
+  "partilha": {
+   "IRPJ": "0.24",
+   "CSLL": "0.15",
+   "CBS": "0.1795",
+   "CPP": "0.2385",
+   "ISS": "0.19",
+   "IBS": "0.002"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"3a Faixa De 360.000,01 a 720.000,00 19,50% 9.900,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2028,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.205",
+  "deduzir": "17100.00",
+  "partilha": {
+   "IRPJ": "0.21",
+   "CSLL": "0.15",
+   "CBS": "0.1894",
+   "CPP": "0.2385",
+   "ISS": "0.21",
+   "IBS": "0.0021"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 20,50% 17.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2028,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.23",
+  "deduzir": "62100.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.125",
+   "CBS": "0.1696",
+   "CPP": "0.2385",
+   "ISS": "0.235",
+   "IBS": "0.0019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 23,00% 62.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2028,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.304",
+  "deduzir": "540000.00",
+  "partilha": {
+   "IRPJ": "0.351",
+   "CSLL": "0.1554",
+   "CBS": "0.1978",
+   "CPP": "0.2958"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência 1º/1/2027 a 31/12/2028; partilha tabela '2027-28'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,40% 540.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2029,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.155",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.25",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2885",
+   "ISS": "0.126",
+   "IBS": "0.014"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"1ª Faixa Até 180.000,00 15,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2029,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.18",
+  "deduzir": "4500.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2785",
+   "ISS": "0.153",
+   "IBS": "0.017"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 18,00% 4.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2029,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.195",
+  "deduzir": "9900.00",
+  "partilha": {
+   "IRPJ": "0.24",
+   "CSLL": "0.15",
+   "CBS": "0.1815",
+   "CPP": "0.2385",
+   "ISS": "0.171",
+   "IBS": "0.019"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 19,50% 9.900,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2029,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.205",
+  "deduzir": "17100.00",
+  "partilha": {
+   "IRPJ": "0.21",
+   "CSLL": "0.15",
+   "CBS": "0.1915",
+   "CPP": "0.2385",
+   "ISS": "0.189",
+   "IBS": "0.021"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 20,50% 17.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2029,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.23",
+  "deduzir": "62100.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.125",
+   "CBS": "0.1715",
+   "CPP": "0.2385",
+   "ISS": "0.2115",
+   "IBS": "0.0235"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 23,00% 62.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2029,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.305",
+  "deduzir": "540000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.155",
+   "CBS": "0.20",
+   "CPP": "0.295"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2029'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,50% 540.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2030,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.155",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.25",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2885",
+   "ISS": "0.112",
+   "IBS": "0.028"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"1ª Faixa Até 180.000,00 15,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2030,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.18",
+  "deduzir": "4500.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2785",
+   "ISS": "0.136",
+   "IBS": "0.034"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 18,00% 4.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2030,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.195",
+  "deduzir": "9900.00",
+  "partilha": {
+   "IRPJ": "0.24",
+   "CSLL": "0.15",
+   "CBS": "0.1815",
+   "CPP": "0.2385",
+   "ISS": "0.152",
+   "IBS": "0.038"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 19,50% 9.900,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2030,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.205",
+  "deduzir": "17100.00",
+  "partilha": {
+   "IRPJ": "0.21",
+   "CSLL": "0.15",
+   "CBS": "0.1915",
+   "CPP": "0.2385",
+   "ISS": "0.168",
+   "IBS": "0.042"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 20,50% 17.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2030,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.23",
+  "deduzir": "62100.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.125",
+   "CBS": "0.1715",
+   "CPP": "0.2385",
+   "ISS": "0.188",
+   "IBS": "0.047"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 23,00% 62.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2030,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.305",
+  "deduzir": "540000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.155",
+   "CBS": "0.20",
+   "CPP": "0.295"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2030'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,50% 540.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2031,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.155",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.25",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2885",
+   "ISS": "0.098",
+   "IBS": "0.042"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"1ª Faixa Até 180.000,00 15,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2031,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.18",
+  "deduzir": "4500.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2785",
+   "ISS": "0.119",
+   "IBS": "0.051"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 18,00% 4.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2031,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.195",
+  "deduzir": "9900.00",
+  "partilha": {
+   "IRPJ": "0.24",
+   "CSLL": "0.15",
+   "CBS": "0.1815",
+   "CPP": "0.2385",
+   "ISS": "0.133",
+   "IBS": "0.057"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 19,50% 9.900,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2031,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.205",
+  "deduzir": "17100.00",
+  "partilha": {
+   "IRPJ": "0.21",
+   "CSLL": "0.15",
+   "CBS": "0.1915",
+   "CPP": "0.2385",
+   "ISS": "0.147",
+   "IBS": "0.063"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 20,50% 17.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2031,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.23",
+  "deduzir": "62100.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.125",
+   "CBS": "0.1715",
+   "CPP": "0.2385",
+   "ISS": "0.1645",
+   "IBS": "0.0705"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 23,00% 62.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2031,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.305",
+  "deduzir": "540000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.155",
+   "CBS": "0.20",
+   "CPP": "0.295"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2031'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,50% 540.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2032,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.155",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.25",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2885",
+   "ISS": "0.084",
+   "IBS": "0.056"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"1ª Faixa Até 180.000,00 15,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2032,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.18",
+  "deduzir": "4500.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2785",
+   "ISS": "0.102",
+   "IBS": "0.068"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 18,00% 4.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2032,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.195",
+  "deduzir": "9900.00",
+  "partilha": {
+   "IRPJ": "0.24",
+   "CSLL": "0.15",
+   "CBS": "0.1815",
+   "CPP": "0.2385",
+   "ISS": "0.114",
+   "IBS": "0.076"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 19,50% 9.900,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2032,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.205",
+  "deduzir": "17100.00",
+  "partilha": {
+   "IRPJ": "0.21",
+   "CSLL": "0.15",
+   "CBS": "0.1915",
+   "CPP": "0.2385",
+   "ISS": "0.126",
+   "IBS": "0.084"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 20,50% 17.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2032,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.23",
+  "deduzir": "62100.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.125",
+   "CBS": "0.1715",
+   "CPP": "0.2385",
+   "ISS": "0.141",
+   "IBS": "0.094"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 23,00% 62.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2032,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.305",
+  "deduzir": "540000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.155",
+   "CBS": "0.20",
+   "CPP": "0.295"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2032'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,50% 540.000,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2033,
+  "faixa": 1,
+  "de": "0",
+  "ate": "180000",
+  "nominal": "0.155",
+  "deduzir": "0",
+  "partilha": {
+   "IRPJ": "0.25",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2885",
+   "IBS": "0.14"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"1ª Faixa Até 180.000,00 15,50% -\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2033,
+  "faixa": 2,
+  "de": "180000.01",
+  "ate": "360000",
+  "nominal": "0.18",
+  "deduzir": "4500.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.15",
+   "CBS": "0.1715",
+   "CPP": "0.2785",
+   "IBS": "0.17"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"2ª Faixa De 180.000,01 a 360.000,00 18,00% 4.500,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2033,
+  "faixa": 3,
+  "de": "360000.01",
+  "ate": "720000",
+  "nominal": "0.195",
+  "deduzir": "9900.00",
+  "partilha": {
+   "IRPJ": "0.24",
+   "CSLL": "0.15",
+   "CBS": "0.1815",
+   "CPP": "0.2385",
+   "IBS": "0.19"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"3ª Faixa De 360.000,01 a 720.000,00 19,50% 9.900,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2033,
+  "faixa": 4,
+  "de": "720000.01",
+  "ate": "1800000",
+  "nominal": "0.205",
+  "deduzir": "17100.00",
+  "partilha": {
+   "IRPJ": "0.21",
+   "CSLL": "0.15",
+   "CBS": "0.1915",
+   "CPP": "0.2385",
+   "IBS": "0.21"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"4ª Faixa De 720.000,01 a 1.800.000,00 20,50% 17.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2033,
+  "faixa": 5,
+  "de": "1800000.01",
+  "ate": "3600000",
+  "nominal": "0.23",
+  "deduzir": "62100.00",
+  "partilha": {
+   "IRPJ": "0.23",
+   "CSLL": "0.125",
+   "CBS": "0.1715",
+   "CPP": "0.2385",
+   "IBS": "0.235"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"5ª Faixa De 1.800.000,01 a 3.600.000,00 23,00% 62.100,00\"",
+  "status": "FATO"
+ },
+ {
+  "anexo": "V",
+  "anexo_lei": "XXII",
+  "ano": 2033,
+  "faixa": 6,
+  "de": "3600000.01",
+  "ate": "4800000",
+  "nominal": "0.305",
+  "deduzir": "540000.00",
+  "partilha": {
+   "IRPJ": "0.35",
+   "CSLL": "0.155",
+   "CBS": "0.20",
+   "CPP": "0.295"
+  },
+  "fonte": "LC 214/2025 atualizada pela LC 227/2026, Anexo XXII (altera o Anexo V da LC 123); tabela nominal vigência a partir de 1º/1/2029; partilha tabela '2033+'. Trecho: \"6ª Faixa De 3.600.000,01 a 4.800.000,00 30,50% 540.000,00\"",
+  "status": "FATO"
+ }
+]
