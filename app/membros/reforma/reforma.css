@@ -358,3 +358,4 @@
 .rf-grafico text { fill: var(--mut); font-family: var(--gp-body); font-weight: 600; }
 .rf-grafico .valor { fill: var(--navy); font-weight: 800; }
 .rf-grafico .foco .ano { fill: var(--navy); font-weight: 800; }
+.rf .gp-ok { color: var(--verde); font-weight: 800; text-align: center; margin: 0; }
