@@ -614,6 +614,7 @@ export default function MembrosPage() {
             chamar={(path, init) => api(path, init)}
             marca={home.settings.brand_name}
             onAbrirProduto={(produto) => go(produto)}
+            onAreaMembros={() => go(null)}
           />
         </main>
       ) : slug ? (

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import novidades from "@/lib/reforma-app/novidades.json";
 import { criarArmazenamentoLocal, criarArmazenamentoSupabase, type Armazenamento, type Chamada, type DadosApp } from "@/lib/reforma-app/armazenamento";
 import { ESCRITORIO_VAZIO, novoId, type Cliente, type Escritorio } from "@/lib/reforma-app/modelo";
-import { BlocoVideos, FormEscritorio, PrimeiroAcesso } from "./Escritorio";
+import { BotaoAulas, FormEscritorio, PrimeiroAcesso } from "./Escritorio";
 import { Clientes } from "./Clientes";
 import { NovoCliente } from "./NovoCliente";
 import { Resultado } from "./Resultado";
@@ -18,15 +18,16 @@ export interface AcessoReforma {
   armazenamento: "supabase" | "local";
 }
 
-type Aba = "clientes" | "como" | "kit" | "novidades";
+type Aba = "clientes" | "aulas" | "kit" | "novidades";
 type Tela = { t: "aba"; aba: Aba } | { t: "escritorio" } | { t: "novo"; cliente: Cliente | null } | { t: "resultado"; id: string };
 
-export function ReformaApp({ acesso, chaveLocal, chamar, marca, onAbrirProduto, forcarLocal }: {
+export function ReformaApp({ acesso, chaveLocal, chamar, marca, onAbrirProduto, onAreaMembros, forcarLocal }: {
   acesso: AcessoReforma;
   chaveLocal: string;
   chamar: Chamada;
   marca: string;
   onAbrirProduto: (slug: string) => void;
+  onAreaMembros?: () => void;
   forcarLocal?: boolean;
 }) {
   const armazem: Armazenamento = useMemo(
@@ -90,14 +91,14 @@ export function ReformaApp({ acesso, chaveLocal, chamar, marca, onAbrirProduto, 
   if (!esc.configurado) {
     return (
       <div className="rf">
-        <PrimeiroAcesso marca={marca} inicial={{ ...ESCRITORIO_VAZIO, ...esc }} onSalvar={salvarEscritorio} />
+        <PrimeiroAcesso marca={marca} inicial={{ ...ESCRITORIO_VAZIO, ...esc }} onSalvar={salvarEscritorio} onAreaMembros={onAreaMembros} />
       </div>
     );
   }
 
   const abas: { id: Aba; curto: string; longo: string; oculta?: boolean }[] = [
     { id: "clientes", curto: "Clientes", longo: "Clientes" },
-    { id: "como", curto: "Como usar", longo: "Como usar" },
+    { id: "aulas", curto: "Aulas", longo: "Aulas" },
     { id: "kit", curto: "Kit", longo: "Kit Consultor" },
     { id: "novidades", curto: "Novidades", longo: "Novidades" },
   ];
@@ -139,10 +140,15 @@ export function ReformaApp({ acesso, chaveLocal, chamar, marca, onAbrirProduto, 
           <FormEscritorio inicial={esc} rotulo="Salvar" onSalvar={salvarEscritorio} />
         </div>
       )}
-      {tela.t === "aba" && tela.aba === "como" && (
+      {tela.t === "aba" && tela.aba === "aulas" && (
         <div className="rf-tela">
-          <h1>Como usar</h1>
-          <BlocoVideos titulo="Vídeos" />
+          <h1>Aulas</h1>
+          <div className="rf-card">
+            <h2>Aprenda a instalar e a usar</h2>
+            <p>As aulas ficam na área de membros: instalar no iPhone, no Android e no computador, e como usar o app do cadastro do cliente até o PDF.</p>
+            <BotaoAulas onAreaMembros={onAreaMembros} texto="Ir para as aulas" />
+            {!onAreaMembros && <p className="gp-muted">Abra a área de membros pelo menu para ver as aulas.</p>}
+          </div>
         </div>
       )}
       {tela.t === "aba" && tela.aba === "kit" && (

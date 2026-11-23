@@ -20,6 +20,7 @@ export default function ReformaDev() {
           chamar={async () => ({})}
           marca="Reforma Desenhada"
           onAbrirProduto={() => undefined}
+          onAreaMembros={() => { window.location.href = "/membros"; }}
           forcarLocal
         />
       </main>

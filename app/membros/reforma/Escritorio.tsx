@@ -3,37 +3,16 @@
 import { useRef, useState } from "react";
 import type { Escritorio } from "@/lib/reforma-app/modelo";
 import { reduzirLogo } from "@/lib/reforma-app/logo";
-import { VIDEOS, youtubeCodigo } from "@/lib/reforma-app/videos";
 import { Caixa, CampoTexto } from "./Campos";
 
 const CORES = ["#1F4E79", "#0F766E", "#7C3AED", "#B45309", "#BE123C", "#111827"];
 
-export function BlocoVideos({ titulo = "Vídeos para começar" }: { titulo?: string }) {
+export function BotaoAulas({ onAreaMembros, texto = "Ver as aulas na área de membros" }: { onAreaMembros?: () => void; texto?: string }) {
+  if (!onAreaMembros) return null;
   return (
-    <section className="rf-bloco" aria-label={titulo}>
-      <h2>{titulo}</h2>
-      <div className="rf-videos">
-        {VIDEOS.map((v) => {
-          const codigo = youtubeCodigo(v.youtube);
-          return (
-            <article key={v.id} className="rf-video">
-              {codigo ? (
-                <div className="rf-video-tela">
-                  <iframe src={`https://www.youtube-nocookie.com/embed/${codigo}`} title={v.titulo} allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture" allowFullScreen loading="lazy" />
-                </div>
-              ) : (
-                <div className="rf-video-tela vazio" role="img" aria-label={`Vídeo "${v.titulo}" em breve`}>
-                  <span className="rf-play" aria-hidden="true" />
-                  <small>Vídeo em breve</small>
-                </div>
-              )}
-              <h3>{v.titulo}</h3>
-              <p>{v.resumo}</p>
-            </article>
-          );
-        })}
-      </div>
-    </section>
+    <button type="button" className="gp-btn rf-grande rf-largo" onClick={onAreaMembros}>
+      {texto}
+    </button>
   );
 }
 
@@ -151,7 +130,7 @@ export function FormEscritorio({ inicial, rotulo, comTermos, onSalvar }: { inici
   );
 }
 
-export function PrimeiroAcesso({ marca, inicial, onSalvar }: { marca: string; inicial: Escritorio; onSalvar: (e: Escritorio) => Promise<void> }) {
+export function PrimeiroAcesso({ marca, inicial, onSalvar, onAreaMembros }: { marca: string; inicial: Escritorio; onSalvar: (e: Escritorio) => Promise<void>; onAreaMembros?: () => void }) {
   return (
     <div className="rf-primeiro">
       <section className="rf-boas-vindas">
@@ -161,12 +140,14 @@ export function PrimeiroAcesso({ marca, inicial, onSalvar }: { marca: string; in
           Cadastre a empresa do seu cliente, veja quanto muda de imposto de 2026 a 2033 e entregue um PDF com a logo do seu escritório. Leva poucos minutos por cliente. ({marca})
         </p>
         <ol className="rf-passos-curtos">
-          <li>Veja os vídeos abaixo (1 a 3 minutos cada).</li>
-          <li>Configure o seu escritório.</li>
+                    <li>Configure o seu escritório.</li>
           <li>Cadastre o primeiro cliente.</li>
         </ol>
       </section>
-      <BlocoVideos />
+      <section className="rf-bloco">
+        <p className="gp-muted">As aulas de como instalar no celular e no computador e de como usar o app ficam na área de membros.</p>
+        <BotaoAulas onAreaMembros={onAreaMembros} />
+      </section>
       <section className="rf-bloco-titulo">
         <h2>Configure o seu escritório</h2>
         <p className="gp-muted">Essas informações saem na capa e no rodapé do PDF que o seu cliente recebe.</p>
