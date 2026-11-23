@@ -115,7 +115,7 @@ export async function areaStats(area: Area, days = 30) {
       seenOrders.add(order);
     }
     const via = String(meta.utm_source || "") === "membros" ? String(meta.utm_content || "cadeado") : openedFromArea(event.email, event.product_id, event.created_at);
-    sales.push({ email: event.email, product_id: event.product_id, valor: money(meta.valor) ?? price(event.product_id), at: event.created_at, area: Boolean(via), via: via || "", order });
+    sales.push({ email: event.email, product_id: event.product_id, valor: meta.valor === 0 ? 0 : money(meta.valor) ?? price(event.product_id), at: event.created_at, area: Boolean(via), via: via || "", order });
   }
   for (const sale of panelSales) {
     if (!inPeriod(sale.at)) continue;

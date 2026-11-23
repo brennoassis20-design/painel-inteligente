@@ -8,6 +8,7 @@ import { areaStats } from "@/lib/membros-stats";
 import { normalizeMedium, tagLink } from "@/lib/membros-utm";
 import { calcularAcesso } from "@/lib/reforma-app-acesso-regra";
 import { cleanUrl, createNotice, inviteBuyersWithoutAccount, listLeads, nextLive, noticeNewModule, noticeNewProduct, studentEmails, studentNotices } from "@/lib/membros-avisos";
+import { valoresDaVenda } from "@/lib/membros-valor";
 
 const enc = encodeURIComponent;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -630,6 +631,11 @@ export async function applySale(event: SaleEvent, area: Area) {
   const bumpSet = new Set((event.bumpIds || []).filter(Boolean).map((id) => `${event.provider}:${id}`));
   const isBump = (product: Product) => Boolean(product.external_ids?.some((id) => bumpSet.has(id)));
 
+  // Um id da plataforma que libera vários produtos (ex.: App da Reforma R$ 67 = App + Kit Consultor) é UMA venda:
+  // o valor pago fica no produto principal (o de maior preço) e os outros entram com 0, para o relatório não somar
+  // o preço de tabela de cada um (antes: 47 + 47 = 94 numa venda de 67). Pedido com order bump segue a regra antiga.
+  const valorPorProduto = valoresDaVenda(products, event.amount, products.some(isBump));
+
   for (const product of products) {
     const status = event.kind === "approved" ? "active" : "refunded";
     const expires = event.kind === "approved" && product.access_days ? new Date(Date.now() + product.access_days * DAY_MS).toISOString() : null;
@@ -650,7 +656,7 @@ export async function applySale(event: SaleEvent, area: Area) {
       provider: event.provider,
       order: event.orderId,
       ...(isBump(product) ? { bump: true } : {}),
-      ...(event.amount && products.length === 1 ? { valor: event.amount } : {}),
+      ...(valorPorProduto.has(product.id) ? { valor: valorPorProduto.get(product.id) } : {}),
       ...(event.utmSource ? { utm_source: event.utmSource } : {}),
       ...(event.utmContent ? { utm_content: event.utmContent } : {}),
       ...(event.utmCampaign ? { utm_campaign: event.utmCampaign } : {}),

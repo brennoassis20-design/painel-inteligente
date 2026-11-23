@@ -8,6 +8,8 @@ import { ANOS, ANO_FINAL, ANO_HOJE, ANO_PADRAO, ATUALIZADO_EM, bloco, frase, gra
 import { acharSetor } from "./setores.ts";
 
 const A4 = { w: 595.28, h: 841.89 };
+// Avisos que ficam só no app (para o contador), fora do PDF do cliente.
+const PDF_SEM_AVISO = ["simples_2026", "tabela_2026", "anos_sem_gabarito"];
 const M = 42;
 
 const TROCAS: Record<string, string> = { "−": "-", "→": "->", "≈": "~", "≤": "<=", "≥": ">=", "“": '"', "”": '"', "‘": "'", "’": "'", "…": "...", " ": " ", "‑": "-", "✓": "ok" };
@@ -310,8 +312,9 @@ export async function gerarPdf({ cliente, escritorio, ano }: { cliente: Cliente;
 
   // ------------------------------------------------ gráfico
   const g = grafico(res);
-  w.titulo("Linha do tempo 2026 a 2033");
   const alt = 150;
+  w.garantir(alt + 40 + 60); // título e gráfico na mesma página (título não fica sozinho no pé)
+  w.titulo("Linha do tempo 2026 a 2033");
   w.garantir(alt + 40);
   const base = w.y - alt - 20;
   const largTot = A4.w - M * 2;
@@ -357,16 +360,20 @@ export async function gerarPdf({ cliente, escritorio, ano }: { cliente: Cliente;
     const valor = l.unidade === "R$" ? r$(l.valor) : l.unidade === "%" ? pc(l.valor, 4) : l.valor;
     w.garantir(60);
     w.par(l.rotulo, { neg: true, tam: 10, depois: 0 });
-    w.par(`${l.formula}  =  ${valor}`, { tam: 9.5, depois: 0 });
+    // a fórmula do motor às vezes já termina no resultado ("... = R$ 3.930,00"): não repetir
+    w.par(l.formula.includes("=") ? l.formula : `${l.formula}  =  ${valor}`, { tam: 9.5, depois: 0 });
     w.par("Fonte: " + l.fonte, { tam: 8, cor: CINZA, depois: 7 });
   }
-  if (!mei) {
+  // no Simples o bloco não tem total único (DAS puro × híbrido já estão na memória acima)
+  if (!mei && bloco(a).total) {
     w.par("Imposto recolhido pela empresa no mês", { neg: true, tam: 10, depois: 0 });
     w.par(`${r$(bloco(a).total)}`, { tam: 9.5, depois: 8 });
   }
   const sl = selo(res, ano);
   w.titulo("O que é estimativa");
-  [...sl.estimativas, ...sl.atencao].forEach((x) => w.par("•  " + x.texto, { x: M + 6, larg: A4.w - M * 2 - 6, tam: 9 }));
+  // O PDF vai para o cliente do contador: sem notas internas de validação e sem repetir os prazos já listados.
+  const fora = new Set([...PDF_SEM_AVISO, ...(simples ? prazosSimples().map((p) => p.codigo) : [])]);
+  [...sl.estimativas, ...sl.atencao].filter((x) => !fora.has(x.codigo)).forEach((x) => w.par("•  " + x.texto, { x: M + 6, larg: A4.w - M * 2 - 6, tam: 9 }));
   if (a.semGabarito) w.par("Faixa ainda em validação: " + sl.emValidacao.join(" "), { tam: 9, cor: CINZA });
   w.par(`Regras atualizadas em ${ATUALIZADO_EM} (versão ${res.versaoParametros}). Estimativa, apoio à decisão.`, { tam: 9, cor: CINZA });
 
