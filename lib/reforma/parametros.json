@@ -1,0 +1,673 @@
+{
+ "versao": "2026-11-22",
+ "atualizadoEm": "2026-11-22",
+ "anos": [
+  2026,
+  2027,
+  2028,
+  2029,
+  2030,
+  2031,
+  2032,
+  2033
+ ],
+ "anosComGabarito": [
+  2026,
+  2027,
+  2029,
+  2033
+ ],
+ "porAno": {
+  "2026": {
+   "cbsReferencia": {
+    "valor": "0.009",
+    "fonte": "ADCT art. 125; LC 214 arts. 343, 346 e 348 (CBS de teste 0,9%)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "cbsMenosPP": {
+    "valor": "0",
+    "fonte": "Sem redução de 0,1 p.p. em 2026",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFixo": {
+    "valor": "0.001",
+    "fonte": "ADCT arts. 125-127; LC 214 arts. 343-344 (IBS de teste: 0,1%; em 2027 = 0,05% estadual + 0,05% municipal)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFracaoPleno": null,
+   "cobraCbsIbs": {
+    "valor": false,
+    "fonte": "LC 214 art. 348: em 2026 a CBS/IBS de teste são só informativas (recolhimento dispensado); a cobrança começa em 2027",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "pisCofinsAtivo": {
+    "valor": true,
+    "fonte": "PIS/Cofins vigentes em 2026; extintos em 2027 (ADCT art. 126; LC 214 art. 347)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "fatorIcmsIss": {
+    "valor": "1",
+    "fonte": "ADCT arts. 125-129: ICMS/ISS integrais até 2028; 90%, 80%, 70%, 60% em 2029-2032; extintos em 2033",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   }
+  },
+  "2027": {
+   "cbsReferencia": {
+    "valor": "0.113",
+    "fonte": "TCU, TC 006.529/2026-7 (28/10/2026): alíquota de referência da CBS 2027 = 11,3%; Senado fixa até 15/12/2026 (LC 214, art. 353 §2º); se não fixar, vale o cálculo do TCU (art. 349 §2º)",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22",
+    "aviso": "CBS: usa 11,3% (cálculo do TCU) como alíquota de referência; o Senado ainda não fixou (prazo 15/12/2026). Em 2027 e 2028 a alíquota padrão é a referência menos 0,1 ponto percentual."
+   },
+   "cbsMenosPP": {
+    "valor": "0.001",
+    "fonte": "LC 214 art. 347 §1º, I (CBS reduzida em 0,1 p.p. em 2027 e 2028)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFixo": {
+    "valor": "0.001",
+    "fonte": "ADCT arts. 125-127; LC 214 arts. 343-344 (IBS de teste: 0,1%; em 2027 = 0,05% estadual + 0,05% municipal)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFracaoPleno": null,
+   "cobraCbsIbs": {
+    "valor": true,
+    "fonte": "ADCT arts. 126-129; LC 214 arts. 344 e 347",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "pisCofinsAtivo": {
+    "valor": false,
+    "fonte": "PIS/Cofins extintos a partir de 2027 (ADCT art. 126; LC 214 art. 347)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "fatorIcmsIss": {
+    "valor": "1",
+    "fonte": "ADCT arts. 125-129: ICMS/ISS integrais até 2028; 90%, 80%, 70%, 60% em 2029-2032; extintos em 2033",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   }
+  },
+  "2028": {
+   "cbsReferencia": {
+    "valor": "0.113",
+    "fonte": "TCU, TC 006.529/2026-7 (28/10/2026): alíquota de referência da CBS 2027 = 11,3%; Senado fixa até 15/12/2026 (LC 214, art. 353 §2º); se não fixar, vale o cálculo do TCU (art. 349 §2º); 2028 = regras de 2027 (ADCT arts. 126-127)",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22",
+    "aviso": "CBS: usa 11,3% (cálculo do TCU) como alíquota de referência; o Senado ainda não fixou (prazo 15/12/2026). Em 2027 e 2028 a alíquota padrão é a referência menos 0,1 ponto percentual."
+   },
+   "cbsMenosPP": {
+    "valor": "0.001",
+    "fonte": "LC 214 art. 347 §1º, I (CBS reduzida em 0,1 p.p. em 2027 e 2028)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFixo": {
+    "valor": "0.001",
+    "fonte": "ADCT arts. 125-127; LC 214 arts. 343-344 (IBS de teste: 0,1%; em 2027 = 0,05% estadual + 0,05% municipal)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFracaoPleno": null,
+   "cobraCbsIbs": {
+    "valor": true,
+    "fonte": "ADCT arts. 126-129; LC 214 arts. 344 e 347",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "pisCofinsAtivo": {
+    "valor": false,
+    "fonte": "PIS/Cofins extintos a partir de 2027 (ADCT art. 126; LC 214 art. 347)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "fatorIcmsIss": {
+    "valor": "1",
+    "fonte": "ADCT arts. 125-129: ICMS/ISS integrais até 2028; 90%, 80%, 70%, 60% em 2029-2032; extintos em 2033",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   }
+  },
+  "2029": {
+   "cbsReferencia": {
+    "valor": "0.113",
+    "fonte": "Referência cheia a partir de 2029 (ADCT art. 128); valor = 11,3% do TCU mantido (hipótese)",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22",
+    "aviso": "CBS de 2029 em diante: mantida em 11,3% (hipótese); o Senado fixa a referência ano a ano."
+   },
+   "cbsMenosPP": {
+    "valor": "0",
+    "fonte": "Sem redução de 0,1 p.p. a partir de 2029",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFixo": null,
+   "ibsFracaoPleno": {
+    "valor": "0.1",
+    "fonte": "ADCT art. 128-129: o IBS sobe enquanto ICMS/ISS caem na mesma proporção (10/20/30/40% em 2029-2032, pleno em 2033). A alíquota do IBS é fixada pelo Senado ano a ano: a fração do pleno é hipótese proporcional, não está na lei.",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22",
+    "aviso": "IBS de 2029 a 2033: fração proporcional da alíquota plena (10%, 20%, 30%, 40% e 100%), hipótese; o Senado fixa a referência ano a ano."
+   },
+   "cobraCbsIbs": {
+    "valor": true,
+    "fonte": "ADCT arts. 126-129; LC 214 arts. 344 e 347",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "pisCofinsAtivo": {
+    "valor": false,
+    "fonte": "PIS/Cofins extintos a partir de 2027 (ADCT art. 126; LC 214 art. 347)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "fatorIcmsIss": {
+    "valor": "0.9",
+    "fonte": "ADCT arts. 125-129: ICMS/ISS integrais até 2028; 90%, 80%, 70%, 60% em 2029-2032; extintos em 2033",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   }
+  },
+  "2030": {
+   "cbsReferencia": {
+    "valor": "0.113",
+    "fonte": "Referência cheia a partir de 2029 (ADCT art. 128); valor = 11,3% do TCU mantido (hipótese)",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22",
+    "aviso": "CBS de 2029 em diante: mantida em 11,3% (hipótese); o Senado fixa a referência ano a ano."
+   },
+   "cbsMenosPP": {
+    "valor": "0",
+    "fonte": "Sem redução de 0,1 p.p. a partir de 2029",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFixo": null,
+   "ibsFracaoPleno": {
+    "valor": "0.2",
+    "fonte": "ADCT art. 128-129: o IBS sobe enquanto ICMS/ISS caem na mesma proporção (10/20/30/40% em 2029-2032, pleno em 2033). A alíquota do IBS é fixada pelo Senado ano a ano: a fração do pleno é hipótese proporcional, não está na lei.",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22"
+   },
+   "cobraCbsIbs": {
+    "valor": true,
+    "fonte": "ADCT arts. 126-129; LC 214 arts. 344 e 347",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "pisCofinsAtivo": {
+    "valor": false,
+    "fonte": "PIS/Cofins extintos a partir de 2027 (ADCT art. 126; LC 214 art. 347)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "fatorIcmsIss": {
+    "valor": "0.8",
+    "fonte": "ADCT arts. 125-129: ICMS/ISS integrais até 2028; 90%, 80%, 70%, 60% em 2029-2032; extintos em 2033",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   }
+  },
+  "2031": {
+   "cbsReferencia": {
+    "valor": "0.113",
+    "fonte": "Referência cheia a partir de 2029 (ADCT art. 128); valor = 11,3% do TCU mantido (hipótese)",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22",
+    "aviso": "CBS de 2029 em diante: mantida em 11,3% (hipótese); o Senado fixa a referência ano a ano."
+   },
+   "cbsMenosPP": {
+    "valor": "0",
+    "fonte": "Sem redução de 0,1 p.p. a partir de 2029",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFixo": null,
+   "ibsFracaoPleno": {
+    "valor": "0.3",
+    "fonte": "ADCT art. 128-129: o IBS sobe enquanto ICMS/ISS caem na mesma proporção (10/20/30/40% em 2029-2032, pleno em 2033). A alíquota do IBS é fixada pelo Senado ano a ano: a fração do pleno é hipótese proporcional, não está na lei.",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22"
+   },
+   "cobraCbsIbs": {
+    "valor": true,
+    "fonte": "ADCT arts. 126-129; LC 214 arts. 344 e 347",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "pisCofinsAtivo": {
+    "valor": false,
+    "fonte": "PIS/Cofins extintos a partir de 2027 (ADCT art. 126; LC 214 art. 347)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "fatorIcmsIss": {
+    "valor": "0.7",
+    "fonte": "ADCT arts. 125-129: ICMS/ISS integrais até 2028; 90%, 80%, 70%, 60% em 2029-2032; extintos em 2033",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   }
+  },
+  "2032": {
+   "cbsReferencia": {
+    "valor": "0.113",
+    "fonte": "Referência cheia a partir de 2029 (ADCT art. 128); valor = 11,3% do TCU mantido (hipótese)",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22",
+    "aviso": "CBS de 2029 em diante: mantida em 11,3% (hipótese); o Senado fixa a referência ano a ano."
+   },
+   "cbsMenosPP": {
+    "valor": "0",
+    "fonte": "Sem redução de 0,1 p.p. a partir de 2029",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFixo": null,
+   "ibsFracaoPleno": {
+    "valor": "0.4",
+    "fonte": "ADCT art. 128-129: o IBS sobe enquanto ICMS/ISS caem na mesma proporção (10/20/30/40% em 2029-2032, pleno em 2033). A alíquota do IBS é fixada pelo Senado ano a ano: a fração do pleno é hipótese proporcional, não está na lei.",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22"
+   },
+   "cobraCbsIbs": {
+    "valor": true,
+    "fonte": "ADCT arts. 126-129; LC 214 arts. 344 e 347",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "pisCofinsAtivo": {
+    "valor": false,
+    "fonte": "PIS/Cofins extintos a partir de 2027 (ADCT art. 126; LC 214 art. 347)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "fatorIcmsIss": {
+    "valor": "0.6",
+    "fonte": "ADCT arts. 125-129: ICMS/ISS integrais até 2028; 90%, 80%, 70%, 60% em 2029-2032; extintos em 2033",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   }
+  },
+  "2033": {
+   "cbsReferencia": {
+    "valor": "0.113",
+    "fonte": "Referência cheia a partir de 2029 (ADCT art. 128); valor = 11,3% do TCU mantido (hipótese)",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22",
+    "aviso": "CBS de 2029 em diante: mantida em 11,3% (hipótese); o Senado fixa a referência ano a ano."
+   },
+   "cbsMenosPP": {
+    "valor": "0",
+    "fonte": "Sem redução de 0,1 p.p. a partir de 2029",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "ibsFixo": null,
+   "ibsFracaoPleno": {
+    "valor": "1",
+    "fonte": "ADCT art. 128-129: o IBS sobe enquanto ICMS/ISS caem na mesma proporção (10/20/30/40% em 2029-2032, pleno em 2033). A alíquota do IBS é fixada pelo Senado ano a ano: a fração do pleno é hipótese proporcional, não está na lei.",
+    "status": "ESTIMATIVA",
+    "atualizadoEm": "2026-11-22"
+   },
+   "cobraCbsIbs": {
+    "valor": true,
+    "fonte": "ADCT arts. 126-129; LC 214 arts. 344 e 347",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "pisCofinsAtivo": {
+    "valor": false,
+    "fonte": "PIS/Cofins extintos a partir de 2027 (ADCT art. 126; LC 214 art. 347)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   },
+   "fatorIcmsIss": {
+    "valor": "0",
+    "fonte": "ADCT arts. 125-129: ICMS/ISS integrais até 2028; 90%, 80%, 70%, 60% em 2029-2032; extintos em 2033",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22"
+   }
+  }
+ },
+ "totalEstimado2033": {
+  "valor": "0.265",
+  "fonte": "Fazenda (nota técnica 2024): 26,47% (25,65% a 27,29%); teto de 26,5% do art. 475 §§9-12 da LC 214 não é automático (gera projeto de lei)",
+  "status": "ESTIMATIVA",
+  "atualizadoEm": "2026-11-22",
+  "aviso": "Carga total de 2033 (CBS + IBS) estimada em 26,5%; o IBS pleno é esse total menos a CBS. Hipótese, não é número fixado em lei."
+ },
+ "pisCofins": {
+  "presumido": {
+   "pis": {
+    "valor": "0.0065",
+    "fonte": "Lei 9.718/1998 (cumulativo no Presumido em 2026)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22",
+    "conferir": true
+   },
+   "cofins": {
+    "valor": "0.03",
+    "fonte": "Lei 9.718/1998",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22",
+    "conferir": true
+   },
+   "creditaCompras": false
+  },
+  "real": {
+   "pis": {
+    "valor": "0.0165",
+    "fonte": "Lei 10.637/2002 (não cumulativo)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22",
+    "conferir": true
+   },
+   "cofins": {
+    "valor": "0.076",
+    "fonte": "Lei 10.833/2003 (não cumulativo)",
+    "status": "FATO",
+    "atualizadoEm": "2026-11-22",
+    "conferir": true
+   },
+   "creditaCompras": true
+  }
+ },
+ "simples": {
+  "limiteRBT12": {
+   "valor": "4800000",
+   "fonte": "LC 123 art. 3º (limite do Simples: R$ 4,8 milhões)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  "coberturaGabarito": {
+   "I": [
+    2,
+    4,
+    5
+   ],
+   "III": [
+    2,
+    3
+   ]
+  },
+  "issIcmsForaDoDasAPartirDaFaixa": {
+   "valor": 6,
+   "fonte": "Tabelas dos Anexos XVIII-XXII (LC 214): a partir da 6ª faixa a partilha não traz ICMS/ISS (recolhidos fora do DAS)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22",
+   "nota": "Sem gabarito: o motor soma ISS/ICMS informados (× fator do ano) por fora do DAS a partir desta faixa."
+  }
+ },
+ "mei": {
+  "2026": {
+   "icms": "1",
+   "iss": "5",
+   "cbs": "0",
+   "ibs": "0",
+   "fonte": "LC 123 art. 18-A (valores atuais)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  "2027": {
+   "icms": "1",
+   "iss": "5",
+   "cbs": "0.994",
+   "ibs": "0.006",
+   "fonte": "LC 214, Anexo XXIII (Anexo VII da LC 123)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  "2028": {
+   "icms": "1",
+   "iss": "5",
+   "cbs": "0.994",
+   "ibs": "0.006",
+   "fonte": "LC 214, Anexo XXIII (Anexo VII da LC 123)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  "2029": {
+   "icms": "0.9",
+   "iss": "4.5",
+   "cbs": "1",
+   "ibs": "0.2",
+   "fonte": "LC 214, Anexo XXIII (Anexo VII da LC 123)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  "2030": {
+   "icms": "0.8",
+   "iss": "4",
+   "cbs": "1",
+   "ibs": "0.4",
+   "fonte": "LC 214, Anexo XXIII (Anexo VII da LC 123)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  "2031": {
+   "icms": "0.7",
+   "iss": "3.5",
+   "cbs": "1",
+   "ibs": "0.6",
+   "fonte": "LC 214, Anexo XXIII (Anexo VII da LC 123)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  "2032": {
+   "icms": "0.6",
+   "iss": "3",
+   "cbs": "1",
+   "ibs": "0.8",
+   "fonte": "LC 214, Anexo XXIII (Anexo VII da LC 123)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  "2033": {
+   "icms": "0",
+   "iss": "0",
+   "cbs": "1",
+   "ibs": "2",
+   "fonte": "LC 214, Anexo XXIII (Anexo VII da LC 123)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  }
+ },
+ "reducoesPermitidas": {
+  "valor": [
+   "0",
+   "0.3",
+   "0.4",
+   "0.5",
+   "0.6",
+   "0.7",
+   "1"
+  ],
+  "fonte": "LC 214: reduções de 30%, 40%, 50%, 60%, 70% ou alíquota zero/isenção (100%)",
+  "status": "FATO",
+  "atualizadoEm": "2026-11-22"
+ },
+ "reducoes": [
+  {
+   "codigo": "nenhuma",
+   "descricao": "Sem redução",
+   "percentual": "0",
+   "fonte": "—",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "profissao_regulamentada",
+   "descricao": "Profissão intelectual regulamentada (contabilidade, advocacia, engenharia etc.)",
+   "percentual": "0.3",
+   "fonte": "LC 214 art. 127 (−30%; no app só no regime regular; PJ: todos os sócios habilitados, sem sócio PJ, sem atividade fora da habilitação)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "educacao",
+   "descricao": "Educação",
+   "percentual": "0.6",
+   "fonte": "LC 214 arts. 128-129 e Anexo II",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "saude",
+   "descricao": "Serviços de saúde",
+   "percentual": "0.6",
+   "fonte": "LC 214 art. 130 e Anexo III",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "dispositivos_medicos",
+   "descricao": "Dispositivos médicos, acessibilidade e medicamentos",
+   "percentual": "0.6",
+   "fonte": "LC 214 arts. 131-133",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "alimentos_higiene",
+   "descricao": "Alimentos, higiene e limpeza",
+   "percentual": "0.6",
+   "fonte": "LC 214 arts. 135-136",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "agro",
+   "descricao": "Agropecuária (in natura e insumos)",
+   "percentual": "0.6",
+   "fonte": "LC 214 arts. 137-138",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "cultura_eventos",
+   "descricao": "Cultura, eventos, audiovisual, esporte",
+   "percentual": "0.6",
+   "fonte": "LC 214 arts. 139-142",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "restaurantes_hotelaria",
+   "descricao": "Bares, restaurantes, hotelaria e parques",
+   "percentual": "0.4",
+   "fonte": "LC 214 arts. 273-276",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "imobiliario",
+   "descricao": "Operações com bens imóveis",
+   "percentual": "0.5",
+   "fonte": "LC 214 regime específico imobiliário (arts. 251 e seguintes)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "locacao_imoveis",
+   "descricao": "Locação, cessão onerosa e arrendamento de imóveis",
+   "percentual": "0.7",
+   "fonte": "LC 214 regime específico imobiliário",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "aliquota_zero",
+   "descricao": "Alíquota zero (cesta básica, hortifrúti, ovos etc.)",
+   "percentual": "1",
+   "fonte": "LC 214 art. 125 e Anexo I; arts. 147-148",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "outro",
+   "descricao": "Outro (informar o percentual e a base legal no motivo)",
+   "percentual": null,
+   "fonte": "Informado pelo usuário",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  }
+ ],
+ "premissaFornecedoresPadrao": "sem_imposto",
+ "avisosFixos": [
+  {
+   "codigo": "base_icms_iss",
+   "tipo": "estimativa",
+   "texto": "A lei não diz se IBS/CBS entram na base do ICMS/ISS durante a transição; o cálculo assume que não entram.",
+   "fonte": "CF art. 156-A §1º, IX e art. 195 §17 (silentes); LC 214 art. 12 §2º, V (ICMS/ISS fora da base de IBS/CBS até 2032)",
+   "status": "ESTIMATIVA"
+  },
+  {
+   "codigo": "simples_2026",
+   "tipo": "atencao",
+   "texto": "Tabela do Simples de 2026 (LC 123 vigente): conferir no Planalto; foi montada igual às faixas 1-5 da tabela de 2027-28 e 6ª faixa de 2029+.",
+   "fonte": "LC 123 Anexos I-V",
+   "status": "ESTIMATIVA"
+  },
+  {
+   "codigo": "arredondamento",
+   "tipo": "atencao",
+   "texto": "Arredondamento por linha (meio centavo para cima); a lei não define se é por documento ou por tributo.",
+   "fonte": "Convenção do app",
+   "status": "ESTIMATIVA"
+  }
+ ],
+ "prazosSimples": [
+  {
+   "codigo": "opcao_set_2026",
+   "texto": "Opção do Simples por IBS/CBS para jan-jun/2027: de 01/09 a 30/10/2026 (encerrada).",
+   "fonte": "Res. CGSN 194/2026 (25/09/2026)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "cancelamento_2026",
+   "texto": "Cancelamento da opção para jan-jun/2027: de 03/11 a 20/12/2026.",
+   "fonte": "Res. CGSN 194/2026 (25/09/2026)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  },
+  {
+   "codigo": "proxima_janela",
+   "texto": "Próxima janela de opção: março/2027 (vale jul-dez); opção semestral e irretratável no semestre.",
+   "fonte": "LC 123 art. 13 §10 (LC 227/2026)",
+   "status": "FATO",
+   "atualizadoEm": "2026-11-22"
+  }
+ ],
+ "meiLimiteAnual": {
+  "valor": "81000",
+  "fonte": "LC 123 art. 18-A §1º (receita bruta anual do MEI até R$ 81.000)",
+  "status": "FATO",
+  "atualizadoEm": "2026-11-22"
+ },
+ "fontes": {
+  "base": "LC 214 art. 12 §2º (base: valor menos ICMS, ISS e descontos incondicionais até 2032)",
+  "debito": "LC 214 (alíquota padrão × (1 − redução) sobre a base)",
+  "credito": "LC 214 art. 47 (crédito amplo de IBS/CBS das compras)",
+  "credito_simples": "LC 214 art. 47 §9º, II; LC 123 art. 23 §§1º-A, 2º e 3º (crédito = alíquota efetiva do fornecedor × % de partilha)",
+  "das": "LC 123 art. 18 e Anexos I-V (nova redação LC 214 Anexos XVIII-XXII)",
+  "partilha": "LC 214 Anexos XVIII-XXII (partilha do DAS)",
+  "faixa5": "LC 214 Anexos XX e XXI (nota da 5ª faixa: teto do ISS)",
+  "hibrido": "LC 214 art. 41 §§3º-4º; LC 123 art. 13 §9º (regime regular de IBS/CBS fora do DAS)",
+  "preco": "Cálculo do app: preço que mantém a margem, com CBS/IBS por fora",
+  "pis_cofins": "Leis 9.718/1998, 10.637/2002 e 10.833/2003",
+  "iss_icms": "ADCT arts. 125-129 (transição de ICMS/ISS)",
+  "mei": "LC 214 Anexo XXIII (Anexo VII da LC 123)",
+  "app": "Cálculo do app"
+ }
+}
