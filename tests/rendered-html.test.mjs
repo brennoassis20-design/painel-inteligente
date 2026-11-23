@@ -17,9 +17,10 @@ test("keeps the Painel Inteligente app ready for Vercel", async () => {
   assert.match(page, /Nichos em alta/);
   assert.match(page, /Copy de vendas/);
   assert.match(packageJson, /"build":\s*"next build --webpack"/);
-  assert.match(packageJson, /"next":\s*"16\.4\.0"/);
-  assert.match(vercelConfig, /"path":\s*"\/api\/trends\/refresh"/);
-  assert.match(vercelConfig, /"schedule":\s*"0 8 \*\/3 \* \*"/);
+  assert.match(packageJson, /"next":\s*"16\.4\.6"/);
+  assert.match(vercelConfig, /"path":\s*"\/api\/trends\/refresh\?market=br"/);
+  assert.match(vercelConfig, /"path":\s*"\/api\/trends\/refresh\?market=latam"/);
+  assert.match(vercelConfig, /"path":\s*"\/api\/membros\/lembrete-acesso"/);
   assert.doesNotMatch(packageJson, /vinext|wrangler|@cloudflare\/vite-plugin/);
 
   await access(new URL(".next/BUILD_ID", root));

@@ -3,9 +3,11 @@
 // Bancada de testes do App da Reforma (só em desenvolvimento): sem login, dados no navegador.
 // Em produção a página fica vazia. Abrir: http://localhost:3000/reforma-dev  (?kit=1 mostra o Kit liberado)
 import "../membros/membros.css";
+import { useRouter } from "next/navigation";
 import { ReformaApp } from "../membros/reforma/ReformaApp";
 
 export default function ReformaDev() {
+  const router = useRouter();
   if (process.env.NODE_ENV === "production") return null;
   const kit = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("kit") === "1";
   return (
@@ -20,7 +22,7 @@ export default function ReformaDev() {
           chamar={async () => ({})}
           marca="Reforma Desenhada"
           onAbrirProduto={() => undefined}
-          onAreaMembros={() => { window.location.href = "/membros"; }}
+          onAreaMembros={() => router.push("/membros")}
           forcarLocal
         />
       </main>

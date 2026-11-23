@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "public/mg/*.min.js", // biblioteca de terceiros já minificada (hls.js)
   ]),
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

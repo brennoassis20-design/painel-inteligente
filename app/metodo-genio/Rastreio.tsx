@@ -46,7 +46,8 @@ export function Rastreio({ valor, prefixo = "pagina-vendas" }: { valor: string; 
   useEffect(() => {
     const origem = lerOrigem();
     const presente = PRESENTES[(origem.coupon || "").toUpperCase()];
-    if (presente && Date.now() < new Date(presente.ate).getTime()) setFaixa(presente.texto);
+    // fora do corpo do efeito (regra react-hooks/set-state-in-effect); a origem só existe no navegador
+    if (presente && Date.now() < new Date(presente.ate).getTime()) queueMicrotask(() => setFaixa(presente.texto));
     const fonte = origem.utm_source || (document.referrer ? new URL(document.referrer).hostname : "direto");
 
     document.querySelectorAll<HTMLAnchorElement>("a[data-checkout]").forEach((link) => {

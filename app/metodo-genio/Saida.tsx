@@ -114,6 +114,8 @@ export function Saida() {
 
   // Sempre no DOM (escondido) para o Rastreio.tsx pôr as UTMs nos links ao abrir a página.
   return (
+    // Clique no fundo fecha; pelo teclado o Esc fecha (listener no document acima) e o botão × tem foco.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <div
       className="mg-saida"
       hidden={!passo}

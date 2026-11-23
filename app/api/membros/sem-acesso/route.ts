@@ -1,7 +1,15 @@
 import { jsonError, supabaseRest } from "@/lib/panel-server";
 import { logEvent } from "@/lib/membros";
 import { authAccountsByEmail } from "@/lib/membros-lembrete";
-import { ACCESS_EMAIL_KIND, REMINDER_KIND } from "@/lib/membros-lembrete-regra";
+import { ACCESS_EMAIL_KIND, REMINDER_KIND, type Account } from "@/lib/membros-lembrete-regra";
+
+type Conta = Account & { user_metadata?: { name?: string; full_name?: string } };
+type Item = {
+  email: string; nome: string | null; area_id: number; area_slug: string | null; area_nome: string | null;
+  provider: string; order_id: string; comprou_em: string; produtos: string[]; status: string[];
+  entrou: boolean; confirmou: boolean; tem_conta: boolean; interno: boolean; convidado_em: string | null;
+  emails_acesso: number; lembretes_app: number; lembretes_total: number; ultimo_lembrete_app: string | null;
+};
 
 export const maxDuration = 60;
 const enc = encodeURIComponent;
@@ -55,13 +63,13 @@ export async function GET(request: Request) {
     // equipe/dono/admin da área: nunca recebe lembrete
     const internos = new Set<string>([...admins.map((a) => a.email.toLowerCase()), ...areas.map((a) => (a.owner_email || "").toLowerCase()).filter(Boolean)]);
     const slugs = new Map(areas.map((a) => [a.id, a]));
-    const por = new Map<string, any>();
+    const por = new Map<string, Item>();
     for (const r of rows) {
       const e = r.email.trim().toLowerCase();
       const area = slugs.get(r.mp_products.area_id);
       const key = `${e}|${r.mp_products.area_id}|${r.order_id || ""}`;
-      const conta = accounts.get(e) as any;
-      const item = por.get(key) || {
+      const conta = accounts.get(e) as Conta | undefined;
+      const item: Item = por.get(key) || {
         email: e, nome: conta?.user_metadata?.name || conta?.user_metadata?.full_name || null,
         area_id: r.mp_products.area_id, area_slug: area?.slug || null, area_nome: area?.brand_name || null,
         provider: r.provider || "", order_id: r.order_id || "", comprou_em: r.created_at, produtos: [] as string[], status: [] as string[],
