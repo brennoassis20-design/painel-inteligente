@@ -9,7 +9,7 @@ export default function ReformaDev() {
   if (process.env.NODE_ENV === "production") return null;
   const kit = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("kit") === "1";
   return (
-    <div className="gp" style={{ ["--gp-accent" as string]: "#2dd4bf", ["--gp-on-accent" as string]: "#04201d", ["--gp-bg" as string]: "#0b1220" }}>
+    <div className="gp" style={{ ["--gp-accent" as string]: "#FFD23F", ["--gp-on-accent" as string]: "#17213A", ["--gp-bg" as string]: "#17213A" }}>
       <header className="gp-top gp-wrap">
         <span className="gp-logo">Reforma Desenhada</span>
       </header>
