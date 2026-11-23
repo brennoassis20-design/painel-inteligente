@@ -126,6 +126,7 @@ export function Resultado({ cliente, escritorio, onEditar, onVoltar }: { cliente
       <section className="rf-card rf-resumo" aria-label="Resumo">
         <span className="gp-eyebrow">Resumo</span>
         <p data-teste="frase">{frase(res, ano, f.nome, pj)}</p>
+        <p className="rf-mao" aria-hidden="true">↓ a tabela e o gráfico logo abaixo mostram o porquê</p>
         {a.semGabarito && <p className="rf-validacao">Faixa ainda em validação: este ano usa parâmetros estimados.</p>}
       </section>
 
@@ -333,7 +334,7 @@ export function Resultado({ cliente, escritorio, onEditar, onVoltar }: { cliente
       {/* 4. linha do tempo */}
       <section className="rf-card" aria-label="Linha do tempo 2026 a 2033">
         <h2>Linha do tempo 2026–2033</h2>
-        <Grafico dados={grafico(res)} anoFoco={ano} />
+        <Grafico dados={grafico(res)} anoFoco={ano} estimados={ANOS.filter((y) => res.anos[y].semGabarito)} />
       </section>
 
       {/* 6. memória */}

@@ -8,7 +8,13 @@ import { BotaoAulas, FormEscritorio, PrimeiroAcesso } from "./Escritorio";
 import { Clientes } from "./Clientes";
 import { NovoCliente } from "./NovoCliente";
 import { Resultado } from "./Resultado";
+import { Archivo_Black, Caveat, Inter } from "next/font/google";
 import "./reforma.css";
+
+const archivo = Archivo_Black({ subsets: ["latin"], weight: "400", variable: "--rf-f-titulo", display: "swap" });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "600", "800"], variable: "--rf-f-texto", display: "swap" });
+const caveat = Caveat({ subsets: ["latin"], weight: "700", variable: "--rf-f-mao", display: "swap" });
+const FONTES = `${archivo.variable} ${inter.variable} ${caveat.variable}`;
 
 export interface AcessoReforma {
   app: boolean;
@@ -56,7 +62,7 @@ export function ReformaApp({ acesso, chaveLocal, chamar, marca, onAbrirProduto, 
 
   if (erro && !dados) {
     return (
-      <div className="rf rf-centro">
+      <div className={`rf rf-centro ${FONTES}`}>
         <p className="rf-erro" role="alert">
           {erro}
         </p>
@@ -66,7 +72,7 @@ export function ReformaApp({ acesso, chaveLocal, chamar, marca, onAbrirProduto, 
       </div>
     );
   }
-  if (!dados) return <div className="rf rf-centro gp-muted">Carregando o app…</div>;
+  if (!dados) return <div className={`rf rf-centro gp-muted ${FONTES}`}>Carregando o app…</div>;
 
   const esc = dados.escritorio;
   const salvarEscritorio = async (e: Escritorio) => {
@@ -90,7 +96,7 @@ export function ReformaApp({ acesso, chaveLocal, chamar, marca, onAbrirProduto, 
 
   if (!esc.configurado) {
     return (
-      <div className="rf">
+      <div className={`rf ${FONTES}`}>
         <PrimeiroAcesso marca={marca} inicial={{ ...ESCRITORIO_VAZIO, ...esc }} onSalvar={salvarEscritorio} onAreaMembros={onAreaMembros} />
       </div>
     );
@@ -107,7 +113,7 @@ export function ReformaApp({ acesso, chaveLocal, chamar, marca, onAbrirProduto, 
   const clienteAberto = tela.t === "resultado" ? dados.clientes.find((c) => c.id === tela.id) : undefined;
 
   return (
-    <div className="rf">
+    <div className={`rf ${FONTES}`}>
       {emAba && (
         <nav className="rf-abas" aria-label="Seções do app">
           {abas.map((a) => (

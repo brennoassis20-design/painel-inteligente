@@ -8,7 +8,7 @@ function curto(v: number) {
   return v.toFixed(0);
 }
 
-export function Grafico({ dados, anoFoco }: { dados: GraficoDados; anoFoco: number }) {
+export function Grafico({ dados, anoFoco, estimados = [] }: { dados: GraficoDados; anoFoco: number; estimados?: number[] }) {
   const W = 640;
   const H = 280;
   const ml = 12;
@@ -27,6 +27,11 @@ export function Grafico({ dados, anoFoco }: { dados: GraficoDados; anoFoco: numb
       <figcaption>
         <b>{dados.titulo}</b>
         <span className="rf-legenda">
+          {estimados.length > 0 && (
+            <span>
+              <i className="cor-est" /> hachurado = ano com estimativa
+            </span>
+          )}
           {dados.series.map((s) => (
             <span key={s.nome}>
               <i className={`cor-${s.cor}`} /> {s.nome}
@@ -35,6 +40,12 @@ export function Grafico({ dados, anoFoco }: { dados: GraficoDados; anoFoco: numb
         </span>
       </figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${dados.titulo}. ${resumo}`}>
+        <defs>
+          <pattern id="rf-hachura" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="6" height="6" fill="#fff" />
+            <rect width="2.5" height="6" fill="currentColor" />
+          </pattern>
+        </defs>
         <line x1={ml} x2={W - ml} y1={H - mb} y2={H - mb} className="eixo" />
         {anos.map((ano, i) => {
           const x0 = ml + i * largGrupo + (largGrupo - largBarra * n) / 2;
@@ -47,7 +58,7 @@ export function Grafico({ dados, anoFoco }: { dados: GraficoDados; anoFoco: numb
                 const x = x0 + j * largBarra;
                 return (
                   <g key={s.nome}>
-                    <rect x={x} y={H - mb - h} width={largBarra - 2} height={h} rx="3" className={`barra cor-${s.cor}`}>
+                    <rect x={x} y={H - mb - h} width={largBarra - 2} height={h} rx="3" className={`barra cor-${s.cor}${estimados.includes(ano) ? " est" : ""}`}>
                       <title>{`${s.nome} em ${ano}: ${p.texto}`}</title>
                     </rect>
                     {n === 1 || ano === anoFoco ? (

@@ -1,4 +1,4 @@
-/* App da Reforma: mobile primeiro (390 px), depois desktop. Usa as variáveis da área (.gp): --gp-bg, --gp-accent, etc. */
+/* App da Reforma: mobile primeiro (390 px). Identidade "Reforma Desenhada" (creme, navy, sombra dura); as variáveis --gp-* são redefinidas só dentro de .rf. */
 .rf { --rf-card: color-mix(in srgb, var(--gp-bg), #fff 7%); --rf-linha: color-mix(in srgb, var(--gp-bg), #fff 18%); --rf-ok: #4ade80; --rf-alerta: #fbbf24; --rf-erro: #ff8a8a; max-width: 880px; margin: 0 auto; padding: 4px max(16px, env(safe-area-inset-left)) 40px max(16px, env(safe-area-inset-right)); font-size: 16px; line-height: 1.5; min-width: 0; }
 .rf *, .rf *::before, .rf *::after { box-sizing: border-box; }
 .rf h1 { font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; }
@@ -232,3 +232,129 @@
   .rf-logo-previa { width: 120px; height: 120px; }
 }
 @media (prefers-reduced-motion: reduce) { .rf-barra i { transition: none; } }
+
+/* ============ Identidade Reforma Desenhada ============ */
+.rf {
+  --navy: #17213a; --paper: #fffbf4; --yel: #ffd23f; --yel-esc: #c99a00; --yel-suave: #fff3c4; --red: #f2624d; --teal: #1fa58a; --blue: #3b7bf2; --lil: #8b7bf0;
+  --verde: #1b7f47; --mut: #56607a; --linha-clara: #dfe5f3; --linha-creme: #e7dfd2; --erro-txt: #b3261e;
+  --gp-bg: var(--paper); --gp-bg2: #fff; --gp-fg: var(--navy); --gp-muted: var(--mut); --gp-accent: var(--verde); --gp-on-accent: #fff; --gp-gold2: #2456c4; --gp-line: var(--linha-clara); --gp-display: var(--rf-f-titulo), "Archivo Black", Arial, sans-serif; --gp-body: var(--rf-f-texto), Inter, Arial, sans-serif;
+  --rf-card: #fff; --rf-linha: var(--linha-clara); --rf-ok: var(--verde); --rf-alerta: #8a6500; --rf-erro: var(--erro-txt);
+  background: var(--paper); background-image: radial-gradient(var(--linha-creme) 1.2px, transparent 1.2px); background-size: 22px 22px;
+  color: var(--navy); font-family: var(--gp-body); border-radius: 18px; padding-top: 14px; margin-block: 8px;
+}
+.rf h1, .rf h2, .rf-cliente-nome, .rf-memoria summary { font-family: var(--gp-display); font-weight: 400; letter-spacing: -0.3px; }
+.rf h1 { line-height: 1.05; }
+.rf h3, .rf h4 { font-weight: 800; }
+.rf b, .rf strong { font-weight: 800; }
+.rf .gp-eyebrow { color: var(--navy); background: var(--yel); display: inline-block; justify-self: start; padding: 4px 10px; border-radius: 99px; font-weight: 800; font-size: 11.5px; letter-spacing: 0.06em; }
+.rf .gp-pill { background: var(--yel); color: var(--navy); font-weight: 800; border: 0; }
+.rf .gp-pill.warn { background: var(--yel-suave); color: var(--navy); box-shadow: inset 0 0 0 1.5px var(--navy); }
+.rf a, .rf .gp-link { color: var(--gp-gold2); text-decoration: underline; text-underline-offset: 3px; }
+.rf-mao { font-family: var(--rf-f-mao), Caveat, cursive; font-weight: 700; font-size: 22px; line-height: 1.1; color: #b3261e; margin: 8px 0 0 !important; }
+.rf-resumo p[data-teste] { font: 800 17.5px/1.5 var(--gp-body); }
+
+/* botões: desenhados */
+.rf .gp-btn { border: 2.5px solid var(--navy); box-shadow: 5px 5px 0 var(--navy); border-radius: 12px; font-weight: 800; transition: transform 0.08s, box-shadow 0.08s; }
+.rf .gp-btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--navy); }
+.rf .gp-btn-gold { background: var(--verde); color: #fff !important; font-size: 17px; }
+.rf .gp-btn:not(.gp-btn-gold) { background: #fff; color: var(--navy) !important; }
+.rf .gp-btn.gp-btn.rf-perigo { background: var(--erro-txt); color: #fff !important; }
+.rf .gp-btn:disabled { opacity: 0.55; box-shadow: 3px 3px 0 var(--navy); }
+.rf .rf-medio { min-height: 44px; }
+.rf .gp-btn:focus-visible, .rf button:focus-visible, .rf summary:focus-visible, .rf a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.rf .gp-back.rf-voltar { color: var(--navy) !important; font-weight: 800; text-decoration: none; }
+
+/* cartões */
+.rf-card, .rf-cartao-cliente, .rf-sugestao, .rf-forn-item, .rf-boas-vindas { background: #fff; border: 2.5px solid var(--navy); border-radius: 14px; box-shadow: 6px 6px 0 var(--navy); }
+.rf-boas-vindas { background: #fff; }
+.rf-nota, .rf-revisao-linha, .rf-detalhe, .rf-setor-escolhido { background: #fff; border: 2px solid var(--navy); border-radius: 12px; }
+.rf-vazio { background: #fff; border: 2.5px dashed var(--navy); border-radius: 14px; }
+.rf-nota { font-size: 14.5px; }
+.rf-detalhe summary { font-weight: 800; }
+.rf-toast { background: #fde8e4; color: #7a1710; border: 2.5px solid var(--navy); box-shadow: 4px 4px 0 var(--navy); border-radius: 12px; font-weight: 600; }
+.rf-erro { color: var(--erro-txt); font-weight: 600; }
+.rf-fab-area, .rf-rodape-passos { background: linear-gradient(180deg, transparent, var(--paper) 35%); }
+
+/* abas */
+.rf-abas { background: #fff; border: 2.5px solid var(--navy); box-shadow: 4px 4px 0 var(--navy); border-radius: 14px; }
+.rf-abas button { color: var(--navy); font-weight: 800; }
+.rf-abas button.on { background: var(--yel); color: var(--navy); box-shadow: inset 0 0 0 2px var(--navy); }
+
+/* campos */
+.rf-campo > label, .rf-rotulo, .rf-escolha legend, .rf-cores legend { font-weight: 800; }
+.rf-campo > label em { color: var(--mut); }
+.rf-campo input, .rf-campo select, .rf-busca input, .rf-setores input[type="search"] { background: #fff; color: var(--navy); border: 2px solid var(--navy); border-radius: 12px; font-family: var(--gp-body); }
+.rf-campo input:focus, .rf-campo select:focus, .rf-busca input:focus, .rf-setores input[type="search"]:focus { outline: 3px solid var(--blue); outline-offset: 1px; }
+.rf-campo.tem-erro input, .rf-campo.tem-erro select { border-color: var(--erro-txt); box-shadow: 0 0 0 2px var(--erro-txt); }
+.rf-input-pre::before, .rf-input-pos::after { color: var(--mut); }
+.rf-opcao, .rf-caixa { background: #fff; border: 2px solid var(--navy); }
+.rf-opcao::before { border-color: var(--navy); background: #fff; }
+.rf-opcao.on, .rf-caixa.on { background: var(--yel-suave); border-color: var(--navy); box-shadow: 3px 3px 0 var(--navy); }
+.rf-opcao.on::before { border-color: var(--navy); background: radial-gradient(circle, var(--navy) 45%, #fff 50%); }
+.rf-opcao:focus-within, .rf-caixa:focus-within { outline: 3px solid var(--blue); outline-offset: 2px; }
+.rf-caixa input { accent-color: var(--verde); }
+.rf-setores-lista { border: 2px solid var(--navy); background: #fff; }
+.rf-grupo h3 { color: var(--navy); background: var(--yel-suave); border-radius: 6px; }
+.rf-setor:hover, .rf-setor:focus-visible { background: var(--yel-suave); }
+.rf-setor small { color: var(--mut); }
+.rf-cor { box-shadow: 0 0 0 2px var(--navy); }
+.rf-cor.on { border-color: #fff; box-shadow: 0 0 0 3px var(--navy); }
+.rf-logo-previa { border-color: var(--navy) !important; }
+.rf-termos summary { color: var(--gp-gold2); font-weight: 800; }
+
+/* passos */
+.rf-barra { background: #fff; border: 2px solid var(--navy); height: 12px; }
+.rf-barra i { background: var(--verde); border-radius: 99px; }
+.rf-progresso li { color: var(--mut); font-weight: 600; }
+.rf-progresso li span { border: 2px solid var(--navy); background: #fff; color: var(--navy); font-weight: 800; }
+.rf-progresso li.atual { color: var(--navy); font-weight: 800; }
+.rf-progresso li.atual span { background: var(--yel); color: var(--navy); border-color: var(--navy); box-shadow: 2px 2px 0 var(--navy); }
+.rf-progresso li.feito span { background: var(--verde); border-color: var(--navy); color: #fff; }
+
+/* avisos */
+.rf-status { border: 2px solid var(--navy); border-radius: 12px; font-weight: 600; }
+.rf-status.ok { background: #e3f5ea; border-color: var(--verde); color: #0d4527; }
+.rf-status.alerta { background: var(--yel-suave); border-color: var(--yel-esc); color: #4d3b00; }
+.rf-status.erro { background: #fde8e4; border-color: var(--erro-txt); color: #7a1710; }
+.rf-credito > div { border: 2px solid var(--navy); }
+.rf-credito-sim { background: #e3f5ea; border-color: var(--navy) !important; }
+.rf-credito-sim h3 { color: #0d4527; }
+.rf-credito-nao { background: #fde8e4; border-color: var(--navy) !important; }
+.rf-credito-nao h3 { color: #7a1710; }
+
+/* confirmação */
+.gp-modal.rf-modal { background: #17213acc; }
+.rf-dialogo.gp-sheet { background: #fff; border: 2.5px solid var(--navy); box-shadow: 6px 6px 0 var(--navy); border-radius: 14px; color: var(--navy); font-family: var(--gp-body); }
+.rf-dialogo p { color: var(--mut); }
+
+/* resultado */
+.rf-anos > span { color: var(--navy); font-weight: 800; }
+.rf-anos button { background: #fff; border: 2px solid var(--navy); color: var(--navy); font-weight: 800; box-shadow: 3px 3px 0 var(--navy); border-radius: 10px; }
+.rf-anos button.on { background: var(--yel); color: var(--navy); }
+.rf-resumo { background: var(--yel-suave); }
+.rf-validacao { color: var(--mut); }
+.rf-tabela th, .rf-tabela td { border-bottom: 1.5px dashed #d9cfbf; }
+.rf-tabela thead th { color: var(--navy); font-weight: 800; border-bottom: 2.5px solid var(--navy); }
+.rf-tabela small { color: var(--mut); }
+.rf-recomenda { background: var(--yel-suave); border: 2.5px solid var(--navy); box-shadow: 4px 4px 0 var(--navy); }
+.rf-prazo { color: var(--mut); }
+.rf-memoria li { border-top: 2px dashed #d9cfbf; }
+.rf-formula { color: var(--mut); }
+.rf-selo { background: var(--yel-suave); border: 2.5px dashed var(--navy); }
+.rf-selo h2 { color: var(--navy); font-size: 17px; }
+
+/* gráfico: DAS navy, híbrido coral; ano estimado = hachura */
+.rf-legenda { color: var(--navy); font-weight: 600; }
+.rf-legenda i { border: 2px solid var(--navy); }
+.rf-grafico .cor-a { fill: var(--navy); background: var(--navy); color: var(--navy); }
+.rf-grafico .cor-b { fill: var(--red); background: var(--red); color: var(--red); }
+.rf-grafico rect.barra { stroke: var(--navy); stroke-width: 2; }
+.rf-grafico rect.barra.est { fill: url(#rf-hachura); }
+.rf-grafico rect.barra.est.cor-a { color: var(--navy); }
+.rf-grafico rect.barra.est.cor-b { color: var(--red); }
+.rf-legenda i.cor-est { background: repeating-linear-gradient(45deg, #fff 0 3px, var(--navy) 3px 5px); }
+.rf-grafico .eixo { stroke: var(--navy); stroke-width: 2; }
+.rf-grafico .fundo-foco { fill: var(--yel); opacity: 0.45; }
+.rf-grafico text { fill: var(--mut); font-family: var(--gp-body); font-weight: 600; }
+.rf-grafico .valor { fill: var(--navy); font-weight: 800; }
+.rf-grafico .foco .ano { fill: var(--navy); font-weight: 800; }
