@@ -11,7 +11,7 @@ import { diasDasMetas, marcosLiberados, type Meta } from "./marcos.ts";
 import { diasLiberados, type Painel } from "./painel.ts";
 import type { OfertasChama } from "./precos.ts";
 import type { Versiculo } from "./pratica.ts";
-import { aplicarAcao, atualizarParaHoje, diffDias, dataSP, estadoVazio, horaSP, inicioSemana, premiarConvite, registrarAcesso, somarDias, somarXp, type Acao, type Estado, type Medalha } from "./regras.ts";
+import { aplicarAcao, atualizarParaHoje, diffDias, dataSP, estadoVazio, horaSP, inicioSemana, premiarConvite, registrarAcesso, somarDias, somarXp, XP, type Acao, type Estado, type Medalha } from "./regras.ts";
 
 export interface RespostaAcao extends Painel {
   completouDia: number | null;
@@ -91,6 +91,8 @@ export interface ArmazemLocal extends Armazem {
     zerar(): void;
     ganharXp(n: number): void;
     definirChama(dias: number): void;
+    /** Estado coerente de quem vem usando o app: N dias concluídos até ontem (histórico, checks, XP, semana e metas). Só bancada. */
+    simularHistorico(dias: number): void;
     /** Pula para a próxima segunda-feira 00h (fecha a semana da liga). */
     virarSemana(): void;
     /** Entram N membros reais simulados na liga (com fotos e alguns anônimos); 0 desliga. Passando do mínimo, o ranking vira "real". */
@@ -214,6 +216,32 @@ export function criarArmazemLocal(
         const g = ler();
         const hoje = hojeDe(g);
         g.estado = { ...g.estado, chama: dias, maior: Math.max(g.estado.maior, dias), ultimaData: dias > 0 ? somarDias(hoje, -1) : null, diasAtivos: Math.max(g.estado.diasAtivos ?? 0, dias) };
+        gravar(g);
+      },
+      simularHistorico(n) {
+        const g = ler();
+        const hoje = hojeDe(g);
+        const concluidos: Record<number, string> = {};
+        const checks: Estado["checks"] = {};
+        const xpSemana: Record<string, number> = {};
+        let xp = 0;
+        // Como no servidor: os 21 dias da jornada + só os últimos 30 dias contínuos vêm com data.
+        for (let k = 1; k <= n; k += 1) {
+          if (k > 21 && k <= n - 30) continue;
+          const data = somarDias(hoje, -(n - k + 1));
+          concluidos[k] = data;
+          checks[k] = { leu: true, orou: true, missao: true };
+        }
+        for (let k = 1; k <= n; k += 1) {
+          const dia = XP.leu + XP.orou + XP.missao + XP.bonusDia;
+          xp += dia;
+          const data = somarDias(hoje, -(n - k + 1));
+          const s = inicioSemana(data);
+          xpSemana[s] = (xpSemana[s] ?? 0) + dia;
+        }
+        const medalhas: Medalha[] = [...diasDasMetas(null)].filter((d) => d <= n).map((d) => `meta${d}`);
+        if (n >= 21) medalhas.push("jornada");
+        g.estado = { ...g.estado, chama: n, maior: Math.max(g.estado.maior, n), ultimaData: n > 0 ? somarDias(hoje, -1) : null, diasAtivos: n, inicio: n > 0 ? somarDias(hoje, -n) : null, concluidos, checks, xp, xpSemana, medalhas, brasas: Math.min(2, Math.floor(n / 7)), lembrete: "07:00" };
         gravar(g);
       },
       simularMembros(n) {

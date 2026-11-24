@@ -222,6 +222,12 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
     );
   }
 
+  const cab = (
+    <div className="ch-biblia-cab">
+      <h1>Bíblia</h1>
+      <button type="button" className="ch-icone-btn" aria-label="Buscar na Bíblia" aria-expanded={mostrarBusca} onClick={() => { setMostrarBusca((v) => !v); if (secao !== "ler" || livro) { setSecao("ler"); setLivro(null); } }}><IconeBusca /></button>
+    </div>
+  );
   const menu = biblia && (
     <div className="ch-biblia-menu" role="tablist" aria-label="Seções da Bíblia">
       {(
@@ -237,6 +243,7 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
   if (secao === "planos" && biblia) {
     return (
       <section className="ch-tela ch-biblia">
+        {cab}
         {menu}
         <BibliaPlanos painel={painel} agir={agir} toast={toast} onAbrir={abrir} onAtivarPush={onAtivarPush} />
         {avisoTela}
@@ -246,6 +253,7 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
   if (secao === "progresso" && biblia) {
     return (
       <section className="ch-tela ch-biblia">
+        {cab}
         {menu}
         <BibliaProgresso
           painel={painel}
@@ -265,6 +273,7 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
   if (secao === "estudo" && biblia) {
     return (
       <section className="ch-tela ch-biblia">
+        {cab}
         {menu}
         <BibliaEstudo painel={painel} agir={agir} onAbrir={abrir} />
         {avisoTela}
@@ -299,11 +308,8 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
       : null;
   return (
     <section className="ch-tela ch-biblia">
+      {cab}
       {menu}
-      <div className="ch-biblia-cab">
-        <h1>Bíblia</h1>
-        <button type="button" className="ch-icone-btn" aria-label="Buscar na Bíblia" aria-expanded={mostrarBusca} onClick={() => setMostrarBusca((v) => !v)}><IconeBusca /></button>
-      </div>
       <p className="ch-suave" style={{ margin: 0 }}>Grátis para sempre. Ler aqui não muda a sua jornada nem a sua chama.</p>
       {falha}
       {!indice && !erro && <p className="ch-suave">Abrindo…</p>}
