@@ -190,3 +190,26 @@
 
 /* Passo a passo de instalar aberto pelo botão "Instalar app" do topo */
 .ch.ch-modal-instalar { position: relative; z-index: 2; width: min(92vw, 420px); margin: auto; padding: 0; max-height: 100%; overflow: auto; }
+
+/* Bíblia e música da oração */
+.ch-nav.cinco { grid-template-columns: repeat(5, 1fr); }
+.ch-nav.cinco button { font-size: 12px; }
+.ch-biblia h2 { font-size: 17px; margin: 14px 0 8px; color: var(--ch-ouro); }
+.ch-biblia-busca { width: 100%; min-height: 52px; font: inherit; font-size: 17px; background: var(--ch-card); color: var(--ch-fg); border: 2px solid var(--ch-linha); border-radius: 14px; padding: 0 14px; }
+.ch-biblia-livros { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.ch-biblia-livros button { min-height: 48px; text-align: left; background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 12px; padding: 8px 12px; font-weight: 600; font-size: 16px; cursor: pointer; }
+.ch-biblia-grade { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.ch-biblia-grade button { min-height: 52px; background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 12px; font-weight: 800; font-size: 17px; cursor: pointer; }
+.ch-biblia-grade button:active, .ch-biblia-livros button:active { background: var(--ch-card2); border-color: var(--ch-ouro); }
+.ch-biblia-barra { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ch-biblia-fonte { display: flex; gap: 6px; }
+.ch-biblia-fonte button { min-width: 48px; min-height: 44px; background: var(--ch-card2); border: 1px solid var(--ch-linha); border-radius: 12px; font-weight: 800; cursor: pointer; }
+.ch-biblia-fonte button:disabled { opacity: 0.4; }
+.ch-biblia-texto { background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 18px; padding: 18px 16px; line-height: 1.65; }
+.ch-biblia-texto p { margin: 0 0 10px; }
+.ch-biblia-texto sup { color: var(--ch-fogo); font-weight: 800; font-size: 0.65em; margin-right: 2px; }
+.ch-biblia-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ch-biblia-credito { font-size: 12.5px; line-height: 1.45; color: var(--ch-suave); text-align: center; margin: 6px 0 0; }
+.ch-biblia-credito a { color: var(--ch-ouro); }
+.ch-som { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 999px; background: var(--ch-card2); border: 1px solid var(--ch-linha); font-weight: 700; font-size: 14px; cursor: pointer; }
+.ch-som[aria-pressed="true"] { border-color: var(--ch-ouro); color: var(--ch-ouro); }

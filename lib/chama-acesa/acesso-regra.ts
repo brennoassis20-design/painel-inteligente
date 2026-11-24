@@ -9,6 +9,8 @@
 export interface ChamaAcesso {
   app: boolean;
   pago: boolean;
+  /** A Bíblia é grátis para sempre: vale para qualquer logado na área, comprou ou não. */
+  biblia: boolean;
   checkoutUrl: string | null;
   oferta365Url: string | null;
   armazenamento: "supabase" | "local";
@@ -30,6 +32,11 @@ function urlSegura(valor: string | undefined): string | null {
   return /^https:\/\//i.test(v) ? v : null;
 }
 
+/** Bíblia dentro do app: sempre liberada para quem está logado na área, sem compra, sem dia 4 trancado, sem prazo. */
+export function bibliaLiberada(): boolean {
+  return true;
+}
+
 export function calcularAcesso(args: {
   areaSlug: string;
   produtos: { slug: string; owned: boolean }[];
@@ -44,6 +51,7 @@ export function calcularAcesso(args: {
   return {
     app: true,
     pago,
+    biblia: bibliaLiberada(),
     checkoutUrl: urlSegura(env.CHAMA_CHECKOUT_URL),
     oferta365Url: urlSegura(env.CHAMA_365_URL),
     armazenamento: (env.CHAMA_ARMAZENAMENTO || "supabase").trim().toLowerCase() === "local" ? "local" : "supabase",

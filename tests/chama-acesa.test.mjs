@@ -2,7 +2,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { inicioSemana, premiarConvite, tSemana, XP, aplicarAcao, atualizarParaHoje, dataSP, diaAtual, estadoVazio, podeAbrir, somarDias, statusDoDia, nivelChama } from "../lib/chama-acesa/regras.ts";
-import { calcularAcesso } from "../lib/chama-acesa/acesso-regra.ts";
+import { calcularAcesso, bibliaLiberada } from "../lib/chama-acesa/acesso-regra.ts";
+import { filtrarLivros, vizinho, ajustarFonte } from "../lib/chama-acesa/biblia.ts";
+import { PROGRESSAO } from "../lib/chama-acesa/musica-oracao.ts";
 import { normalizarDias } from "../lib/chama-acesa/dias.ts";
 import { montarSessao, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
 import { atualizarLiga, classificar, gerarBots, normalizarLigas, xpDoBot, zonaDe } from "../lib/chama-acesa/ligas.ts";
@@ -356,4 +358,52 @@ test("convite: +50 XP e 1 brasa guardada, respeitando o máximo de 2", () => {
   e = premiarConvite(premiarConvite(e, D0), D0);
   assert.equal(e.brasas, 2);
   assert.equal(e.amigos, 3);
+});
+
+test("bíblia: liberada sem compra e após o dia 3", () => {
+  const env = { CHAMA_AREA_SLUG: "chama-acesa", CHAMA_PRODUCT_SLUGS: "chama", NODE_ENV: "production" };
+  const semCompra = calcularAcesso({ areaSlug: "chama-acesa", produtos: [], admin: false, env });
+  assert.equal(semCompra?.pago, false);
+  assert.equal(semCompra?.biblia, true);
+  assert.equal(bibliaLiberada(), true);
+  // dia 4 trancado para quem não comprou, e a Bíblia continua aberta
+  let e = estadoVazio();
+  for (let d = 1; d <= 3; d++) {
+    const hoje = somarDias("2026-11-01", d - 1);
+    e = aplicarAcao(e, { tipo: "check", dia: d, check: "leu" }, hoje, false).estado;
+    e = aplicarAcao(e, { tipo: "check", dia: d, check: "orou" }, hoje, false).estado;
+    e = aplicarAcao(e, { tipo: "check", dia: d, check: "missao" }, hoje, false).estado;
+  }
+  assert.equal(podeAbrir(e, 4, "2026-11-04", false).ok, false);
+  assert.equal(semCompra?.biblia, true);
+});
+
+test("bíblia: dados completos, busca, vizinhos e fonte", () => {
+  const lerJson = (n) => JSON.parse(readFileSync(new URL(`../public/chama-acesa/biblia/${n}.json`, import.meta.url), "utf8"));
+  const indice = lerJson("indice");
+  assert.equal(indice.length, 66);
+  assert.equal(indice.filter((l) => l.testamento === "at").length, 39);
+  assert.equal(indice.find((l) => l.sigla === "gen").capitulos, 50);
+  assert.equal(indice.find((l) => l.sigla === "psa").capitulos, 150);
+  assert.equal(indice.find((l) => l.sigla === "rev").capitulos, 22);
+  assert.match(lerJson("joh").capitulos[2][15], /^Porque Deus amou ao mundo de tal maneira/);
+  assert.match(lerJson("gen").capitulos[0][0], /^No princípio criou Deus os céus e a terra/);
+  assert.match(lerJson("psa").capitulos[22][0], /O SENHOR é meu pastor, nada me faltará/);
+  assert.deepEqual(filtrarLivros(indice, "joao").map((l) => l.sigla), ["joh", "1jo", "2jo", "3jo"]);
+  assert.equal(filtrarLivros(indice, "genesis")[0].sigla, "gen");
+  assert.equal(filtrarLivros(indice, "1 jo")[0].nome, "1 João");
+  assert.deepEqual(vizinho(indice, { sigla: "gen", cap: 50 }, 1), { sigla: "exo", cap: 1 });
+  assert.deepEqual(vizinho(indice, { sigla: "exo", cap: 1 }, -1), { sigla: "gen", cap: 50 });
+  assert.equal(vizinho(indice, { sigla: "gen", cap: 1 }, -1), null);
+  assert.equal(vizinho(indice, { sigla: "rev", cap: 22 }, 1), null);
+  assert.equal(ajustarFonte(28, 1), 28);
+  assert.equal(ajustarFonte(20, -1), 18);
+});
+
+test("música da oração: acordes em tom maior, graves a agudos, sem batida", () => {
+  assert.equal(PROGRESSAO.length, 4);
+  for (const a of PROGRESSAO) {
+    assert.equal(a.length, 4);
+    assert.ok(a.every((f) => f > 80 && f < 600));
+  }
 });

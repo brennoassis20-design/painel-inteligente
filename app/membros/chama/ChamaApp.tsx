@@ -12,6 +12,8 @@ import { InstalarApp, useVisaoInstalar, type ForcarInstalacao } from "./Instalar
 import { compartilharCartao, gerarCartao, gerarPapelDeParede } from "@/lib/chama-acesa/cartao";
 import { atualizarSelo, completouHoje } from "@/lib/chama-acesa/selo";
 import { tagLink } from "@/lib/membros-utm";
+import { iniciarMusica, lerSomLigado, pararMusica, prepararAudio, salvarSomLigado } from "@/lib/chama-acesa/musica-oracao";
+import { Biblia } from "./Biblia";
 import { Chama } from "./Chama";
 import "./chama.css";
 
@@ -21,7 +23,7 @@ const FONTES = `${titulo.variable} ${texto.variable}`;
 
 const SEGUNDOS_ORACAO = 20;
 
-type Aba = "hoje" | "jornada" | "liga" | "conquistas";
+type Aba = "hoje" | "jornada" | "liga" | "biblia" | "conquistas";
 type Vista =
   | { v: "abas" }
   | { v: "passo"; dia: number; passo: Check }
@@ -332,7 +334,10 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             checks={estado.checks[atual]}
             jejum={Boolean(estado.jejum[atual])}
             chama={estado.chama}
-            onPasso={(passo) => irPara({ v: "passo", dia: atual, passo })}
+            onPasso={(passo) => {
+              if (passo === "orou") prepararAudio(); // o toque que abre a oração destrava o áudio no iPhone
+              irPara({ v: "passo", dia: atual, passo });
+            }}
             onJejum={(valor) => void agir({ tipo: "jejum", dia: atual, valor })}
             onPagamento={() => irPara({ v: "pagamento" })}
             onCelebracao={() => irPara({ v: "celebracao" })}
@@ -398,6 +403,8 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         </section>
       )}
 
+      {aba === "biblia" && <Biblia />}
+
       {aba === "conquistas" && (
         <section className="ch-tela">
           <h1>Conquistas</h1>
@@ -435,8 +442,8 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         </section>
       )}
 
-      <nav className="ch-nav quatro" aria-label="Seções do app">
-        {([["hoje", "🔥", "Hoje"], ["jornada", "🗺️", "Jornada"], ["liga", sit.liga.icone, "Liga"], ["conquistas", "🏅", "Conquistas"]] as const).map(([id, ic, nome]) => (
+      <nav className="ch-nav cinco" aria-label="Seções do app">
+        {([["hoje", "🔥", "Hoje"], ["jornada", "🗺️", "Jornada"], ["liga", sit.liga.icone, "Liga"], ["biblia", "📖", "Bíblia"], ["conquistas", "🏅", "Conquistas"]] as const).map(([id, ic, nome]) => (
           <button key={id} type="button" className={aba === id ? "on" : ""} aria-current={aba === id ? "page" : undefined} onClick={() => { setAba(id); window.scrollTo({ top: 0 }); }}>
             <span aria-hidden="true">{ic}</span>{nome}
           </button>
@@ -531,6 +538,29 @@ function Passo({ dia, passo, feito, onVoltar, onConcluir }: { dia: Dia; passo: C
     const t = window.setTimeout(() => setResta((r) => r - 1), 1000);
     return () => window.clearTimeout(t);
   }, [resta]);
+  const [som, setSom] = useState(lerSomLigado);
+  const orando = passo === "orou";
+  // Música só enquanto a oração está aberta: sai com fade ao fechar, marcar, trocar de aba ou ir para o segundo plano.
+  useEffect(() => {
+    if (!orando || !som) return;
+    iniciarMusica();
+    const fundo = () => {
+      if (document.visibilityState === "hidden") pararMusica(0.2);
+    };
+    document.addEventListener("visibilitychange", fundo);
+    window.addEventListener("pagehide", fundo);
+    return () => {
+      document.removeEventListener("visibilitychange", fundo);
+      window.removeEventListener("pagehide", fundo);
+      pararMusica();
+    };
+  }, [orando, som]);
+  const alternarSom = () => {
+    const novo = !som;
+    if (novo) prepararAudio(); // dentro do toque
+    salvarSomLigado(novo);
+    setSom(novo);
+  };
   const pct = passo === "orou" && !feito ? ((SEGUNDOS_ORACAO - resta) / SEGUNDOS_ORACAO) * 100 : 100;
   return (
     <div className="ch-cheia ch-passo">
@@ -545,6 +575,9 @@ function Passo({ dia, passo, feito, onVoltar, onConcluir }: { dia: Dia; passo: C
       )}
       {passo === "orou" && (
         <>
+          <button type="button" className="ch-som" aria-pressed={som} onClick={alternarSom}>
+            <span aria-hidden="true">{som ? "🔊" : "🔇"}</span>Música de fundo: {som ? "ligada" : "desligada"}
+          </button>
           <h1>Hora de orar</h1>
           <p className="ch-oracao">{dia.oracao}</p>
           <p className="ch-suave">Fale com Deus com as suas palavras também. Sem pressa.</p>
@@ -561,7 +594,7 @@ function Passo({ dia, passo, feito, onVoltar, onConcluir }: { dia: Dia; passo: C
         {feito ? (
           <button type="button" className="ch-btn ch-btn-grande" onClick={onVoltar}>Já concluído · voltar</button>
         ) : (
-          <button type="button" className="ch-btn ch-btn-grande ch-progresso" style={{ ["--p" as string]: `${pct}%` }} disabled={resta > 0} onClick={onConcluir}>
+          <button type="button" className="ch-btn ch-btn-grande ch-progresso" style={{ ["--p" as string]: `${pct}%` }} disabled={resta > 0} onClick={() => { if (orando) pararMusica(); onConcluir(); }}>
             {resta > 0 ? `Continue orando… ${resta}s` : passo === "leu" ? "Li a Palavra" : passo === "orou" ? "Amém, orei" : "Cumpri a missão"}
           </button>
         )}
