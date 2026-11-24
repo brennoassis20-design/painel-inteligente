@@ -187,3 +187,6 @@
 .ch-nav.quatro { grid-template-columns: repeat(4, 1fr); }
 .ch-dev-previa { background: #2a1a44; border-radius: 8px; padding: 8px 10px; margin-top: 6px; text-align: left; }
 .ch-dev select { min-height: 40px; background: #3b2563; color: #fff; border: 1px solid #8b5cf6; border-radius: 8px; padding: 0 6px; }
+
+/* Passo a passo de instalar aberto pelo botão "Instalar app" do topo */
+.ch.ch-modal-instalar { position: relative; z-index: 2; width: min(92vw, 420px); margin: auto; padding: 0; max-height: 100%; overflow: auto; }

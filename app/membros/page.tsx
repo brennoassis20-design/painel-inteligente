@@ -9,6 +9,7 @@ import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Pro
 import Login from "./Login";
 import { ReformaApp, type AcessoReforma } from "./reforma/ReformaApp";
 import { ChamaApp } from "./chama/ChamaApp";
+import { InstalarApp } from "./chama/Instalar";
 import { criarArmazemRemoto } from "@/lib/chama-acesa/armazem";
 import type { ChamaAcesso } from "@/lib/chama-acesa/acesso-regra";
 import { api, areaBase, areaHeaders, areaSlug, AuthError, brl, readSession, writeSession } from "./session";
@@ -842,6 +843,15 @@ export default function MembrosPage() {
         />
       )}
 
+      {home.chama?.app && installOpen && (
+        // Chama Acesa: o botão "Instalar app" do topo abre o passo a passo do próprio Chama (o genérico fala em Gênio Play).
+        <div className="gp-modal" role="dialog" aria-modal="true" aria-label="Instalar o Chama Acesa">
+          <button type="button" className="gp-backdrop" aria-label="Fechar" onClick={() => setInstallOpen(false)} />
+          <div className="ch ch-modal-instalar">
+            <InstalarApp forcar="auto" onFechar={() => setInstallOpen(false)} />
+          </div>
+        </div>
+      )}
       {!promoOpen && !offerOpen && !home.chama?.app && <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />}
 
       {trailer && (
