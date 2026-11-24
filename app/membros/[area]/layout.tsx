@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { getArea } from "@/lib/membros";
 import { appIcons } from "@/lib/membros-icones";
-import { areaDoChama, CHAMA_COR, CHAMA_ICONES, CHAMA_NOME } from "@/lib/chama-acesa/acesso-regra";
+import { areaDoChama, CHAMA_ICONES, CHAMA_NOME } from "@/lib/chama-acesa/acesso-regra";
+import { COR_DO_TEMA, SCRIPT_TEMA, TEMA_PADRAO } from "@/lib/chama-acesa/tema";
 
 // Chama Acesa: título, manifest, favicon e ícone do iPhone (apple-touch-icon 180) próprios, sem depender do cadastro da área.
 function chamaMetadata(slug: string): Metadata {
@@ -35,11 +36,20 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
 
 export async function generateViewport({ params }: Pick<Props, "params">): Promise<Viewport> {
   const slug = String((await params).area || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
-  if (slug === areaDoChama()) return { themeColor: CHAMA_COR, viewportFit: "cover" };
+  if (slug === areaDoChama()) // Barra do navegador: a cor do tema claro (padrão); o script do layout troca para o escuro se a pessoa escolheu.
+  if (slug === areaDoChama()) return { themeColor: COR_DO_TEMA[TEMA_PADRAO], viewportFit: "cover" };
   const area = await getArea(slug).catch(() => null);
   return { themeColor: area?.bg_color || "#0A0C12", viewportFit: "cover" };
 }
 
-export default function AreaLayout({ children }: Props) {
-  return children;
+export default async function AreaLayout({ params, children }: Props) {
+  const slug = String((await params).area || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  if (slug !== areaDoChama()) return children;
+  // Chama Acesa: aplica o tema salvo antes da primeira pintura, para a tela não piscar.
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      {children}
+    </>
+  );
 }
