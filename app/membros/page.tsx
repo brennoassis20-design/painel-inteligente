@@ -331,11 +331,15 @@ export default function MembrosPage() {
   const temChama = Boolean(home?.chama?.app);
   useEffect(() => {
     if (!temChama) return;
+    // Na área do Chama não há aulas: os produtos (grátis e pago) são só o acesso ao app. Qualquer ?p= (cadastro grátis,
+    // atalho salvo no iPhone com a URL do produto) abre o app, nunca a tela vazia "Nenhuma aula disponível".
     const query = new URLSearchParams(window.location.search);
-    if (!query.get("p") && !query.get("chama")) {
+    if (query.get("chama") !== "0" && !query.get("aula")) {
       window.history.replaceState(null, "", `${window.location.pathname}?chama=1`);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- lê o endereço de abertura do app instalado
+      /* eslint-disable react-hooks/set-state-in-effect -- lê o endereço de abertura do app instalado */
+      setSlug(null);
       setChamaAberto(true);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [temChama]);
   const armazemChama = useMemo(() => criarArmazemRemoto((path, init) => api(path, init)), []);
@@ -510,12 +514,15 @@ export default function MembrosPage() {
             // Cadastro grátis: vai direto para a primeira aula gratuita.
             if (info?.signup) {
               const data = await loadHome();
+              // Chama Acesa: o cadastro grátis abre o app (o efeito do temChama cuida disso), não o produto vazio.
+              if (data?.chama?.app) return;
               const free = data?.products.find((product) => product.is_free);
               if (free) go(free.slug);
             }
           }}
         />
-        <InstallGuide />
+        {/* Chama Acesa: a instrução de instalar fica dentro do app (Instalar.tsx), não a da "área de membros". */}
+        {areaSlug() !== "chama-acesa" && <InstallGuide />}
       </div>
     );
   }
@@ -835,7 +842,7 @@ export default function MembrosPage() {
         />
       )}
 
-      {!promoOpen && !offerOpen && <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />}
+      {!promoOpen && !offerOpen && !home.chama?.app && <InstallGuide key={installOpen ? "aberto" : "auto"} forceOpen={installOpen} onClose={() => setInstallOpen(false)} />}
 
       {trailer && (
         <div className="gp-modal" role="dialog" aria-modal="true" aria-label="Trailer">
