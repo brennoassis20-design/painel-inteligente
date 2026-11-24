@@ -14,11 +14,14 @@ export const maxDuration = 60;
 // A cada hora: (1) lembrete da hora escolhida pela pessoa e o das 21h (São Paulo), só para quem ainda não completou o dia,
 // com categoria e texto sorteados pela situação (lembretes-textos.json); (2) na hora CHAMA_COBRANCA_HORA (padrão 10), a
 // cobrança do dia 4 (push + e-mail) para quem completou o dia 3 ontem e não comprou. ?dry=1 só conta e mostra a prévia; ?hora=07 força a hora.
+// Aceita o CRON_SECRET (crons da Vercel) ou o CHAMA_CRON_SECRET, próprio do timer da VPS: o CRON_SECRET é variável
+// sensível na Vercel e não sai em `vercel env pull`, então a VPS usa uma senha só dela.
 function authorized(request: Request) {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return false;
+  const secrets = [process.env.CRON_SECRET, process.env.CHAMA_CRON_SECRET].map((s) => s?.trim()).filter(Boolean);
+  if (!secrets.length) return false;
   const bearer = (request.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i)?.[1];
-  return bearer === secret || new URL(request.url).searchParams.get("secret") === secret;
+  const query = new URL(request.url).searchParams.get("secret");
+  return secrets.some((secret) => bearer === secret || query === secret);
 }
 
 export async function GET(request: Request) {
