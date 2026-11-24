@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { areaDoChama } from "@/lib/chama-acesa/acesso-regra";
+import { PARCELA_PADRAO } from "@/lib/chama-acesa/precos";
 import { Comece } from "./Comece";
 
 // Página de vendas curta do Chama Acesa (membros.bagencymidia.site/chama-acesa/comece). Só existe para a área do app; as outras áreas dão 404.
@@ -18,5 +19,6 @@ export const metadata: Metadata = {
 export default async function ComecePage({ params }: { params: Promise<{ area: string }> }) {
   const slug = String((await params).area || "").toLowerCase();
   if (slug !== areaDoChama()) notFound();
-  return <Comece area={slug} />;
+  const parcela = process.env.CHAMA_PARCELA_VITALICIO === undefined ? PARCELA_PADRAO : process.env.CHAMA_PARCELA_VITALICIO.trim().slice(0, 40) || null;
+  return <Comece area={slug} parcelaVitalicio={parcela} />;
 }

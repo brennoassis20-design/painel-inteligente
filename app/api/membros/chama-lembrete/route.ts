@@ -3,7 +3,8 @@ import { areaUrl, getArea } from "@/lib/membros";
 import { pushParaUsuarios } from "@/lib/membros-avisos";
 import { areaDoChama } from "@/lib/chama-acesa/acesso-regra";
 import { rodarCobranca } from "@/lib/chama-acesa/cobranca";
-import { carregarLigas, carregarTextos } from "@/lib/chama-acesa/conteudo-servidor";
+import { carregarLigas, carregarMarcos, carregarTextos } from "@/lib/chama-acesa/conteudo-servidor";
+import { diasDasMetas } from "@/lib/chama-acesa/marcos";
 import { quemRecebe, registrarEnvio, type PerfilLembrete } from "@/lib/chama-acesa/lembretes";
 import { dataSP } from "@/lib/chama-acesa/regras";
 import { quemRecebeBiblia } from "@/lib/chama-acesa/biblia-estudo";
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     const perfis = await supabaseRest<PerfilLembrete[]>(
       `/chama_perfil?area_id=eq.${area.id}&horario_lembrete=not.is.null&select=user_id,nome,chama_atual,maior_chama,ultima_data,ultimo_acesso,horario_lembrete,dias_feitos,xp_semana,liga,lembretes_hist`,
     );
-    const entregas = quemRecebe(perfis, hora, hoje, textos, carregarLigas());
+    const entregas = quemRecebe(perfis, hora, hoje, textos, carregarLigas(), diasDasMetas(carregarMarcos()));
     let enviados = 0;
     if (!dry) {
       for (const { perfil, mensagem } of entregas) {

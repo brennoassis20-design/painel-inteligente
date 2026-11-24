@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { normalizarDias, type Dia } from "./dias";
+import { normalizarMarcos, type Meta } from "./marcos";
 import { normalizarLigas, type ConfigLigas } from "./ligas";
 import { normalizarTextos, type Texto } from "./lembretes";
 import { normalizarVersiculos, type Versiculo } from "./pratica";
@@ -37,4 +38,14 @@ export function carregarLigas(): ConfigLigas {
 
 export function carregarTextos(): Texto[] {
   return com("lembretes-textos.json", "lembretes-textos.exemplo.json", normalizarTextos, (v) => !v.length).dados;
+}
+
+export function carregarMarcos(): Meta[] {
+  return normalizarMarcos(lerJson("marcos.json"));
+}
+
+/** Banco de missões dos dias depois do 21 (missoes.json: lista de textos curtos). */
+export function carregarMissoes(): string[] {
+  const cru = lerJson("missoes.json");
+  return Array.isArray(cru) ? cru.map((m) => (typeof m === "string" ? m.trim() : "")).filter(Boolean) : [];
 }

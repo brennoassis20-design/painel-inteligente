@@ -1,7 +1,8 @@
 // Lembretes diários estilo Duolingo: quem recebe, qual categoria e qual texto. Lógica pura (testável);
 // a rota /api/membros/chama-lembrete só executa o que sai daqui.
 import { aleatorio, situacaoNaLiga, type ConfigLigas } from "./ligas.ts";
-import { diffDias, estadoVazio, MARCOS_CHAMA, type Estado, type LigaEstado } from "./regras.ts";
+import { DIAS_METAS_PADRAO, ehMeta, proximaMeta } from "./marcos.ts";
+import { diffDias, estadoVazio, type Estado, type LigaEstado } from "./regras.ts";
 
 export interface Texto { cat: string; tom: string; titulo: string; corpo: string }
 export type Tipo = "manha" | "noite";
@@ -64,6 +65,8 @@ export interface Contexto {
   posicao: number;
   zona: "sobe" | "desce" | "neutra";
   sobem: number;
+  /** Dias das metas (marcos.json). Sem isso vale a lista padrão. */
+  diasMetas?: readonly number[];
 }
 
 /** Quantos dias sem abrir o app. */
@@ -85,7 +88,7 @@ export function categoriaDoLembrete(c: Contexto): string | null {
   if (sumido === MAX_DIAS_SUMIDO) return "sumiu_14_dias";
   if (sumido >= 5) return "sumiu_5_dias";
   if (sumido >= 2) return "sumiu_2_dias";
-  if (c.chama > 0 && (MARCOS_CHAMA as readonly number[]).includes(c.chama + 1)) return "medalha_perto";
+  if (c.chama > 0 && ehMeta(c.chama + 1, c.diasMetas ?? DIAS_METAS_PADRAO)) return "medalha_perto";
   if (c.zona === "desce") return "liga_risco_descer";
   if (c.posicao > c.sobem && c.posicao <= c.sobem + 3 && c.zona === "neutra") return "liga_perto_subir";
   if (c.chama === 1 && c.maior > 1) return "voltou";
@@ -97,21 +100,22 @@ export interface Mensagem { tipo: Tipo | "checkout"; categoria: string; chave: s
 export interface Entrega { perfil: PerfilLembrete; mensagem: Mensagem }
 
 /** Monta a mensagem de um perfil num horário (ou null se não deve receber). */
-export function montarMensagem(p: PerfilLembrete, tipo: Tipo, hoje: string, hora: number, textos: Texto[], cfg: ConfigLigas, rnd?: () => number): Mensagem | null {
+export function montarMensagem(p: PerfilLembrete, tipo: Tipo, hoje: string, hora: number, textos: Texto[], cfg: ConfigLigas, rnd?: () => number, diasMetas: readonly number[] = DIAS_METAS_PADRAO): Mensagem | null {
   const e: Estado = { ...estadoVazio(), chama: p.chama_atual, xpSemana: p.xp_semana ?? {}, liga: p.liga ?? estadoVazio().liga };
   const sit = situacaoNaLiga(e, hoje, hora, p.user_id, cfg, p.nome ?? "Você");
   const ctx: Contexto = {
     tipo, hoje, chama: p.chama_atual, maior: p.maior_chama ?? p.chama_atual, ultimaData: p.ultima_data, ultimoAcesso: p.ultimo_acesso ?? null,
-    diasFeitos: p.dias_feitos ?? 0, posicao: sit.posicao, zona: sit.zona, sobem: cfg.sobem,
+    diasFeitos: p.dias_feitos ?? 0, posicao: sit.posicao, zona: sit.zona, sobem: cfg.sobem, diasMetas,
   };
   const cat = categoriaDoLembrete(ctx);
   if (!cat) return null;
   const texto = escolherTexto(textos, cat, p.lembretes_hist ?? {}, hoje, rnd ?? aleatorio(`${p.user_id}|${hoje}|${tipo}`));
   if (!texto) return null;
-  const proximoMarco = MARCOS_CHAMA.find((m) => m > p.chama_atual) ?? 21;
+  // Meta seguinte da chama, sem teto (a chama é infinita): "{meta}" nos textos é o número de dias da meta.
+  const proximoMarco = proximaMeta(p.chama_atual, diasMetas);
   const vars = {
     nome: (p.nome || "amigo").split(" ")[0], dias: p.chama_atual, liga: sit.liga.nome, posicao: sit.posicao,
-    meta: Math.max(1, proximoMarco - p.chama_atual), proximo_dia: Math.min(21, (p.dias_feitos ?? 0) + 1),
+    meta: proximoMarco, faltam: Math.max(1, proximoMarco - p.chama_atual), proximo_dia: (p.dias_feitos ?? 0) + 1,
   };
   return { tipo, categoria: cat, chave: chaveDoTexto(texto), titulo: preencher(texto.titulo, vars), corpo: preencher(texto.corpo, vars) };
 }
@@ -120,13 +124,13 @@ export function montarMensagem(p: PerfilLembrete, tipo: Tipo, hoje: string, hora
  * Quem recebe agora (hora = "HH" em São Paulo, hoje = AAAA-MM-DD). Só quem ligou o lembrete (tem horário) e ainda não completou hoje.
  * Manhã: a hora escolhida. Noite: 21h (quem escolheu 21h recebe só o da noite). A categoria e o texto vêm da situação da pessoa.
  */
-export function quemRecebe(perfis: PerfilLembrete[], hora: string, hoje: string, textos: Texto[], cfg: ConfigLigas): Entrega[] {
+export function quemRecebe(perfis: PerfilLembrete[], hora: string, hoje: string, textos: Texto[], cfg: ConfigLigas, diasMetas: readonly number[] = DIAS_METAS_PADRAO): Entrega[] {
   const out: Entrega[] = [];
   for (const p of perfis) {
     if (!p.horario_lembrete || p.ultima_data === hoje) continue;
     const tipo: Tipo | null = hora === String(HORA_NOITE) ? "noite" : p.horario_lembrete.slice(0, 2) === hora ? "manha" : null;
     if (!tipo) continue;
-    const mensagem = montarMensagem(p, tipo, hoje, Number(hora), textos, cfg);
+    const mensagem = montarMensagem(p, tipo, hoje, Number(hora), textos, cfg, undefined, diasMetas);
     if (mensagem) out.push({ perfil: p, mensagem });
   }
   return out;

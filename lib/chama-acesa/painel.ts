@@ -1,7 +1,9 @@
 // Monta o que a tela precisa (estado + conteúdo liberado). Usado pela rota do servidor e pelo armazém local.
 import type { Dia } from "./dias";
 import type { ConfigLigas } from "./ligas";
+import type { Meta } from "./marcos";
 import type { Versiculo } from "./pratica";
+import type { OfertasChama } from "./precos";
 import { DIAS_GRATIS, type Estado } from "./regras.ts";
 
 export interface Painel {
@@ -19,7 +21,13 @@ export interface Painel {
   /** Código de convite da pessoa e endereço do cadastro grátis (sem o ?ref=). */
   codigo: string;
   conviteBase: string;
+  /** Link antigo (pagamento único); só aparece se `ofertas` estiver sem links. */
   checkoutUrl: string | null;
+  ofertas: OfertasChama;
+  /** Metas da chama. O estudo só vem preenchido nas metas que a pessoa já alcançou (marcosLiberados). */
+  marcos: Meta[];
+  /** Banco de missões dos dias depois do 21. */
+  missoes: string[];
   oferta365Url: string | null;
   /** true = ainda é o conteúdo de exemplo (dias.json não existe). */
   exemplo: boolean;

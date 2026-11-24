@@ -1,6 +1,6 @@
 // Lado do servidor: lê e grava o estado da jornada nas tabelas chama_perfil e chama_dias (sempre filtrando por user_id).
 import { supabaseRest } from "@/lib/panel-server";
-import { premiarConvite, checksVazios, estadoVazio, type Aviso, type Checks, type Estado, type LigaEstado, type Medalha } from "./regras";
+import { premiarConvite, checksVazios, diasConcluidos, estadoVazio, TOTAL_DIAS, type Aviso, type Checks, type Estado, type LigaEstado, type Medalha } from "./regras";
 
 const enc = encodeURIComponent;
 
@@ -20,19 +20,26 @@ type LinhaPerfil = {
   ultimo_acesso: string | null;
   lembretes_hist: Record<string, string> | null;
   liga: LigaEstado | null;
+  dias_feitos: number | null;
 };
 type LinhaDia = { dia: number; concluido_em: string | null; checks: Partial<Checks> | null; jejum: boolean };
 
 /** Código curto de convite (primeiros 8 caracteres do id). */
 export const codigoDe = (userId: string) => userId.replace(/-/g, "").slice(0, 8).toLowerCase();
 
-const COLUNAS = "inicio,horario_lembrete,brasas,chama_atual,maior_chama,ultima_data,medalhas,avisos,xp,xp_semana,praticas,amigos,ultimo_acesso,lembretes_hist,liga";
+const COLUNAS = "inicio,horario_lembrete,brasas,chama_atual,maior_chama,ultima_data,medalhas,avisos,xp,xp_semana,praticas,amigos,ultimo_acesso,lembretes_hist,liga,dias_feitos";
+
+/** Quantos dias recentes (depois do 21) vêm do banco: a chama não tem limite e a lista de dias cresce por anos. */
+const DIAS_RECENTES = 30;
 
 export async function carregarEstado(userId: string): Promise<Estado> {
-  const [perfis, dias] = await Promise.all([
+  // Os 21 dias da jornada inicial inteiros + só os últimos dias contínuos. O total vem de chama_perfil.dias_feitos.
+  const [perfis, jornada, recentes] = await Promise.all([
     supabaseRest<LinhaPerfil[]>(`/chama_perfil?user_id=eq.${userId}&select=${COLUNAS}`),
-    supabaseRest<LinhaDia[]>(`/chama_dias?user_id=eq.${userId}&select=dia,concluido_em,checks,jejum&order=dia.asc`),
+    supabaseRest<LinhaDia[]>(`/chama_dias?user_id=eq.${userId}&dia=lte.${TOTAL_DIAS}&select=dia,concluido_em,checks,jejum&order=dia.asc`),
+    supabaseRest<LinhaDia[]>(`/chama_dias?user_id=eq.${userId}&dia=gt.${TOTAL_DIAS}&select=dia,concluido_em,checks,jejum&order=dia.desc&limit=${DIAS_RECENTES}`),
   ]);
+  const dias = [...jornada, ...recentes];
   const e = estadoVazio();
   const p = perfis[0];
   if (p) {
@@ -51,12 +58,14 @@ export async function carregarEstado(userId: string): Promise<Estado> {
     e.ultimoAcesso = p.ultimo_acesso;
     e.lembretesHist = p.lembretes_hist ?? {};
     e.liga = p.liga ? { ...e.liga, ...p.liga } : e.liga;
+    e.diasAtivos = p.dias_feitos ?? 0;
   }
   for (const d of dias) {
     if (d.concluido_em) e.concluidos[d.dia] = d.concluido_em;
     e.checks[d.dia] = { ...checksVazios(), ...(d.checks || {}) };
     if (d.jejum) e.jejum[d.dia] = true;
   }
+  e.diasAtivos = Math.max(e.diasAtivos, Object.keys(e.concluidos).length);
   return e;
 }
 
@@ -85,7 +94,7 @@ export async function salvarEstado(userId: string, areaId: number, e: Estado, no
       ultimo_acesso: e.ultimoAcesso,
       lembretes_hist: e.lembretesHist,
       liga: e.liga,
-      dias_feitos: Object.keys(e.concluidos).length,
+      dias_feitos: diasConcluidos(e),
       atualizado: agora,
     }),
   });

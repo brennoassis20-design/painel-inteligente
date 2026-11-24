@@ -27,6 +27,7 @@ export default function ChamaDev() {
       criarArmazemLocal("dev", {
         buscarConteudo: async () => (await (await fetch("/api/chama-dev")).json()) as Conteudo,
         checkoutUrl: "https://example.com/checkout-teste",
+        ofertas: { vitalicioUrl: "https://chk.eduzz.com/mznmfsl3", mensalUrl: "https://example.com/chama-mensal", parcelaVitalicio: "12x de R$ 15,20" },
         oferta365Url: "https://example.com/chama-365",
       }),
     [],
@@ -58,6 +59,7 @@ export default function ChamaDev() {
               <button type="button" onClick={() => mexer(() => armazem.dev.avancar(2))}>Pular 1 dia (esquecer um dia)</button>
               <button type="button" onClick={() => mexer(() => armazem.dev.alternarCompra())}>{info.pago ? "Desfazer compra" : "Simular compra"}</button>
               <button type="button" onClick={() => mexer(() => armazem.dev.ganharXp(50))}>Ganhar +50 XP</button>
+              {[69, 99, 999].map((n) => <button key={n} type="button" onClick={() => mexer(() => { armazem.dev.definirChama(n); })}>Chama em {n}</button>)}
               <button type="button" onClick={() => mexer(() => armazem.dev.virarSemana())}>Virar a semana</button>
               <button type="button" onClick={() => mexer(() => armazem.dev.simularAmigo())}>Amigo aceitou</button>
               <button type="button" className="perigo" onClick={() => mexer(() => armazem.dev.zerar())}>Zerar</button>

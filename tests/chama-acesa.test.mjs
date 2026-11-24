@@ -19,6 +19,11 @@ import { criarBibliaLocal } from "../lib/chama-acesa/armazem-biblia.ts";
 import { criarArmazemLocal } from "../lib/chama-acesa/armazem.ts";
 import { readFileSync } from "node:fs";
 import { completouHoje } from "../lib/chama-acesa/selo.ts";
+import { DIAS_METAS_PADRAO, diasDasMetas, ehMeta, marcosLiberados, metaDoDia, metasAlcancadas, normalizarMarcos, proximaMeta, temMeta } from "../lib/chama-acesa/marcos.ts";
+import { montarDiaContinuo, ORACOES_CONTINUAS } from "../lib/chama-acesa/continuo.ts";
+import { diasConcluidos, jornadaCompleta, MAX_DIA } from "../lib/chama-acesa/regras.ts";
+import { eduzz, kindDeContratoEduzz, statusDoAcesso } from "../lib/webhook-eduzz.ts";
+import { textosVitalicio, PARCELA_PADRAO } from "../lib/chama-acesa/precos.ts";
 
 const D0 = "2026-12-01";
 
@@ -135,7 +140,7 @@ test("virada de dia no fuso de São Paulo (UTC-3)", () => {
   assert.equal(podeAbrir(e, 2, dataSP(new Date("2026-12-01T03:10:00Z")), true).ok, true);
 });
 
-test("medalhas: 3, 7, 14, 21 dias de chama e jornada completa", () => {
+test("metas: 3, 7, 14, 21 dias de chama e jornada completa", () => {
   let e = estadoVazio();
   const vistas = {};
   for (let d = 1; d <= 21; d += 1) {
@@ -143,7 +148,7 @@ test("medalhas: 3, 7, 14, 21 dias de chama e jornada completa", () => {
     e = r.estado;
     for (const m of r.novasMedalhas) vistas[m] = d;
   }
-  assert.deepEqual(vistas, { chama3: 3, chama7: 7, chama14: 14, chama21: 21, jornada: 21 });
+  assert.deepEqual(vistas, { meta3: 3, meta7: 7, meta12: 12, meta14: 14, meta21: 21, jornada: 21 });
   assert.equal(e.chama, 21);
   assert.equal(diaAtual(e), 22);
   assert.equal(nivelChama(0), 0);
@@ -823,4 +828,257 @@ test("bancada: a Bíblia usa o relógio simulado e 'zerar' limpa também a Bíbl
   assert.ok(m, "prévia do lembrete com plano em andamento");
   a.dev.zerar();
   assert.equal((await a.biblia.carregar()).estado.plano, null);
+});
+
+
+// ============================================================ chama infinita, metas, dia contínuo, assinatura
+
+const lerJson = (n) => JSON.parse(readFileSync(new URL(`../lib/chama-acesa/${n}`, import.meta.url), "utf8"));
+
+// Estado de quem já está na chama N (21 dias feitos, chama contínua até ontem).
+function veterano(chama, hoje = D0) {
+  const concluidos = {};
+  for (let d = 1; d <= 21; d += 1) concluidos[d] = somarDias(hoje, -(chama - d + 1));
+  const total = Math.max(chama, 21);
+  concluidos[total] = somarDias(hoje, -1); // o último dia feito (ontem): é o que libera o seguinte
+  return { ...estadoVazio(), chama, maior: chama, ultimaData: somarDias(hoje, -1), concluidos, diasAtivos: total, medalhas: ["jornada"] };
+}
+
+test("chama infinita: passa do 21, do 100 e do 1000 sem travar, e o dia contínuo segue (22, 23...)", () => {
+  let e = veterano(21);
+  assert.equal(diaAtual(e), 22);
+  assert.equal(jornadaCompleta(e), true);
+  const r = completar(e, 22, D0);
+  assert.equal(r.estado.chama, 22);
+  assert.equal(r.estado.diasAtivos, 22);
+  assert.equal(diaAtual(r.estado), 23);
+  assert.equal(r.estado.concluidos[22], D0);
+  e = veterano(99);
+  assert.equal(completar(e, diaAtual(e), D0).estado.chama, 100);
+  e = veterano(999);
+  assert.equal(diaAtual(e), 1000);
+  const r1000 = completar(e, 1000, D0);
+  assert.equal(r1000.estado.chama, 1000);
+  assert.equal(r1000.estado.maior, 1000);
+  assert.ok(r1000.novasMedalhas.includes("meta1000"));
+  assert.equal(podeAbrir(r1000.estado, MAX_DIA + 1, D0, true).ok, false);
+});
+
+test("dia depois do 21: continua exigindo acesso pago, um dia por dia de calendário e o anterior feito", () => {
+  const e = veterano(21);
+  assert.equal(podeAbrir(e, 22, D0, true).ok, true);
+  assert.deepEqual(podeAbrir(e, 22, D0, false), { ok: false, motivo: "pagamento" }); // assinatura caiu: trava de novo
+  assert.deepEqual(podeAbrir(e, 24, D0, true), { ok: false, motivo: "anterior" });
+  const feito = completar(e, 22, D0).estado;
+  assert.deepEqual(podeAbrir(feito, 23, D0, true), { ok: false, motivo: "amanha" });
+  assert.equal(podeAbrir(feito, 23, somarDias(D0, 1), true).ok, true);
+  assert.equal(statusDoDia(feito, 22, D0, false), "feito"); // nada é apagado: o dia feito continua feito sem assinatura
+  assert.equal(feito.chama, 22);
+});
+
+test("anos de dias ativos: o total fica em diasAtivos mesmo com só os dias recentes carregados", () => {
+  // Servidor: 21 dias da jornada + últimos 30 dias contínuos carregados; o total vem de dias_feitos.
+  const concluidos = {};
+  for (let d = 1; d <= 21; d += 1) concluidos[d] = "2026-01-01";
+  for (let d = 771; d <= 800; d += 1) concluidos[d] = d === 800 ? somarDias(D0, -1) : "2028-01-01";
+  const e = { ...estadoVazio(), chama: 800, maior: 800, ultimaData: somarDias(D0, -1), concluidos, diasAtivos: 800 };
+  assert.equal(diasConcluidos(e), 800);
+  assert.equal(diaAtual(e), 801);
+  const r = aplicarAcao(e, { tipo: "check", dia: 801, check: "leu" }, D0, true);
+  assert.equal(r.erro, undefined);
+});
+
+test("níveis visuais da chama crescem sem limite: 30, 50, 100 e 365 dias", () => {
+  assert.deepEqual([0, 1, 2, 3, 7, 14, 21, 29, 30, 49, 50, 99, 100, 364, 365, 1000].map(nivelChama), [0, 1, 1, 2, 3, 4, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8]);
+});
+
+test("metas: disparam no dia exato, uma vez, e quem já tinha a medalha antiga não ganha de novo", () => {
+  const marcos = normalizarMarcos(lerJson("marcos.json"));
+  const dias = diasDasMetas(marcos);
+  for (const d of [3, 7, 12, 14, 21, 25, 30, 40, 50, 70, 75, 100, 120, 150, 153, 200, 300, 365, 490, 500, 1000]) assert.ok(dias.includes(d), `meta ${d}`);
+  let e = veterano(69);
+  const r = completar(e, diaAtual(e), D0);
+  assert.deepEqual(r.novasMedalhas, ["meta70"]);
+  assert.equal(metaDoDia(70, marcos).dia, 70);
+  assert.ok(!metaDoDia(70, marcos).generica);
+  // dia seguinte (71): nenhuma meta; voltar a 70 (chama apagou e subiu de novo) não repete a medalha.
+  const r71 = completar(r.estado, diaAtual(r.estado), somarDias(D0, 1));
+  assert.deepEqual(r71.novasMedalhas, []);
+  const refeita = { ...veterano(69), medalhas: ["jornada", "meta70"] };
+  assert.deepEqual(completar(refeita, diaAtual(refeita), D0).novasMedalhas, []);
+  // medalha antiga "chama7" vale como a meta 7
+  assert.equal(temMeta(["chama7"], 7), true);
+  const antigo = { ...veterano(21), chama: 6, medalhas: ["jornada", "chama3", "chama7"] };
+  assert.deepEqual(completar(antigo, diaAtual(antigo), D0).novasMedalhas, []);
+});
+
+test("metas: depois do 365 vem uma genérica a cada 100 dias (sem estudo próprio); metas fixas seguem valendo", () => {
+  assert.equal(ehMeta(400), true);
+  assert.equal(ehMeta(600), true);
+  assert.equal(ehMeta(1100), true);
+  assert.equal(ehMeta(401), false);
+  assert.equal(ehMeta(300, DIAS_METAS_PADRAO), true);
+  assert.equal(ehMeta(200, [3]), false); // lista própria sem o 200 e antes do 365: não é meta
+  const g = metaDoDia(600, [], DIAS_METAS_PADRAO);
+  assert.equal(g.generica, true);
+  assert.match(g.nome, /600/);
+  assert.ok(g.estudo.length > 100 && g.oracao && g.pergunta);
+  assert.equal(proximaMeta(0), 3);
+  assert.equal(proximaMeta(21), 25);
+  assert.equal(proximaMeta(365), 400);
+  assert.equal(proximaMeta(400), 490);
+  assert.equal(proximaMeta(500), 600);
+  assert.equal(proximaMeta(1000), 1100);
+  assert.equal(proximaMeta(1234), 1300);
+  const r = completar(veterano(599), 600, D0);
+  assert.deepEqual(r.novasMedalhas, ["meta600"]);
+  // as genéricas não colidem com as metas com estudo próprio (500 e 1000 usam o estudo da lista; 490 não é múltiplo de 100)
+  const marcos = normalizarMarcos(lerJson("marcos.json"));
+  assert.equal(metaDoDia(500, marcos).generica, undefined);
+  assert.equal(metaDoDia(1000, marcos).generica, undefined);
+  assert.equal(metaDoDia(400, marcos).generica, true);
+  assert.equal(metaDoDia(490, marcos).generica, undefined);
+});
+
+test("metas: estudo só de meta alcançada, XP bônus uma vez; servidor não manda o estudo das não alcançadas", () => {
+  const marcos = normalizarMarcos(lerJson("marcos.json"));
+  const e = { ...veterano(75), medalhas: ["meta70"] };
+  const bloqueada = aplicarAcao(e, { tipo: "estudo", dia: 100 }, D0, true);
+  assert.ok(bloqueada.erro);
+  const ok = aplicarAcao(e, { tipo: "estudo", dia: 70 }, D0, true);
+  assert.equal(ok.xpGanho, XP.estudo);
+  assert.equal(ok.estado.xp, XP.estudo);
+  const de_novo = aplicarAcao(ok.estado, { tipo: "estudo", dia: 70 }, D0, true);
+  assert.equal(de_novo.xpGanho, 0);
+  assert.equal(aplicarAcao(e, { tipo: "estudo", dia: 71 }, D0, true).erro !== undefined, true); // 71 não é meta
+  const lib = marcosLiberados(marcos, 75);
+  assert.ok(lib.find((m) => m.dia === 70).estudo);
+  assert.equal(lib.find((m) => m.dia === 100).estudo, "");
+  assert.deepEqual(metasAlcancadas({ medalhas: [], maior: 75 }, marcos).map((m) => m.dia).slice(0, 3), [75, 70, 50]);
+  assert.equal(metasAlcancadas({ medalhas: [], maior: 700 }, marcos)[0].dia, 700); // genérica já alcançada aparece
+});
+
+test("marcos.json: formato esperado, 21 metas e nenhum texto provisório", () => {
+  const cru = lerJson("marcos.json");
+  const m = normalizarMarcos(cru);
+  assert.equal(m.length, cru.length);
+  assert.deepEqual(m.map((x) => x.dia), [3, 7, 12, 14, 21, 25, 30, 40, 50, 70, 75, 100, 120, 150, 153, 200, 300, 365, 490, 500, 1000]);
+  for (const x of m) {
+    assert.ok(x.nome && x.referencia && x.versiculo && x.estudo && x.pergunta && x.oracao, `meta ${x.dia} completa`);
+    assert.ok(!/PROVISÓRIO/.test(JSON.stringify(x)), `meta ${x.dia} ainda provisória`);
+    assert.ok(x.estudo.split(/\n{2,}/).length >= 3, `meta ${x.dia}: estudo com 3 a 5 parágrafos`);
+  }
+});
+
+test("lembretes: medalha_perto usa as metas sem teto de 21 e {meta} é o número da meta", () => {
+  const base = { tipo: "manha", hoje: "2026-12-04", chama: 69, maior: 69, ultimaData: "2026-12-03", ultimoAcesso: "2026-12-03", diasFeitos: 69, posicao: 15, zona: "neutra", sobem: 7 };
+  assert.equal(categoriaDoLembrete({ ...base, chama: 69 }), "medalha_perto"); // amanhã é a meta 70
+  assert.equal(categoriaDoLembrete({ ...base, chama: 50 }), "manha_normal");
+  assert.equal(categoriaDoLembrete({ ...base, chama: 399 }), "medalha_perto"); // genérica 400
+  const perfil = { user_id: "u", nome: "Ana", chama_atual: 69, ultima_data: "2026-12-03", ultimo_acesso: "2026-12-03", horario_lembrete: "07:00", dias_feitos: 69, xp_semana: {}, lembretes_hist: {} };
+  const textos = [{ cat: "medalha_perto", tom: "x", titulo: "Perto", corpo: "Mais um dia: meta de {meta} dias, faltam {faltam}." }];
+  const m = quemRecebe([perfil], "07", "2026-12-04", textos, CFG_L)[0].mensagem;
+  assert.equal(m.corpo, "Mais um dia: meta de 70 dias, faltam 1.");
+});
+
+test("dia contínuo: Palavra do plano ativo; sem plano, versículo do dia; oração e missão que giram", () => {
+  const missoes = lerJson("missoes.json");
+  assert.ok(missoes.length >= 55);
+  const versiculos = normalizarVersiculos(lerJson("versiculos.json"));
+  const com = montarDiaContinuo({ dia: 40, missoes, versiculos, leitura: { nome: "João 3", plano: "Evangelho em 30 dias" } });
+  assert.equal(com.doPlano, true);
+  assert.equal(com.referencia, "João 3");
+  assert.match(com.reflexao, /João 3/);
+  const sem = montarDiaContinuo({ dia: 40, missoes, versiculos, leitura: null });
+  assert.equal(sem.doPlano, false);
+  assert.ok(sem.versiculo && sem.referencia);
+  assert.equal(com.missao, sem.missao);
+  assert.ok(missoes.includes(com.missao) && ORACOES_CONTINUAS.includes(com.oracao));
+  // estável no mesmo dia e variando de um dia para o outro
+  assert.equal(montarDiaContinuo({ dia: 40, missoes, versiculos }).missao, sem.missao);
+  const distintas = new Set(Array.from({ length: 30 }, (_, i) => montarDiaContinuo({ dia: 22 + i, missoes, versiculos }).missao));
+  assert.ok(distintas.size >= 25);
+  // vazio não quebra
+  assert.ok(montarDiaContinuo({ dia: 22, missoes: [], versiculos: [] }).missao);
+});
+
+test("missoes.json: curtas, em português e com Deus/Jesus/Bíblia/Senhor/Palavra em maiúscula", () => {
+  const m = lerJson("missoes.json");
+  assert.equal(new Set(m).size, m.length);
+  for (const t of m) {
+    assert.ok(t.length > 15 && t.length <= 140, t);
+    assert.ok(!/\b(deus|jesus|senhor|bíblia)\b/.test(t), `minúscula: ${t}`);
+    assert.ok(!/dieta|jejum/i.test(t), t);
+  }
+});
+
+test("acesso: assinatura em dia libera; caiu = só o grátis; Bíblia sempre; admin vê tudo; ofertas novas e legado", () => {
+  const env = { CHAMA_AREA_SLUG: "chama-acesa", CHAMA_PRODUCT_SLUGS: "chama-acesa-21-dias,chama-acesa-mensal", NODE_ENV: "production" };
+  const prod = (mensal, vital) => [{ slug: "chama-acesa-21-dias", owned: vital }, { slug: "chama-acesa-mensal", owned: mensal }];
+  const a = (produtos, admin = false, extra = {}) => calcularAcesso({ areaSlug: "chama-acesa", produtos, admin, env: { ...env, ...extra } });
+  assert.equal(a(prod(true, false)).pago, true); // assinatura mensal em dia
+  assert.equal(a(prod(false, true)).pago, true); // vitalício
+  const caiu = a(prod(false, false));
+  assert.equal(caiu.pago, false);
+  assert.equal(caiu.biblia, true);
+  assert.equal(a(prod(false, false), true).pago, true);
+  assert.equal(calcularAcesso({ areaSlug: "outra", produtos: [], admin: true, env }), null);
+  // links: novos + parcela padrão; legado como alternativa
+  const novo = a(prod(false, false), false, { CHAMA_CHECKOUT_VITALICIO_URL: "https://chk.eduzz.com/mznmfsl3", CHAMA_CHECKOUT_MENSAL_URL: "https://chk.eduzz.com/mensal", CHAMA_CHECKOUT_URL: "https://chk.eduzz.com/antigo" });
+  assert.equal(novo.ofertas.vitalicioUrl, "https://chk.eduzz.com/mznmfsl3");
+  assert.equal(novo.ofertas.parcelaVitalicio, PARCELA_PADRAO);
+  assert.equal(novo.checkoutUrl, "https://chk.eduzz.com/antigo");
+  assert.equal(a(prod(false, false), false, { CHAMA_PARCELA_VITALICIO: "12x de R$ 14,96" }).ofertas.parcelaVitalicio, "12x de R$ 14,96");
+  assert.equal(a(prod(false, false), false, { CHAMA_PARCELA_VITALICIO: "" }).ofertas.parcelaVitalicio, null);
+  assert.equal(a(prod(false, false), false, { CHAMA_CHECKOUT_VITALICIO_URL: "http://inseguro" }).ofertas.vitalicioUrl, null);
+  assert.deepEqual(textosVitalicio("12x de R$ 15,20"), { grande: "12x de R$ 15,20", apoio: "ou R$ 147 à vista" });
+  assert.deepEqual(textosVitalicio(null), { grande: "R$ 147 à vista ou parcelado", apoio: "pagamento único" });
+});
+
+test("webhook Eduzz: assinatura cancelada/inadimplente/suspensa tira o acesso; renovação e reativação devolvem", () => {
+  const contrato = (status, reason = "status_updated", contentAccess = {}) => ({
+    id: "e1", event: "myeduzz.contract_updated",
+    data: { products: [{ id: "3158827", name: "Chama" }], contract: { id: "C9", status, contentAccess }, customer: { name: "Ana", email: "Ana@Ex.com" }, reason },
+  });
+  for (const st of ["canceled", "defaulter", "suspended"]) {
+    const ev = eduzz(contrato(st));
+    assert.equal(ev.kind, "ended", st);
+    assert.equal(ev.email, "ana@ex.com");
+    assert.deepEqual(ev.externalIds, ["3158827"]);
+    assert.equal(statusDoAcesso(ev.kind), "expired");
+  }
+  assert.equal(eduzz(contrato("late")).kind, "ignored"); // tolerância da Eduzz: ainda não cortou
+  assert.equal(eduzz(contrato("late", "status_updated", { removeOnLatePayment: true })).kind, "ended");
+  assert.equal(eduzz(contrato("finished")).kind, "ignored"); // vitalício parcelado que terminou de pagar mantém o acesso
+  assert.equal(eduzz(contrato("finished", "status_updated", { removeOnContractEnd: true })).kind, "ended");
+  assert.equal(eduzz(contrato("upToDate", "reactivation")).kind, "approved");
+  assert.equal(eduzz(contrato("upToDate", "readjustment")).kind, "ignored");
+  assert.equal(eduzz(contrato("awaitingPayment")).kind, "ignored");
+  // renovação = fatura paga (acesso de volta)
+  const paga = eduzz({ event: "myeduzz.invoice_paid", id: "x", data: { id: "F1", buyer: { email: "ana@ex.com" }, items: [{ productId: "3158827" }], contract: { id: "C9" } } });
+  assert.equal(paga.kind, "approved");
+  assert.equal(statusDoAcesso(paga.kind), "active");
+  assert.equal(kindDeContratoEduzz({ status: "canceled" }, ""), "ended");
+});
+
+test("webhook Eduzz: compra única de outros produtos continua exatamente como antes", () => {
+  const inv = (event, extra = {}) => eduzz({ event, id: "ev", data: { id: "F77", buyer: { name: "Bia", email: "Bia@x.com" }, items: [{ productId: "555", parentId: "444" }], paid: { value: 27 }, utm: { source: "membros", medium: "cadeado" }, ...extra } });
+  const paga = inv("myeduzz.invoice_paid");
+  assert.deepEqual([paga.kind, paga.email, paga.externalIds, paga.orderId, paga.amount, paga.utmSource], ["approved", "bia@x.com", ["555", "444"], "F77", 27, "membros"]);
+  assert.equal(inv("myeduzz.invoice_refunded").kind, "refunded");
+  assert.equal(inv("myeduzz.invoice_chargeback").kind, "refunded");
+  assert.equal(inv("myeduzz.invoice_waiting_payment").kind, "pending");
+  assert.equal(inv("myeduzz.invoice_opened").kind, "pending");
+  assert.equal(inv("myeduzz.invoice_waiting_refund").kind, "ignored");
+  // cancelada/expirada de fatura (compra única não paga) segue ignorada: nada é tirado
+  assert.equal(inv("myeduzz.invoice_canceled").kind, "ignored");
+  assert.equal(inv("myeduzz.invoice_expired").kind, "ignored");
+  // eventos de contrato sem contrato válido não viram nada
+  assert.equal(eduzz({ event: "myeduzz.contract_created", data: { contract: { id: "C", status: "canceled" }, customer: { email: "a@b.c" }, products: [{ id: "1" }] } }).kind, "ignored");
+  // entrega customizada (create/remove) intacta
+  const entrega = eduzz({ type: "create", fields: { edz_cli_email: "C@x.com", edz_cnt_cod: "9", edz_fat_cod: "7" } });
+  assert.deepEqual([entrega.kind, entrega.email, entrega.rawType], ["approved", "c@x.com", "entrega_create"]);
+  assert.equal(eduzz({ type: "remove", fields: { edz_cli_email: "c@x.com", edz_cnt_cod: "9" } }).kind, "refunded");
+  // status de acesso: aprovado ativa, reembolso estorna, fim de assinatura expira; pendente/ignorado não gravam
+  assert.deepEqual(["approved", "refunded", "ended", "pending", "ignored"].map(statusDoAcesso), ["active", "refunded", "expired", null, null]);
 });

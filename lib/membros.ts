@@ -3,6 +3,7 @@
 // painel de administração e pelo conector de IA (MCP). Assim os dois fazem sempre o mesmo.
 import { createHash, randomBytes } from "node:crypto";
 import { getAuthAccount, inviteBuyer, setAuthMetadata, supabaseRest } from "@/lib/panel-server";
+import { statusDoAcesso } from "@/lib/webhook-eduzz";
 import { deliverSaleAccess } from "@/lib/membros-acesso-email";
 import { areaStats } from "@/lib/membros-stats";
 import { normalizeMedium, tagLink } from "@/lib/membros-utm";
@@ -586,7 +587,8 @@ export async function checkoutLink(
 
 export type SaleEvent = {
   provider: string;
-  kind: "approved" | "refunded" | "pending" | "ignored";
+  // "ended" = assinatura cancelada/atrasada/suspensa: o acesso acaba sem ser reembolso (só eventos de contrato da Eduzz).
+  kind: "approved" | "refunded" | "ended" | "pending" | "ignored";
   rawType: string;
   email: string;
   name?: string;
@@ -640,7 +642,7 @@ export async function applySale(event: SaleEvent, area: Area) {
   const valorPorProduto = valoresDaVenda(products, event.amount, products.some(isBump));
 
   for (const product of products) {
-    const status = event.kind === "approved" ? "active" : "refunded";
+    const status = statusDoAcesso(event.kind) ?? "refunded";
     const expires = event.kind === "approved" && product.access_days ? new Date(Date.now() + product.access_days * DAY_MS).toISOString() : null;
     await supabaseRest("/mp_access?on_conflict=email,product_id", {
       method: "POST",
@@ -655,7 +657,7 @@ export async function applySale(event: SaleEvent, area: Area) {
         updated_at: now(),
       }),
     });
-    await logEvent(product.area_id, event.email, product.id, event.kind === "approved" ? "compra" : "reembolso", {
+    await logEvent(product.area_id, event.email, product.id, event.kind === "approved" ? "compra" : event.kind === "ended" ? "assinatura_encerrada" : "reembolso", {
       provider: event.provider,
       order: event.orderId,
       ...(isBump(product) ? { bump: true } : {}),
@@ -670,7 +672,8 @@ export async function applySale(event: SaleEvent, area: Area) {
     // Produto do Método Gênio vendido fora da Cakto também libera o Painel Inteligente.
     // Prazo = access_days do produto (padrão 1 ano + 7 dias; 36500+ = vitalício). Nunca encurta um acesso maior.
     // Reembolso de complemento (produto oculto, ex.: Vitalício) não derruba o Painel do Gênio: fica para revisão.
-    if (product.special === "painel" && product.area_id === MAIN_AREA_ID && event.provider !== "cakto") {
+    // Fim de assinatura só fecha o acesso do produto (mp_access): nunca mexe nas permissões do Painel do Gênio.
+    if (product.special === "painel" && product.area_id === MAIN_AREA_ID && event.provider !== "cakto" && event.kind !== "ended") {
       if (event.kind !== "approved" && !product.published) {
         await logEvent(product.area_id, event.email, product.id, "reembolso_complemento_revisar", { provider: event.provider, order: event.orderId });
         continue;

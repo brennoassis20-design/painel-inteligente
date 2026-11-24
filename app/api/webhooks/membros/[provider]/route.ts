@@ -1,5 +1,6 @@
 import { applySale, type Area, type SaleEvent } from "@/lib/membros";
 import { jsonError, supabaseRest } from "@/lib/panel-server";
+import { eduzz } from "@/lib/webhook-eduzz";
 
 // Receptor universal de vendas: cada plataforma é traduzida para o mesmo formato.
 // Hotmart: autentica pelo hottok (cabeçalho X-HOTMART-HOTTOK). Demais: ?secret=.
@@ -46,61 +47,6 @@ function hotmart(payload: Json): SaleEvent {
     amount: money(obj(purchase.price).value) ?? money(obj(purchase.full_price).value),
     // Link da área: sck=membros_<medium>_<content> e src=<origem do aluno> (utm_term).
     ...hotmartOrigin(obj(purchase.origin)),
-  };
-}
-
-// Eduzz (Developer Hub, eventos myeduzz.*): data.buyer/student, data.items[].productId.
-function eduzz(payload: Json): SaleEvent {
-  // Entrega customizada da Eduzz: { type: "create" | "remove", fields: { edz_cli_email, edz_cnt_cod, ... } }
-  const fields = obj(payload.fields);
-  if (fields.edz_cli_email || payload.type === "create" || payload.type === "remove") {
-    const type = txt(payload.type).toLowerCase();
-    return {
-      provider: "eduzz",
-      kind: type === "create" ? "approved" : type === "remove" ? "refunded" : "ignored",
-      rawType: `entrega_${type || "teste"}`,
-      email: txt(fields.edz_cli_email).toLowerCase().trim(),
-      name: txt(fields.edz_cli_rsocial) || undefined,
-      externalIds: [txt(fields.edz_cnt_cod), fields.edz_cnt_paicod ? txt(fields.edz_cnt_paicod) : ""],
-      orderId: txt(fields.edz_fat_cod) || undefined,
-      bumpIds: ["1", "true"].includes(txt(fields.edz_order_bump_item).toLowerCase()) ? [txt(fields.edz_cnt_cod)] : [],
-      amount: money(fields.edz_valorpago),
-      utmSource: txt(fields.edz_gtr_param1) || null,
-      utmContent: txt(fields.edz_gtr_param4) || null,
-      utmCampaign: txt(fields.edz_gtr_param2) || null,
-      utmMedium: txt(fields.edz_gtr_param3) || null,
-      utmTerm: txt(fields.edz_gtr_param5) || null,
-    };
-  }
-  const data = obj(payload.data);
-  const type = txt(payload.event).toLowerCase();
-  const student = obj(data.student);
-  const buyer = obj(data.buyer);
-  const items = Array.isArray(data.items) ? (data.items as unknown[]).map(obj) : [];
-  const kind: SaleEvent["kind"] = /waiting_refund/.test(type)
-    ? "ignored"
-    : /invoice_paid/.test(type)
-      ? "approved"
-      : /refunded|chargeback/.test(type)
-        ? "refunded"
-        : /waiting_payment|invoice_opened/.test(type)
-          ? "pending"
-          : "ignored";
-  return {
-    provider: "eduzz",
-    kind,
-    rawType: type,
-    // Compra de presente: quem estuda é o "student"; senão, o comprador.
-    email: txt(student.email || buyer.email).toLowerCase().trim(),
-    name: txt(student.name || buyer.name) || undefined,
-    externalIds: items.flatMap((item) => [txt(item.productId), item.parentId ? txt(item.parentId) : ""]),
-    orderId: txt(data.id || payload.id),
-    amount: money(obj(data.paid).value) ?? money(obj(data.price).value),
-    utmSource: txt(obj(data.utm).source) || null,
-    utmContent: txt(obj(data.utm).content) || null,
-    utmCampaign: txt(obj(data.utm).campaign) || null,
-    utmMedium: txt(obj(data.utm).medium) || null,
-    utmTerm: txt(obj(data.utm).term) || null,
   };
 }
 

@@ -5,7 +5,9 @@ import type { Dia } from "./dias.ts";
 import { criarBibliaLocal, criarBibliaRemoto, type ArmazemBiblia, type ArmazemBibliaLocal } from "./armazem-biblia.ts";
 import { aleatorio, atualizarLiga, type ConfigLigas } from "./ligas.ts";
 import { escolherTexto, montarMensagem, perfilDeEstado, preencher, type Mensagem, type Texto, type Tipo } from "./lembretes.ts";
+import { diasDasMetas, marcosLiberados, type Meta } from "./marcos.ts";
 import { diasLiberados, type Painel } from "./painel.ts";
+import type { OfertasChama } from "./precos.ts";
 import type { Versiculo } from "./pratica.ts";
 import { aplicarAcao, atualizarParaHoje, diffDias, dataSP, estadoVazio, horaSP, inicioSemana, premiarConvite, registrarAcesso, somarDias, somarXp, type Acao, type Estado, type Medalha } from "./regras.ts";
 
@@ -35,6 +37,7 @@ export function criarArmazemRemoto(chamar: Chamada): Armazem {
       const corpo =
         acao.tipo === "check" ? { acao: "check", dia: acao.dia, check: acao.check }
         : acao.tipo === "jejum" ? { acao: "jejum", dia: acao.dia, valor: acao.valor }
+        : acao.tipo === "estudo" ? { acao: "estudo", dia: acao.dia }
         : acao.tipo === "lembrete" ? { acao: "lembrete", horario: acao.horario }
         : acao.tipo === "pratica" ? { acao: "pratica", acertos: acao.acertos, ids: acao.ids }
         : acao.tipo === "limparResultadoLiga" ? { acao: "limparResultadoLiga" }
@@ -53,7 +56,7 @@ interface Guardado {
   pago: boolean;
 }
 
-export interface Conteudo { dias: Dia[]; versiculos: Versiculo[]; ligas: ConfigLigas; textos: Texto[] }
+export interface Conteudo { dias: Dia[]; versiculos: Versiculo[]; ligas: ConfigLigas; textos: Texto[]; marcos?: Meta[]; missoes?: string[] }
 
 export interface ArmazemLocal extends Armazem {
   biblia: ArmazemBibliaLocal;
@@ -63,6 +66,7 @@ export interface ArmazemLocal extends Armazem {
     alternarCompra(): boolean;
     zerar(): void;
     ganharXp(n: number): void;
+    definirChama(dias: number): void;
     /** Pula para a próxima segunda-feira 00h (fecha a semana da liga). */
     virarSemana(): void;
     /** Um amigo convidado completou o dia 1: +50 XP e 1 brasa. */
@@ -78,7 +82,7 @@ export const SEMENTE_LOCAL = "dev";
 
 export function criarArmazemLocal(
   chave: string,
-  opcoes: { buscarConteudo: () => Promise<Conteudo>; storage?: Mem; checkoutUrl?: string | null; oferta365Url?: string | null; pagoInicial?: boolean; relogio?: () => string; conviteBase?: string },
+  opcoes: { buscarConteudo: () => Promise<Conteudo>; storage?: Mem; checkoutUrl?: string | null; ofertas?: OfertasChama; oferta365Url?: string | null; pagoInicial?: boolean; relogio?: () => string; conviteBase?: string },
 ): ArmazemLocal {
   const k = `chama-acesa:v2:${chave}`;
   const st: Mem | undefined = opcoes.storage ?? (typeof window !== "undefined" ? window.localStorage : undefined);
@@ -111,7 +115,8 @@ export function criarArmazemLocal(
   const painel = (g: Guardado, c: Conteudo): Painel => ({
     estado: g.estado, hoje: hojeDe(g), hora: horaSP(), pago: g.pago, dias: diasLiberados(c.dias, g.pago), versiculos: c.versiculos, ligas: c.ligas,
     semente: SEMENTE_LOCAL, nome: "Você", codigo: "dev12345", conviteBase: opcoes.conviteBase ?? "http://localhost:3000/membros/chama-dev",
-    checkoutUrl: opcoes.checkoutUrl ?? null, oferta365Url: opcoes.oferta365Url ?? null, exemplo: false,
+    checkoutUrl: opcoes.checkoutUrl ?? null, ofertas: opcoes.ofertas ?? { vitalicioUrl: null, mensalUrl: null, parcelaVitalicio: null },
+    marcos: marcosLiberados(c.marcos ?? [], g.estado.maior), missoes: c.missoes ?? [], oferta365Url: opcoes.oferta365Url ?? null, exemplo: false,
   });
   return {
     tipo: "local",
@@ -126,7 +131,7 @@ export function criarArmazemLocal(
     async agir(acao) {
       const c = await opcoes.buscarConteudo();
       const g = ler();
-      const r = aplicarAcao(emDia(g, c), acao, hojeDe(g), g.pago);
+      const r = aplicarAcao(emDia(g, c), acao, hojeDe(g), g.pago, diasDasMetas(c.marcos));
       if (r.erro) throw new Error(r.erro);
       g.estado = r.estado;
       gravar(g);
@@ -147,6 +152,13 @@ export function criarArmazemLocal(
       zerar() {
         st?.removeItem(k);
         biblia.dev.zerar();
+      },
+      definirChama(dias) {
+        // Bancada: põe a sequência num número qualquer (ex.: 1000) para ver a chama e as metas.
+        const g = ler();
+        const hoje = hojeDe(g);
+        g.estado = { ...g.estado, chama: dias, maior: Math.max(g.estado.maior, dias), ultimaData: dias > 0 ? somarDias(hoje, -1) : null, diasAtivos: Math.max(g.estado.diasAtivos ?? 0, dias) };
+        gravar(g);
       },
       ganharXp(n) {
         const g = ler();

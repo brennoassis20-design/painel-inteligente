@@ -13,7 +13,7 @@ const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 function emailHtml(area: Area, titulo: string, corpo: string, url: string) {
   return `<div style="font-family:system-ui,Arial,sans-serif;background:#0a0f1f;color:#f4f1ea;padding:28px;max-width:480px;margin:auto;border-radius:16px">
 <h2 style="margin:0 0 12px;color:#ffc857">${esc(titulo)}</h2><p style="font-size:16px;line-height:1.5">${esc(corpo)}</p>
-<p style="margin:24px 0"><a href="${esc(url)}" style="background:#ff8a1f;color:#2a1200;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:12px;display:inline-block">Continuar a minha jornada</a></p>
+<p style="margin:24px 0"><a href="${esc(url)}" style="background:#ff8a1f;color:#2a1200;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:12px;display:inline-block">Escolher como continuar</a></p>
 <p style="font-size:12px;color:#aab2cf">${esc(area.brand_name)}</p></div>`;
 }
 
@@ -37,12 +37,15 @@ export async function rodarCobranca(area: Area, hoje: string, textos: Texto[], d
   }
   const alvos = quemRecebeCobranca(cands, hoje, textos);
   if (dry) return { candidatos: alvos.length, enviados: 0, emails: 0, previa: alvos.map((a) => ({ titulo: a.titulo, corpo: a.corpo })) };
-  const checkout = process.env.CHAMA_CHECKOUT_URL?.trim();
+  // Com as ofertas novas (vitalício e mensal) o aviso abre o app, onde as duas opções aparecem lado a lado;
+  // sem elas, cai no checkout antigo (CHAMA_CHECKOUT_URL).
+  const duasOfertas = Boolean(process.env.CHAMA_CHECKOUT_VITALICIO_URL?.trim() || process.env.CHAMA_CHECKOUT_MENSAL_URL?.trim());
+  const checkout = duasOfertas ? `${areaUrl(area)}/?app=1` : process.env.CHAMA_CHECKOUT_URL?.trim();
   let enviados = 0;
   let mails = 0;
   for (const a of alvos) {
     const email = emails.get(a.candidato.user_id)!;
-    const link = (medium: "aviso-push" | "aviso-email") => (checkout && /^https:\/\//.test(checkout) ? tagLink(checkout, { medium, campaign: "chama-acesa", content: "dia-4", provider: "eduzz", email }).url : "");
+    const link = (medium: "aviso-push" | "aviso-email") => (checkout && /^https:\/\//.test(checkout) ? (duasOfertas ? checkout : tagLink(checkout, { medium, campaign: "chama-acesa", content: "dia-4", provider: "eduzz", email }).url) : "");
     enviados += await pushParaUsuarios(area.id, [a.candidato.user_id], { title: a.titulo, body: a.corpo, url: link("aviso-push") || `${areaUrl(area)}/?app=1`, tag: "chama-cobranca" });
     if (brevoReady(area) && link("aviso-email")) {
       try {

@@ -6,6 +6,8 @@ import { Archivo_Black, Inter } from "next/font/google";
 import { Chama } from "../../chama/Chama";
 import "../../chama/chama.css";
 import "./comece.css";
+import { OfertasBloco } from "../../chama/Ofertas";
+import type { OfertasChama } from "@/lib/chama-acesa/precos";
 import { captureUtm, loadPixel, readUtm, track } from "../../pixel";
 
 const titulo = Archivo_Black({ subsets: ["latin"], weight: "400", variable: "--ch-f-titulo", display: "swap" });
@@ -31,11 +33,12 @@ const PRINTS = [
   { arq: "checks-feitos", alt: "Tela de dia concluído com a chama crescendo", legenda: "Chama de dias seguidos que cresce a cada dia" },
   { arq: "pratica", alt: "Prática de versículos: completar a palavra que falta", legenda: "Prática para fixar os versículos" },
   { arq: "jornada", alt: "Mapa da jornada de 21 dias", legenda: "A jornada de 21 dias, dia a dia" },
-  { arq: "medalhas", alt: "Tela de conquistas com medalhas", legenda: "Medalhas pelas marcas de 3, 7, 14 e 21 dias" },
+  { arq: "medalhas", alt: "Tela de conquistas com medalhas", legenda: "Metas e medalhas pelos dias de chama" },
 ];
 
 const RECURSOS: [string, string][] = [
-  ["Versículo do dia", "Um versículo e uma reflexão curta, escritos para cada um dos 21 dias."],
+  ["Versículo do dia", "Um versículo e uma reflexão curta em cada um dos 21 dias da jornada. Depois, a Palavra do seu plano de leitura."],
+  ["Metas com estudo bíblico", "A cada meta da chama (7, 30, 70, 100 dias e além) um estudo sobre o número, para reler quando quiser."],
   ["Oração guiada", "Com música de fundo, que você pode ligar ou desligar."],
   ["Missão prática", "Uma tarefa pequena por dia, para tirar a Palavra do papel."],
   ["Chama de dias seguidos", "Ela cresce a cada dia completo. Brasas guardadas protegem a chama se você faltar."],
@@ -49,12 +52,16 @@ const PERGUNTAS: [string, string][] = [
   ["Preciso de cartão para começar?", "Não. O cadastro é grátis, só com e-mail, e os 3 primeiros dias não pedem cartão nem pagamento."],
   ["E se eu perder um dia?", "Cada dia do app abre uma vez por dia de calendário. Se você pular um dia, o app usa uma brasa guardada para manter a chama acesa. Você ganha uma brasa a cada 7 dias seguidos (guarda até 2) e mais uma quando um amigo convidado completa o dia 1. Sem brasa, a chama volta a zero, mas os dias que você já fez continuam feitos e você retoma de onde parou."],
   ["Quanto tempo por dia?", "Cerca de 5 minutos: ler o versículo, fazer a oração e cumprir a missão do dia."],
-  ["A Bíblia é paga?", "Não. A Bíblia dentro do app é grátis para sempre, mesmo sem comprar os 21 dias."],
+  ["A Bíblia é paga?", "Não. A Bíblia dentro do app é grátis para sempre, mesmo sem assinar ou comprar."],
+  ["Posso cancelar?", "Sim. No plano mensal você cancela quando quiser, sem multa. O vitalício é um pagamento único."],
+  ["E se eu cancelar?", "O seu progresso fica guardado e a Bíblia continua grátis. Só os dias pagos voltam a ficar trancados até você retomar."],
+  ["E depois dos 21 dias?", "A chama continua. Todo dia tem a Palavra (o capítulo do seu plano de leitura ou um versículo), uma oração e uma missão. A sequência não tem limite, e a cada meta (7, 30, 70, 100 dias e mais) você ganha um estudo bíblico."],
 ];
 
-export function Comece({ area }: { area: string }) {
+export function Comece({ area, parcelaVitalicio }: { area: string; parcelaVitalicio: string | null }) {
   const [href, setHref] = useState("/chama-acesa/gratis");
   const disparou = useRef(false);
+  const ofertas: OfertasChama = { vitalicioUrl: null, mensalUrl: null, parcelaVitalicio };
 
   useEffect(() => {
     captureUtm();
@@ -135,10 +142,16 @@ export function Comece({ area }: { area: string }) {
               <span>Você usa o app de verdade e vê se faz sentido para a sua rotina.</span>
             </li>
             <li>
-              <b>Depois, R$ 37 uma vez</b>
-              <span>Libera os 21 dias completos. Um pagamento só, sem mensalidade.</span>
+              <b>Depois, você escolhe como continuar</b>
+              <span>Vitalício (R$ 147, em até 12x) ou mensal (R$ 19,90 por mês, cancele quando quiser). A chama segue além dos 21 dias.</span>
             </li>
           </ol>
+        </section>
+
+        <section className="cm-sec" aria-labelledby="cm-preco">
+          <h2 id="cm-preco">Quanto custa depois dos 3 dias grátis</h2>
+          <OfertasBloco ofertas={ofertas} />
+          <p className="cm-mini">Cadastro e os 3 primeiros dias são grátis. A Bíblia no app é grátis para sempre.</p>
         </section>
 
         <section className="cm-sec" aria-labelledby="cm-duvidas">

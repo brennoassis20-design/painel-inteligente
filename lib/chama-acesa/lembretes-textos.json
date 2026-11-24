@@ -189,7 +189,7 @@
     "cat": "medalha_perto",
     "tom": "engracado",
     "titulo": "Uma medalha te espera 🏅",
-    "corpo": "Falta 1 dia para a medalha de {meta} dias. Não vai deixar escapar né?"
+    "corpo": "Falta 1 dia para a meta de {meta} dias. Não vai deixar escapar né?"
   },
   {
     "cat": "medalha_perto",
@@ -267,7 +267,7 @@
     "cat": "checkout_dia4",
     "tom": "carinhoso",
     "titulo": "Você começou tão bem ❤️",
-    "corpo": "3 dias seguidos com Deus. Libera os outros 18 e termina o que começou."
+    "corpo": "3 dias seguidos com Deus. Continue de onde parou e termine o que começou."
   },
   {
     "cat": "checkout_dia4",

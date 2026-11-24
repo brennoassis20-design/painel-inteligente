@@ -1,17 +1,24 @@
 // Regra pura (sem banco): quem usa o Chama Acesa e quem já pagou.
 //   CHAMA_AREA_SLUG            área onde o app existe (padrão: chama-acesa)
-//   CHAMA_PRODUCT_SLUGS        slugs dos produtos que liberam os 21 dias (compra aprovada no webhook Eduzz)
-//   CHAMA_CHECKOUT_URL         checkout Eduzz mostrado ao tentar abrir o dia 4 sem compra
+//   CHAMA_PRODUCT_SLUGS        slugs dos produtos que liberam o app além do dia 3 (compra ou assinatura em dia, via webhook Eduzz)
+//   CHAMA_CHECKOUT_MENSAL_URL  checkout Eduzz da assinatura R$ 19,90/mês
+//   CHAMA_CHECKOUT_VITALICIO_URL checkout Eduzz do vitalício R$ 147 em até 12x
+//   CHAMA_PARCELA_VITALICIO    texto pronto da parcela, ex.: "12x de R$ 14,96" (não definida = "12x de R$ 15,20"; definida vazia = "R$ 147 à vista ou parcelado")
+//   CHAMA_CHECKOUT_URL         checkout antigo (pagamento único): só vale se as duas URLs novas não existirem
 //   CHAMA_365_URL              oferta "Chama Acesa 365" mostrada ao fim do dia 21 (vazio = não mostra)
 //   CHAMA_ARMAZENAMENTO        "supabase" (padrão) ou "local" (navegador, enquanto a migration não foi aplicada)
 //   CHAMA_DEV_LIBERAR          só fora de produção: "pago" libera tudo para qualquer logado
 // Quem está logado na área (cadastro grátis) tem os dias 1 a 3. O dono (admin da área) vê tudo.
+import { PARCELA_PADRAO, type OfertasChama } from "./precos.ts";
+
 export interface ChamaAcesso {
   app: boolean;
   pago: boolean;
   /** A Bíblia é grátis para sempre: vale para qualquer logado na área, comprou ou não. */
   biblia: boolean;
+  /** Link antigo (pagamento único). Só usado quando `ofertas` não tem nenhum link. */
   checkoutUrl: string | null;
+  ofertas: OfertasChama;
   oferta365Url: string | null;
   armazenamento: "supabase" | "local";
 }
@@ -53,6 +60,7 @@ export function calcularAcesso(args: {
     pago,
     biblia: bibliaLiberada(),
     checkoutUrl: urlSegura(env.CHAMA_CHECKOUT_URL),
+    ofertas: { vitalicioUrl: urlSegura(env.CHAMA_CHECKOUT_VITALICIO_URL), mensalUrl: urlSegura(env.CHAMA_CHECKOUT_MENSAL_URL), parcelaVitalicio: env.CHAMA_PARCELA_VITALICIO === undefined ? PARCELA_PADRAO : env.CHAMA_PARCELA_VITALICIO.trim().slice(0, 40) || null },
     oferta365Url: urlSegura(env.CHAMA_365_URL),
     armazenamento: (env.CHAMA_ARMAZENAMENTO || "supabase").trim().toLowerCase() === "local" ? "local" : "supabase",
   };

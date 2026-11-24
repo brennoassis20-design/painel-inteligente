@@ -6,10 +6,13 @@ import { CHAMA_ALTURA, CHAMA_EXTERNA, CHAMA_INTERNA, CHAMA_LARGURA } from "@/lib
 // Chama em SVG (sem biblioteca). O tamanho, o brilho e as chamas laterais crescem com a sequência; 0 = brasa apagada.
 export function Chama({ dias, acendendo, tamanho }: { dias: number; acendendo?: boolean; tamanho?: number }) {
   const nivel = nivelChama(dias);
-  const px = tamanho ?? 84 + nivel * 26;
+  // Do nível 5 em diante a chama não cresce mais (cabe na tela): ganha brilho, chamas extras e aura.
+  const px = tamanho ?? 84 + Math.min(nivel, 4) * 26;
   const id = `ch-${nivel}-${tamanho ?? 0}`;
   return (
-    <span className={`ch-chama n${nivel}${acendendo ? " acendendo" : ""}`} style={{ width: px * (nivel >= 3 ? 1.9 : 1), height: px * 1.3 }} aria-hidden="true">
+    <span className={`ch-chama n${nivel}${acendendo ? " acendendo" : ""}`} style={{ width: px * (nivel >= 6 ? 2.7 : nivel >= 3 ? 1.9 : 1), height: px * 1.3 }} aria-hidden="true">
+      {nivel >= 6 && <Uma classe="lado longe esq" id={`${id}c`} apagada={false} />}
+      {nivel >= 6 && <Uma classe="lado longe dir" id={`${id}d`} apagada={false} />}
       {nivel >= 3 && <Uma classe="lado esq" id={`${id}a`} apagada={false} />}
       {nivel >= 3 && <Uma classe="lado dir" id={`${id}b`} apagada={false} />}
       <Uma classe="centro" id={id} apagada={nivel === 0} />

@@ -1,15 +1,20 @@
 // Regras do Chama Acesa (funções puras, sem banco e sem relógio: quem chama passa a data de hoje).
 // Datas são sempre "AAAA-MM-DD" no fuso de São Paulo.
+import { DIAS_METAS_PADRAO, ehMeta, idEstudo, idMeta, metaAlcancada, temMeta } from "./marcos.ts";
+
 export const FUSO = "America/Sao_Paulo";
+/** Dias da jornada inicial (dias.json). Depois do 21 a chama continua: o dia vira Palavra + oração + missão (continuo.ts). */
 export const TOTAL_DIAS = 21;
+/** Teto de segurança do número do dia (não é regra de produto: a chama não tem limite). */
+export const MAX_DIA = 100_000;
 export const DIAS_GRATIS = 3;
 export const MAX_BRASAS = 2;
 export const DIAS_POR_BRASA = 7;
-export const MARCOS_CHAMA = [3, 7, 14, 21] as const;
 
 export type Check = "leu" | "orou" | "missao";
 export type Checks = Record<Check, boolean>;
-export type Medalha = "chama3" | "chama7" | "chama14" | "chama21" | "jornada";
+/** "metaN" = meta de N dias de chama alcançada; "estudoN" = estudo da meta N concluído; "jornada" = os 21 dias; "chamaN" = medalha antiga. */
+export type Medalha = string;
 export type Aviso = "brasa_salvou" | "chama_apagou";
 
 export interface HistLiga { semana: string; liga: number; posicao: number; xp: number; resultado: "subiu" | "ficou" | "desceu" }
@@ -25,7 +30,7 @@ export interface LigaEstado {
 }
 
 /** Pontos de experiência (XP). */
-export const XP = { leu: 10, orou: 10, missao: 15, jejum: 10, bonusDia: 15, acertoPratica: 5, praticaPerfeita: 10, convite: 50 } as const;
+export const XP = { leu: 10, orou: 10, missao: 15, jejum: 10, bonusDia: 15, acertoPratica: 5, praticaPerfeita: 10, convite: 50, estudo: 30 } as const;
 
 export interface Estado {
   xp: number;
@@ -47,8 +52,10 @@ export interface Estado {
   chama: number;
   maior: number;
   brasas: number;
-  /** dia da jornada -> data em que foi concluído */
+  /** dia (contínuo, 1, 2, ... 21, 22, ...) -> data em que foi concluído. O servidor carrega só os dias recentes: veja diasAtivos. */
   concluidos: Record<number, string>;
+  /** Quantos dias já foram concluídos no total, ao longo dos anos (guardado em chama_perfil.dias_feitos). */
+  diasAtivos: number;
   checks: Record<number, Checks>;
   jejum: Record<number, boolean>;
   medalhas: Medalha[];
@@ -58,7 +65,7 @@ export interface Estado {
 }
 
 export function estadoVazio(): Estado {
-  return { xp: 0, xpSemana: {}, praticas: {}, amigos: 0, ultimoAcesso: null, lembretesHist: {}, liga: { indice: 0, semana: null, historico: [], resultado: null }, inicio: null, ultimaData: null, chama: 0, maior: 0, brasas: 0, concluidos: {}, checks: {}, jejum: {}, medalhas: [], avisos: [], lembrete: null };
+  return { xp: 0, xpSemana: {}, praticas: {}, amigos: 0, ultimoAcesso: null, lembretesHist: {}, liga: { indice: 0, semana: null, historico: [], resultado: null }, inicio: null, ultimaData: null, chama: 0, maior: 0, brasas: 0, concluidos: {}, diasAtivos: 0, checks: {}, jejum: {}, medalhas: [], avisos: [], lembrete: null };
 }
 
 export function checksVazios(): Checks {
@@ -127,21 +134,27 @@ export function premiarConvite(e: Estado, hoje: string): Estado {
 // ------------------------------------------------------------------ consultas
 
 export function diasConcluidos(e: Estado): number {
-  return Object.keys(e.concluidos).length;
+  return Math.max(e.diasAtivos ?? 0, Object.keys(e.concluidos).length);
 }
 
-/** Próximo dia da jornada a fazer (o primeiro não concluído); 22 = terminou. */
+/** Próximo dia a fazer: o primeiro não concluído dos 21 da jornada; depois, o dia contínuo seguinte (22, 23, ...). */
 export function diaAtual(e: Estado): number {
   for (let d = 1; d <= TOTAL_DIAS; d += 1) if (!e.concluidos[d]) return d;
-  return TOTAL_DIAS + 1;
+  return Math.max(TOTAL_DIAS, diasConcluidos(e)) + 1;
+}
+
+/** Os 21 dias da jornada inicial já foram concluídos? */
+export function jornadaCompleta(e: Estado): boolean {
+  for (let d = 1; d <= TOTAL_DIAS; d += 1) if (!e.concluidos[d]) return false;
+  return true;
 }
 
 export type Motivo = "pagamento" | "anterior" | "amanha" | "fim";
 export type Abertura = { ok: true } | { ok: false; motivo: Motivo };
 
-/** Pode abrir o dia N hoje? Dia 4 em diante exige compra; só um dia por dia de calendário. */
+/** Pode abrir o dia N hoje? Dia 4 em diante (inclusive depois do 21) exige acesso pago; só um dia por dia de calendário. */
 export function podeAbrir(e: Estado, dia: number, hoje: string, pago: boolean): Abertura {
-  if (!Number.isInteger(dia) || dia < 1 || dia > TOTAL_DIAS) return { ok: false, motivo: "fim" };
+  if (!Number.isInteger(dia) || dia < 1 || dia > MAX_DIA) return { ok: false, motivo: "fim" };
   if (e.concluidos[dia]) return { ok: true }; // dia já feito: pode rever
   if (dia > DIAS_GRATIS && !pago) return { ok: false, motivo: "pagamento" };
   if (dia > 1) {
@@ -187,6 +200,7 @@ export function atualizarParaHoje(e: Estado, hoje: string): Estado {
 export type Acao =
   | { tipo: "check"; dia: number; check: Check }
   | { tipo: "jejum"; dia: number; valor: boolean }
+  | { tipo: "estudo"; dia: number }
   | { tipo: "lembrete"; horario: string | null }
   | { tipo: "pratica"; acertos: number; ids: string[] }
   | { tipo: "limparResultadoLiga" }
@@ -206,7 +220,7 @@ export interface Resultado {
 const horarioValido = (h: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(h);
 
 /** Aplica uma ação do usuário. Sempre resolve brasa/apagar antes. Nunca lança: devolve `erro`. */
-export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boolean): Resultado {
+export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boolean, diasMetas: readonly number[] = DIAS_METAS_PADRAO): Resultado {
   const base = atualizarParaHoje(entrada, hoje);
   const nada = (erro?: string): Resultado => ({ estado: base, completouDia: null, novasMedalhas: [], ganhouBrasa: false, xpGanho: 0, erro });
 
@@ -220,6 +234,14 @@ export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boo
     for (const id of acao.ids) praticas[id] = (praticas[id] ?? 0) + 1;
     // Prática não completa o dia nem mexe na chama: só XP e o contador de versículos vistos.
     return { ...nada(), estado: { ...somarXp(base, xp, hoje), praticas }, xpGanho: xp };
+  }
+  if (acao.tipo === "estudo") {
+    // Estudo da meta: só de meta já alcançada, e o bônus de XP vale uma vez só.
+    const meta = Number(acao.dia);
+    if (!ehMeta(meta, diasMetas) || !metaAlcancada(base, meta)) return nada("Este estudo ainda não foi liberado.");
+    if (base.medalhas.includes(idEstudo(meta))) return nada();
+    const estado = somarXp({ ...base, medalhas: [...base.medalhas, idEstudo(meta)] }, XP.estudo, hoje);
+    return { ...nada(), estado, xpGanho: XP.estudo };
   }
   if (acao.tipo === "lembrete") {
     if (acao.horario !== null && !horarioValido(acao.horario)) return nada("Horário inválido.");
@@ -256,31 +278,27 @@ export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boo
     maior: Math.max(estado.maior, chama),
     ultimaData: hoje,
     concluidos,
+    diasAtivos: Math.max((estado.diasAtivos ?? 0) + 1, Object.keys(concluidos).length),
     brasas: ganhouBrasa ? estado.brasas + 1 : estado.brasas,
   };
   const novas: Medalha[] = [];
-  for (const m of MARCOS_CHAMA) {
-    const id = `chama${m}` as Medalha;
-    if (chama >= m && !estado.medalhas.includes(id)) novas.push(id);
-  }
-  if (Object.keys(concluidos).length >= TOTAL_DIAS && !estado.medalhas.includes("jornada")) novas.push("jornada");
+  // Meta: bate no número exato da chama e nunca repete (quem já tem a medalha, inclusive a antiga "chamaN", não ganha de novo).
+  if (ehMeta(chama, diasMetas) && !temMeta(estado.medalhas, chama)) novas.push(idMeta(chama));
+  if (jornadaCompleta(estado) && !estado.medalhas.includes("jornada")) novas.push("jornada");
   estado = { ...estado, medalhas: [...estado.medalhas, ...novas] };
   return { estado, completouDia: acao.dia, novasMedalhas: novas, ganhouBrasa, xpGanho };
 }
 
-/** Intensidade visual da chama (0 = brasa fraca ... 4 = fogueira), cresce com a sequência. */
-export function nivelChama(chama: number): 0 | 1 | 2 | 3 | 4 {
-  if (chama <= 0) return 0;
-  if (chama < 3) return 1;
-  if (chama < 7) return 2;
-  if (chama < 14) return 3;
-  return 4;
+/** Níveis visuais da chama: 0 apagada, 1 a 4 até 29 dias (como era), 5 a partir de 30, 6 de 50, 7 de 100 e 8 de 365 dias. */
+export type NivelChama = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export const DEGRAUS_CHAMA = [1, 3, 7, 14, 30, 50, 100, 365] as const;
+
+/** Intensidade visual da chama (0 = brasa fraca ... 8 = chama de um ano), cresce com a sequência sem limite. */
+export function nivelChama(chama: number): NivelChama {
+  if (!(chama > 0)) return 0;
+  let n = 0;
+  for (const d of DEGRAUS_CHAMA) if (chama >= d) n += 1;
+  return n as NivelChama;
 }
 
-export const NOMES_MEDALHA: Record<Medalha, { nome: string; texto: string }> = {
-  chama3: { nome: "Faísca", texto: "3 dias de chama seguidos" },
-  chama7: { nome: "Fogueira", texto: "7 dias de chama seguidos" },
-  chama14: { nome: "Labareda", texto: "14 dias de chama seguidos" },
-  chama21: { nome: "Chama inextinguível", texto: "21 dias de chama seguidos" },
-  jornada: { nome: "Jornada completa", texto: "Os 21 dias de consagração concluídos" },
-};
+export const NOME_JORNADA = { nome: "Jornada completa", texto: "Os 21 dias de consagração concluídos" };
