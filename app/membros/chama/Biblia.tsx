@@ -6,11 +6,12 @@ import {
   type LivroIndice, type LivroTexto, type Posicao,
 } from "@/lib/chama-acesa/biblia";
 import type { ArmazemBiblia, PainelBiblia } from "@/lib/chama-acesa/armazem-biblia";
-import { situacaoDoPlano, type AcaoBiblia } from "@/lib/chama-acesa/biblia-estudo";
+import { progressoBiblia, situacaoDoPlano, type AcaoBiblia } from "@/lib/chama-acesa/biblia-estudo";
 import { BibliaLeitor } from "./BibliaLeitor";
 import { BibliaPlanos } from "./BibliaPlanos";
 import { BibliaProgresso } from "./BibliaProgresso";
 import { BibliaEstudo } from "./BibliaEstudo";
+import { Anel, IconeBusca } from "./Icones";
 
 const BASE = "/chama-acesa/biblia";
 const cacheLivros = new Map<string, LivroTexto>();
@@ -49,6 +50,7 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
   const [indice, setIndice] = useState<LivroIndice[] | null>(cacheIndice);
   const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
+  const [mostrarBusca, setMostrarBusca] = useState(false);
   const [secao, setSecao] = useState<Secao>("ler");
   const [livro, setLivro] = useState<LivroIndice | null>(null);
   const [leitura, setLeitura] = useState<(Posicao & AbrirOpcoes) | null>(null);
@@ -223,10 +225,10 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
   const menu = biblia && (
     <div className="ch-biblia-menu" role="tablist" aria-label="Seções da Bíblia">
       {(
-        [["ler", "📖", "Ler"], ["planos", "🗓️", "Planos"], ["progresso", "📊", "Progresso"], ["estudo", "✍️", "Estudo"]] as const
-      ).map(([id, ic, nome]) => (
+        [["ler", "Ler"], ["planos", "Planos"], ["progresso", "Progresso"], ["estudo", "Estudo"]] as const
+      ).map(([id, nome]) => (
         <button key={id} type="button" role="tab" aria-selected={secao === id} className={secao === id ? "on" : ""} onClick={() => { setSecao(id); setLivro(null); window.scrollTo({ top: 0 }); }}>
-          <span aria-hidden="true">{ic}</span>{nome}
+          {nome}
         </button>
       ))}
     </div>
@@ -288,24 +290,38 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
   const nomeUltimo = ultimo ? indice?.find((l) => l.sigla === ultimo.sigla)?.nome : null;
   const sitPlano = painel?.estado.plano ? situacaoDoPlano(painel.estado.plano, painel.hoje) : null;
   const hojePlano = sitPlano?.hoje && !sitPlano.hoje.feito ? sitPlano.hoje : null;
+  // "Continuar lendo": o plano de hoje (com anel do plano) ou o último capítulo lido (anel = % da Bíblia lida).
+  const progresso = painel ? progressoBiblia(painel.estado.lidos) : null;
+  const continuar = hojePlano && sitPlano
+    ? { titulo: hojePlano.nome, sub: `Plano ${sitPlano.plano.nome} · dia ${hojePlano.dia} de ${sitPlano.total}`, pct: sitPlano.percentual, rotulo: `${sitPlano.percentual}% do plano`, abrir: () => abrir(hojePlano.capitulos[0], { plano: { dia: hojePlano.dia, caps: hojePlano.capitulos, nome: hojePlano.nome } }) }
+    : ultimo && nomeUltimo
+      ? { titulo: `${nomeUltimo} ${ultimo.cap}`, sub: progresso ? `${progresso.lidos} de ${progresso.total} capítulos da Bíblia lidos` : "Seu último capítulo", pct: progresso ? Math.round(progresso.percentual) : 0, rotulo: `${progresso ? Math.round(progresso.percentual) : 0}% da Bíblia lida`, abrir: () => abrir(ultimo) }
+      : null;
   return (
     <section className="ch-tela ch-biblia">
       {menu}
-      <h1>Bíblia</h1>
-      <p className="ch-suave">Grátis para sempre. Ler aqui não muda a sua jornada nem a sua chama.</p>
+      <div className="ch-biblia-cab">
+        <h1>Bíblia</h1>
+        <button type="button" className="ch-icone-btn" aria-label="Buscar na Bíblia" aria-expanded={mostrarBusca} onClick={() => setMostrarBusca((v) => !v)}><IconeBusca /></button>
+      </div>
+      <p className="ch-suave" style={{ margin: 0 }}>Grátis para sempre. Ler aqui não muda a sua jornada nem a sua chama.</p>
       {falha}
       {!indice && !erro && <p className="ch-suave">Abrindo…</p>}
       {indice && (
         <>
-          {hojePlano && sitPlano && (
-            <button type="button" className="ch-btn" onClick={() => abrir(hojePlano.capitulos[0], { plano: { dia: hojePlano.dia, caps: hojePlano.capitulos, nome: hojePlano.nome } })}>
-              Leitura de hoje: {hojePlano.nome}
+          {continuar && (
+            <button type="button" className="ch-continuar" onClick={continuar.abrir}>
+              <span className="et">{hojePlano ? "Leitura de hoje" : "Continuar lendo"}</span>
+              <span className="lin">
+                <span><b>{continuar.titulo}</b><small>{continuar.sub}</small></span>
+                <Anel pct={continuar.pct} tam={56} espessura={6} texto={`${continuar.pct}%`} tamTexto={12} rotulo={continuar.rotulo} />
+              </span>
             </button>
           )}
-          {ultimo && nomeUltimo && (
-            <button type="button" className={hojePlano ? "ch-btn ch-btn-claro" : "ch-btn"} onClick={() => abrir(ultimo)}>Continuar: {nomeUltimo} {ultimo.cap}</button>
+          {hojePlano && ultimo && nomeUltimo && (
+            <button type="button" className="ch-btn ch-btn-claro" onClick={() => abrir(ultimo)}>Continuar: {nomeUltimo} {ultimo.cap}</button>
           )}
-          <input className="ch-biblia-busca" type="search" inputMode="search" placeholder="Buscar livro (ex.: João, Salmos)" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar livro" />
+          {(mostrarBusca || busca) && <input className="ch-biblia-busca" type="search" inputMode="search" placeholder="Buscar livro (ex.: João, Salmos)" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar livro" />}
           {grupo("at", "Antigo Testamento")}
           {grupo("nt", "Novo Testamento")}
           {filtrados.length === 0 && <p className="ch-suave">Nenhum livro com esse nome.</p>}

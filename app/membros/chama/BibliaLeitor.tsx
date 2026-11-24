@@ -175,7 +175,7 @@ export function BibliaLeitor({ indice, posicao, versiculos, erro, fonte, onFonte
       {erro}
       {estudo && versiculos && (
         <button type="button" className="ch-btn ch-btn-claro ch-btn-baixo" onClick={() => setPedido({ titulo: `Contexto de ${info?.nome} ${cap}`, pedido: { tipo: "capitulo", sigla, cap } })}>
-          💡 Contexto do capítulo
+          Contexto do capítulo
         </button>
       )}
       {!versiculos && !erro && <p className="ch-suave">Abrindo…</p>}
@@ -248,11 +248,11 @@ export function BibliaLeitor({ indice, posicao, versiculos, erro, fonte, onFonte
             </div>
           ) : (
             <div className="ch-acoes">
-              <button type="button" onClick={() => setNota({ vIni: ordenados[0], vFim: ordenados[ordenados.length - 1], texto: "", tema: "" })}><span aria-hidden="true">📝</span>Nota</button>
-              <button type="button" onClick={() => setCores(true)}><span aria-hidden="true">🖍️</span>Destacar</button>
-              <button type="button" onClick={() => void copiar()}><span aria-hidden="true">📋</span>Copiar</button>
-              <button type="button" onClick={() => void enviar()}><span aria-hidden="true">📤</span>Enviar</button>
-              <button type="button" onClick={() => setPedido({ titulo: `Explicação de ${refSel}`, pedido: { tipo: "versiculos", sigla, cap, versiculos: ordenados } })}><span aria-hidden="true">💡</span>Explicar</button>
+              <button type="button" onClick={() => setCores(true)}>Destacar</button>
+              <button type="button" onClick={() => setNota({ vIni: ordenados[0], vFim: ordenados[ordenados.length - 1], texto: "", tema: "" })}>Nota</button>
+              <button type="button" onClick={() => setPedido({ titulo: `Explicação de ${refSel}`, pedido: { tipo: "versiculos", sigla, cap, versiculos: ordenados } })}>Contexto</button>
+              <button type="button" onClick={() => void enviar()}>Enviar</button>
+              <button type="button" onClick={() => void copiar()}>Copiar</button>
             </div>
           )}
         </div>

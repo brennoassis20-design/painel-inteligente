@@ -5,11 +5,20 @@ import type { ArmazemConta } from "@/lib/chama-acesa/armazem";
 import { MAX_NOME, ROTULO_PLANO, type Conta as DadosConta } from "@/lib/chama-acesa/conta";
 import { reduzirFoto } from "@/lib/chama-acesa/foto";
 import { PRECO_MENSAL, PRECO_VITALICIO } from "@/lib/chama-acesa/precos";
+import type { Tema } from "@/lib/chama-acesa/tema";
 import { Avatar } from "./Avatar";
+import { IconeCamera, IconeVoltar } from "./Icones";
 
 /** Tela "Conta": nome de exibição, foto, e-mail (só leitura), plano, preferência do ranking e sair. */
-export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair }: {
+export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama, ligaNome, lembrete, tema, onTema }: {
   armazem: ArmazemConta;
+  /** Dias de chama, liga e horário do lembrete diário (só para mostrar). */
+  chama: number;
+  ligaNome: string;
+  lembrete: string | null;
+  /** Aparência: claro (padrão) ou escuro; a escolha fica salva no aparelho. */
+  tema: Tema;
+  onTema: (t: Tema) => void;
   onVoltar: () => void;
   /** Avisa o app que nome, foto ou preferência mudaram (para atualizar o ranking e o topo). */
   onMudou: () => void;
@@ -52,7 +61,7 @@ export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair }: {
   if (!conta) {
     return (
       <div className="ch-cheia ch-passo">
-        <button type="button" className="ch-link voltar" onClick={onVoltar}>‹ Voltar</button>
+        <button type="button" className="ch-voltar" aria-label="Voltar" onClick={onVoltar}><IconeVoltar /></button>
         {msg ? <p role="alert" className="ch-nota">{msg.texto}</p> : <p className="ch-suave">Abrindo a sua conta…</p>}
       </div>
     );
@@ -60,12 +69,14 @@ export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair }: {
   const mudouNome = nome.trim() !== conta.nome.trim();
   return (
     <div className="ch-cheia ch-passo ch-conta">
-      <button type="button" className="ch-link voltar" onClick={onVoltar}>‹ Voltar</button>
-      <h1>Minha conta</h1>
+      <header className="ch-conta-cab">
+        <button type="button" className="ch-voltar" aria-label="Voltar" onClick={onVoltar}><IconeVoltar /></button>
+        <h1>Minha conta</h1>
+      </header>
 
-      <div className="ch-conta-foto">
-        <Avatar nome={conta.nome} foto={conta.foto} tamanho={96} />
-        <div>
+      <section className="ch-conta-foto" aria-label="Foto">
+        <div className="ch-foto-grande">
+          <Avatar nome={conta.nome} foto={conta.foto} tamanho={112} />
           <input
             ref={arquivo}
             type="file"
@@ -77,47 +88,63 @@ export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair }: {
               if (f) void rodar(async () => { const p = await reduzirFoto(f); return armazem.agir({ tipo: "foto", dados: p.dados, mime: p.mime }); }, "Foto atualizada.");
             }}
           />
-          <button type="button" className="ch-btn" disabled={ocupado} onClick={() => arquivo.current?.click()}>{conta.foto ? "Trocar a foto" : "Colocar uma foto"}</button>
-          {conta.foto && <button type="button" className="ch-link" disabled={ocupado} onClick={() => void rodar(() => armazem.agir({ tipo: "removerFoto" }), "Foto removida.")}>Remover a foto</button>}
+          <button type="button" className="ch-camera" aria-label={conta.foto ? "Trocar a foto" : "Colocar uma foto"} disabled={ocupado} onClick={() => arquivo.current?.click()}><IconeCamera /></button>
         </div>
-      </div>
+        <span className="ch-suave" style={{ fontSize: 13 }}>{chama} {chama === 1 ? "dia" : "dias"} de chama · Liga {ligaNome}</span>
+        {conta.foto && <button type="button" className="ch-link" disabled={ocupado} onClick={() => void rodar(() => armazem.agir({ tipo: "removerFoto" }), "Foto removida.")}>Remover a foto</button>}
+      </section>
 
-      <label className="ch-campo">
-        <span>Nome de exibição</span>
-        <input type="text" value={nome} maxLength={MAX_NOME} onChange={(e) => setNome(e.target.value)} autoComplete="nickname" />
-      </label>
-      <button type="button" className="ch-btn" disabled={ocupado || !mudouNome} onClick={() => void rodar(() => armazem.agir({ tipo: "nome", nome }), "Nome salvo.")}>Salvar o nome</button>
+      <section className="ch-cartao" aria-label="Perfil">
+        <label className="ch-campo">
+          <span>Nome no ranking</span>
+          <input type="text" value={nome} maxLength={MAX_NOME} onChange={(e) => setNome(e.target.value)} autoComplete="nickname" />
+          <small className="ch-suave" style={{ fontWeight: 400, fontSize: 12 }}>Só o primeiro nome aparece para os outros.</small>
+        </label>
+        <button type="button" className="ch-btn" disabled={ocupado || !mudouNome} onClick={() => void rodar(() => armazem.agir({ tipo: "nome", nome }), "Nome salvo.")}>Salvar o nome</button>
+        <div className="ch-troca">
+          <span className="t" id="ch-rotulo-ranking">Aparecer no ranking<small>Desligado: você aparece como “Membro”, sem foto.</small></span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={conta.mostrarNoRanking}
+            aria-labelledby="ch-rotulo-ranking"
+            className="ch-switch"
+            disabled={ocupado}
+            onClick={() => void rodar(() => armazem.agir({ tipo: "mostrar", valor: !conta.mostrarNoRanking }), !conta.mostrarNoRanking ? "Seu nome e foto aparecem no ranking." : "Você aparece como Membro, sem foto.")}
+          />
+        </div>
+        <label className="ch-campo">
+          <span>E-mail</span>
+          <input type="email" value={conta.email} readOnly aria-readonly="true" />
+        </label>
+      </section>
 
-      <label className="ch-campo">
-        <span>E-mail</span>
-        <input type="email" value={conta.email} readOnly aria-readonly="true" />
-      </label>
+      <section className="ch-cartao lista" aria-label="Configurações">
+        <div className="ch-item"><span>Lembrete diário</span><span className="v">{lembrete ?? "Desligado"}</span></div>
+        <div className="ch-item">
+          <span id="ch-rotulo-aparencia">Aparência</span>
+          <div className="ch-segm" role="radiogroup" aria-labelledby="ch-rotulo-aparencia">
+            <button type="button" role="radio" aria-checked={tema === "claro"} onClick={() => onTema("claro")}>Claro</button>
+            <button type="button" role="radio" aria-checked={tema === "escuro"} onClick={() => onTema("escuro")}>Escuro</button>
+          </div>
+        </div>
+        <div className="ch-item"><span>Plano</span><span className="plano">{ROTULO_PLANO[conta.plano]}</span></div>
+      </section>
 
-      <div className="ch-card">
-        <span className="ch-etiqueta">Seu acesso</span>
-        <h2>{ROTULO_PLANO[conta.plano]}</h2>
-        {conta.plano === "gratis" ? (
-          <>
-            <p className="ch-suave">Os dias 1 a 3 são grátis. Para seguir, escolha o vitalício ({PRECO_VITALICIO}, em até 12x) ou o mensal ({PRECO_MENSAL}/mês, cancele quando quiser).</p>
-            <button type="button" className="ch-btn ch-btn-grande" onClick={onAssinar}>Ver as opções</button>
-          </>
-        ) : conta.plano === "mensal" ? (
-          <p className="ch-suave">Assinatura em dia. Para cancelar, use o link do recibo da Eduzz no seu e-mail. Seu progresso fica guardado e a Bíblia continua grátis.</p>
-        ) : (
-          <p className="ch-suave">Acesso completo, sem mensalidade.</p>
-        )}
-      </div>
-
-      <label className="ch-jejum" aria-label="Mostrar meu nome e foto no ranking">
-        <input type="checkbox" checked={conta.mostrarNoRanking} disabled={ocupado} onChange={(e) => void rodar(() => armazem.agir({ tipo: "mostrar", valor: e.target.checked }), e.target.checked ? "Seu nome e foto aparecem no ranking." : "Você aparece como Membro, sem foto.")} />
-        <span>
-          <b>Mostrar meu nome e foto no ranking</b>
-          <small>Outros membros da sua liga verão o seu primeiro nome e a sua foto. Desligado, você aparece só como “Membro”.</small>
-        </span>
-      </label>
+      {conta.plano === "gratis" ? (
+        <div className="ch-card">
+          <span className="ch-etiqueta">Seu acesso</span>
+          <p className="ch-suave">Os dias 1 a 3 são grátis. Para seguir, escolha o vitalício ({PRECO_VITALICIO}, em até 12x) ou o mensal ({PRECO_MENSAL}/mês, cancele quando quiser).</p>
+          <button type="button" className="ch-btn ch-btn-grande" onClick={onAssinar}>Ver as opções</button>
+        </div>
+      ) : conta.plano === "mensal" ? (
+        <p className="ch-suave">Assinatura em dia. Para cancelar, use o link do recibo da Eduzz no seu e-mail. Seu progresso fica guardado e a Bíblia continua grátis.</p>
+      ) : (
+        <p className="ch-suave">Acesso completo, sem mensalidade.</p>
+      )}
 
       {msg && <p role={msg.tom === "erro" ? "alert" : "status"} className={msg.tom === "erro" ? "ch-nota" : "ch-suave"}>{msg.texto}</p>}
-      {onSair && <button type="button" className="ch-btn ch-btn-claro" onClick={onSair}>Sair da conta</button>}
+      {onSair && <button type="button" className="ch-sair" onClick={onSair}>Sair da conta</button>}
     </div>
   );
 }

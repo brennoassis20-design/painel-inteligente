@@ -1,11 +1,13 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Archivo_Black, Inter } from "next/font/google";
+import { Bricolage_Grotesque, Inter, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
 import type { Armazem, RespostaAcao } from "@/lib/chama-acesa/armazem";
 import type { Dia } from "@/lib/chama-acesa/dias";
 import type { Painel } from "@/lib/chama-acesa/painel";
-import { diaAtual, diasConcluidos, inicioSemana, MAX_BRASAS, NOME_JORNADA, podeAbrir, statusDoDia, TOTAL_DIAS, XP, type Check, type StatusDia } from "@/lib/chama-acesa/regras";
+import { diaAtual, diasConcluidos, inicioSemana, MAX_BRASAS, NOME_JORNADA, podeAbrir, somarDias, statusDoDia, TOTAL_DIAS, XP, type Check, type StatusDia } from "@/lib/chama-acesa/regras";
+import { progressoBiblia } from "@/lib/chama-acesa/biblia-estudo";
+import { aplicarTemaNaPagina, lerTema, salvarTema, type Tema } from "@/lib/chama-acesa/tema";
 import { diasDasMetas, idEstudo, metaDoDia, metasAlcancadas, proximaMeta, type Meta } from "@/lib/chama-acesa/marcos";
 import { montarDiaContinuo, type DiaContinuo, type LeituraPlano } from "@/lib/chama-acesa/continuo";
 import { situacaoDoPlano } from "@/lib/chama-acesa/biblia-estudo";
@@ -21,11 +23,25 @@ import { Avatar } from "./Avatar";
 import { Chama } from "./Chama";
 import { ContaTela } from "./Conta";
 import { OfertasBloco } from "./Ofertas";
+import { Anel, IconeAba, IconeCheck, IconeCoracao, IconeEnvio, IconeLivro, IconeVoltar, MiniChama, type IdAba } from "./Icones";
 import "./chama.css";
 
-const titulo = Archivo_Black({ subsets: ["latin"], weight: "400", variable: "--ch-f-titulo", display: "swap" });
-const texto = Inter({ subsets: ["latin"], weight: ["400", "600", "800"], variable: "--ch-f-texto", display: "swap" });
-const FONTES = `${titulo.variable} ${texto.variable}`;
+// Fontes dos dois temas: claro = Plus Jakarta Sans; escuro = Bricolage Grotesque (títulos e números) + Inter; texto bíblico = Newsreader nos dois.
+const bric = Bricolage_Grotesque({ subsets: ["latin"], weight: ["600", "800"], variable: "--ch-f-bric", display: "swap" });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--ch-f-inter", display: "swap" });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--ch-f-jak", display: "swap" });
+const serifada = Newsreader({ subsets: ["latin"], weight: ["400", "500"], style: ["normal", "italic"], variable: "--ch-f-serif", display: "swap" });
+const FONTES = `${bric.variable} ${inter.variable} ${jakarta.variable} ${serifada.variable}`;
+
+/** Raiz do app: marca o tema (claro/escuro), as fontes e o fundo da tela inteira. */
+function Raiz({ tema, className = "", children }: { tema: Tema; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={`ch ${FONTES}${className ? ` ${className}` : ""}`} data-tema={tema}>
+      <div className="ch-fundo" aria-hidden="true" />
+      {children}
+    </div>
+  );
+}
 
 const SEGUNDOS_ORACAO = 20;
 
@@ -72,6 +88,26 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
   const [convidar, setConvidar] = useState(false);
   const [cartaoInstalarFechado, setCartaoInstalarFechado] = useState(false);
   const visaoInstalar = useVisaoInstalar(instalarForcar);
+  // Tema: claro é o padrão para todo mundo; a escolha fica salva no aparelho (localStorage).
+  const [tema, setTema] = useState<Tema>(() => lerTema());
+  useEffect(() => aplicarTemaNaPagina(tema), [tema]);
+  const trocarTema = (t: Tema) => {
+    setTema(t);
+    salvarTema(t);
+  };
+  // Jornada: capítulos da Bíblia lidos (só se o armazém da Bíblia existir; senão a tela mostra o XP).
+  const [capitulos, setCapitulos] = useState<number | null>(null);
+  useEffect(() => {
+    if (aba !== "jornada" || !armazem.biblia) return;
+    let vivo = true;
+    armazem.biblia
+      .carregar()
+      .then((b) => vivo && setCapitulos(progressoBiblia(b.estado.lidos).lidos))
+      .catch(() => vivo && setCapitulos(null));
+    return () => {
+      vivo = false;
+    };
+  }, [aba, armazem]);
   // O título da aba é sempre o do app (a área pode ainda estar com o nome do Gênio Play).
   useEffect(() => {
     document.title = marca === "Gênio Play" ? "Chama Acesa" : marca;
@@ -134,13 +170,13 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
   if (erro && !painel) {
     return (
-      <div className={`ch ch-centro ${FONTES}`}>
+      <Raiz tema={tema} className="ch-centro">
         <p role="alert">{erro}</p>
         <button type="button" className="ch-btn" onClick={carregar}>Tentar de novo</button>
-      </div>
+      </Raiz>
     );
   }
-  if (!painel) return <div className={`ch ch-centro ${FONTES}`}>Acendendo o fogo…</div>;
+  if (!painel) return <Raiz tema={tema} className="ch-centro">Acendendo o fogo…</Raiz>;
 
   const { estado, hoje, pago } = painel;
   const conteudo = (n: number): DiaContinuo | Dia | undefined =>
@@ -267,10 +303,11 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
   } else if (vista.v === "pagamento") {
     corpo = (
       <div className="ch-cheia ch-pag">
-        <Chama dias={estado.chama} tamanho={110} />
-        <h1>Sua chama tem {diasTxt(estado.chama)}.</h1>
-        <p className="ch-grande">Não deixe ela apagar.</p>
-        <p className="ch-suave">Os 3 primeiros dias foram o começo. A jornada de 21 dias e a chama que continua depois dela estão esperando por você, com a mesma rotina de 5 minutos. Seu progresso fica guardado e a Bíblia continua grátis.</p>
+        <header className="ch-pag-cab">
+          <span className="ch-pag-selo"><span><MiniChama tam={18} /></span>{diasTxt(estado.chama)} de chama</span>
+          <h1>Sua chama está em {diasTxt(estado.chama)}.<br />Não deixe ela apagar.</h1>
+          <p>Os 3 primeiros dias foram o começo. Continue de onde parou: dia {atual} da jornada, com a mesma rotina de 5 minutos. Seu progresso fica guardado.</p>
+        </header>
         {blocoCompra()}
         <button type="button" className="ch-link" onClick={() => irPara({ v: "abas" })}>Voltar</button>
       </div>
@@ -343,6 +380,11 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         onMudou={carregar}
         onAssinar={() => irPara({ v: "pagamento" })}
         onSair={onSair}
+        chama={estado.chama}
+        ligaNome={sit.liga.nome}
+        lembrete={estado.lembrete}
+        tema={tema}
+        onTema={trocarTema}
       />
     );
   } else if (vista.v === "meta") {
@@ -379,11 +421,11 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
   if (corpo) {
     return (
-      <div className={`ch ${FONTES}`}>
+      <Raiz tema={tema}>
         {corpo}
         {xpPop && <div className="ch-xp-pop" key={xpPop.k} aria-live="polite">+{xpPop.n} XP</div>}
         {aviso && <p className="ch-toast" role="status">{aviso}</p>}
-      </div>
+      </Raiz>
     );
   }
 
@@ -391,8 +433,28 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
   const concl = diasConcluidos(estado);
   const proxima = proximaMeta(estado.chama, diasMetas);
   const alcancadas = metasAlcancadas(estado, painel.marcos ?? []);
+  const nomeMeta = (dia: number) => {
+    const m = metaDe(dia);
+    return m?.nome && !m.generica ? m.nome : `${diasTxt(dia)} de chama`;
+  };
+  const diasFeitos = new Set(Object.values(estado.concluidos));
+  const ultimaLiga = estado.liga.indice >= painel.ligas.ligas.length - 1;
+  const proximaLiga = ultimaLiga ? null : painel.ligas.ligas[estado.liga.indice + 1];
+  const eu = sit.linhas.find((l) => l.voce);
+  const primeiroNome = (painel.nome || "").trim().split(/\s+/)[0];
+  const saudacao = painel.hora < 12 ? "Bom dia" : painel.hora < 18 ? "Boa tarde" : "Boa noite";
+  const tempoLiga = `${sit.restante.dias}d ${sit.restante.horas}h`;
+  const regraLiga = [proximaLiga ? `os ${sit.limites.sobem} primeiros sobem` : "", estado.liga.indice > 0 && sit.limites.descem > 0 ? `os ${sit.limites.descem} últimos descem` : ""].filter(Boolean).join("; ").replace(/^./, (c) => c.toUpperCase());
+  const irAba = (id: Aba) => { setAba(id); window.scrollTo({ top: 0 }); };
+  const ABAS: { id: Aba; icone: IdAba; nome: string }[] = [
+    { id: "hoje", icone: "hoje", nome: "Hoje" },
+    { id: "jornada", icone: "jornada", nome: "Jornada" },
+    { id: "liga", icone: "liga", nome: "Liga" },
+    { id: "biblia", icone: "biblia", nome: "Bíblia" },
+    { id: "conquistas", icone: "conquistas", nome: "Metas" },
+  ];
   return (
-    <div className={`ch ${FONTES}`}>
+    <Raiz tema={tema}>
       {estado.avisos.includes("brasa_salvou") && (
         <Faixa tom="brasa" onFechar={() => void agir({ tipo: "limparAvisos" })}>
           <b>Sua brasa guardada salvou a chama!</b> Você ficou um dia sem entrar e a brasa cobriu. Cuide dela hoje.
@@ -406,18 +468,54 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
       {aba === "hoje" && (
         <section className="ch-tela">
-          <div className="ch-topo">
+          <header className="ch-cab">
+            <div>
+              <span className="ch-data">{dataPorExtenso(hoje)}</span>
+              <h1>{primeiroNome && primeiroNome !== "Você" ? `${saudacao}, ${primeiroNome}` : saudacao}</h1>
+            </div>
             {armazem.conta && (
               <button type="button" className="ch-perfil-btn" aria-label="Minha conta" onClick={() => irPara({ v: "conta" })}>
                 <Avatar nome={painel.nome} foto={painel.perfil.foto} tamanho={40} />
               </button>
             )}
-            <Chama dias={estado.chama} />
-            <div className="ch-num">{estado.chama}</div>
-            <div className="ch-num-sub">{estado.chama === 1 ? "dia de chama acesa" : "dias de chama acesa"}</div>
-            <div className="ch-pills"><span className="ch-pill">⚡ {estado.xp} XP</span><span className="ch-pill">Semana: {estado.xpSemana[inicioSemana(hoje)] ?? 0} XP</span></div>
+          </header>
+
+          <section className="ch-hero" aria-label="Sua chama">
+            <div className="ch-hero-topo">
+              <div className="ch-hero-num">
+                <span className="ch-hero-sel so-claro-bloco">Chama acesa</span>
+                <span className={`ch-hero-n${String(estado.chama).length > 3 ? " longo" : ""}`}>{estado.chama}</span>
+                <span className="ch-hero-sub">
+                  <span className="so-claro">{estado.chama === 1 ? "dia seguido com Deus" : "dias seguidos com Deus"}</span>
+                  <span className="so-escuro">{estado.chama === 1 ? "dia de chama acesa" : "dias de chama acesa"}</span>
+                </span>
+                <span className="ch-hero-liga">Liga {sit.liga.nome} · {sit.posicao}º lugar</span>
+              </div>
+              <div className="ch-hero-chama"><Chama dias={estado.chama} tamanho={58} /></div>
+            </div>
+            <div className="ch-semana" aria-label="Sua semana">
+              {["S", "T", "Q", "Q", "S", "S", "D"].map((letra, i) => {
+                const data = somarDias(inicioSemana(hoje), i);
+                const feito = diasFeitos.has(data) || (data === hoje && feitoHoje);
+                const eHoje = data === hoje;
+                return (
+                  <div key={data}>
+                    <span aria-hidden="true">{letra}</span>
+                    <div className={`ch-q${feito ? " feito" : ""}${eHoje && !feito ? " hoje" : ""}`} role="img" aria-label={`${feito ? "Dia feito" : eHoje ? "Hoje" : "Sem registro"}: ${data.split("-").reverse().slice(0, 2).join("/")}`}><MiniChama /></div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="ch-xpl"><span><b>{estado.xp}</b> XP no total</span><span><b>{estado.xpSemana[inicioSemana(hoje)] ?? 0}</b> XP nesta semana</span></div>
             {estado.brasas > 0 && <div className="ch-brasas" title="Brasa guardada">{Array.from({ length: estado.brasas }, (_, i) => <i key={i} />)}<span>{estado.brasas === 1 ? "1 brasa guardada" : `${estado.brasas} brasas guardadas`}</span></div>}
-          </div>
+          </section>
+
+          <button type="button" className="ch-faixa-liga" onClick={() => irAba("liga")}>
+            <span className="pos">{sit.posicao}º</span>
+            <span className="nome">Liga {sit.liga.nome}{proximaLiga && sit.limites.sobem > 0 ? ` · até o ${sit.limites.sobem}º sobe` : ""}</span>
+            <span className="tempo">{tempoLiga}</span>
+          </button>
+
           <Hoje
             atual={atual}
             dia={conteudo(atual)}
@@ -432,6 +530,16 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             onJejum={(valor) => void agir({ tipo: "jejum", dia: atual, valor })}
             onPagamento={() => irPara({ v: "pagamento" })}
           />
+
+          <button type="button" className="ch-proxima" onClick={() => irAba("conquistas")} aria-label={`Próxima meta: ${nomeMeta(proxima)}. Abrir as metas`}>
+            <Anel pct={(estado.chama / proxima) * 100} tam={48} espessura={4} texto={String(proxima)} tamTexto={proxima >= 1000 ? 11 : 13} rotulo={`${estado.chama} de ${proxima} dias`} />
+            <span className="tx">
+              <b>Próxima meta: {nomeMeta(proxima)}</b>
+              <span className="ch-trilho" aria-hidden="true"><i style={{ width: `${Math.min(100, (estado.chama / proxima) * 100)}%` }} /></span>
+              <small>{proxima - estado.chama === 1 ? "falta 1 dia" : `faltam ${proxima - estado.chama} dias`}</small>
+            </span>
+          </button>
+
           {visaoInstalar !== "nada" && !cartaoInstalarFechado && concl === 0 && <InstalarApp forcar={instalarForcar} onFechar={() => setCartaoInstalarFechado(true)} />}
           <button type="button" className="ch-btn ch-btn-claro" onClick={() => setVista({ v: "pratica" })}>Ler mais versículos</button>
           {feitoHoje && <button type="button" className="ch-btn ch-btn-claro" onClick={() => setConvidar(true)}>Convidar um amigo</button>}
@@ -444,54 +552,116 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
       {aba === "jornada" && (
         <section className="ch-tela">
-          <h1>Sua jornada</h1>
-          <p className="ch-suave">{Math.min(concl, TOTAL_DIAS)} de {TOTAL_DIAS} dias da jornada concluídos{concl > TOTAL_DIAS ? `. Depois dela, a chama segue: ${concl} dias feitos no total` : ""}. Um dia por dia, sem pressa.</p>
-          <ol className="ch-trilha">
-            {Array.from({ length: TOTAL_DIAS }, (_, i) => i + 1).map((n) => {
-              const st = statusDoDia(estado, n, hoje, pago);
-              const desloc = [0, 1, 2, 1, 0, -1, -2, -1][(n - 1) % 8] * 34;
-              return (
-                <li key={n} style={{ transform: `translateX(${desloc}px)` }}>
-                  <button type="button" className={`ch-no ${st}${n === atual ? " atual" : ""}`} onClick={() => (st === "hoje" ? setAba("hoje") : abrirDia(n))} aria-label={`Dia ${n}: ${ROTULO[st]}`}>
-                    <span className="n">{st === "feito" ? "✓" : st === "pago" ? "🔒" : n}</span>
-                  </button>
-                  <small>{ROTULO_CURTO[st]}{[7, 14, 21].includes(n) ? " · 🏅" : ""}</small>
-                </li>
-              );
-            })}
-          </ol>
+          <header className="ch-tela-cab">
+            <span className="ch-data">Sua caminhada</span>
+            <h1>Jornada</h1>
+          </header>
+          <div className="ch-tres">
+            <div><b>{estado.chama}</b><span>{estado.chama === 1 ? "dia seguido" : "dias seguidos"}</span></div>
+            <div><b>{alcancadas.length}</b><span>{alcancadas.length === 1 ? "meta alcançada" : "metas alcançadas"}</span></div>
+            {capitulos !== null ? <div><b>{capitulos}</b><span>{capitulos === 1 ? "capítulo lido" : "capítulos lidos"}</span></div> : <div><b>{estado.xp}</b><span>XP no total</span></div>}
+          </div>
+
+          <section className="ch-mapa" aria-label="Mapa da chama">
+            <div className="ch-mapa-cab"><h2>Últimas 5 semanas</h2><span>cada quadrado = 1 dia</span></div>
+            <div className="ch-mapa-grade">
+              {["S", "T", "Q", "Q", "S", "S", "D"].map((l, i) => <span key={i} className="l" aria-hidden="true">{l}</span>)}
+              {Array.from({ length: 35 }, (_, i) => {
+                const data = somarDias(inicioSemana(somarDias(inicioSemana(hoje), -28)), i);
+                const feito = diasFeitos.has(data) || (data === hoje && feitoHoje);
+                const cls = feito ? "f" : data === hoje ? "h" : data > hoje ? "x" : "";
+                return <i key={data} className={cls} role="img" aria-label={`${data.split("-").reverse().slice(0, 2).join("/")}: ${feito ? "dia completo" : data > hoje ? "ainda não chegou" : "sem registro"}`} />;
+              })}
+            </div>
+            <div className="ch-legenda"><span>sem registro</span><i /><i className="f" /><span>dia completo</span></div>
+          </section>
+
+          <section className="ch-etapas" aria-label="Etapas">
+            <h2>Etapas</h2>
+            <div className="ch-etapa">
+              <div className="eixo"><div className={`bola ${concl >= TOTAL_DIAS ? "feita" : "agora"}`}>{concl >= TOTAL_DIAS ? <IconeCheck tam={16} largura={2.6} /> : <i />}</div><div className={`fio${concl >= TOTAL_DIAS ? " feito" : ""}`} /></div>
+              <div className="tx"><b>Jornada de {TOTAL_DIAS} dias</b><small>{concl >= TOTAL_DIAS ? (estado.concluidos[TOTAL_DIAS] ? `Concluída em ${dataCurta(estado.concluidos[TOTAL_DIAS])}` : "Concluída") : `${Math.min(concl, TOTAL_DIAS)} de ${TOTAL_DIAS} dias concluídos`}</small></div>
+            </div>
+            <div className="ch-etapa">
+              <div className="eixo"><div className={`bola ${concl >= TOTAL_DIAS ? "agora" : "depois"}`}>{concl >= TOTAL_DIAS && <i />}</div><div className="fio" /></div>
+              <div className="tx"><b>Dias contínuos</b><small>{concl >= TOTAL_DIAS ? `Palavra do plano + oração + missão · dia ${atual}` : `Começam depois do dia ${TOTAL_DIAS}`}</small></div>
+            </div>
+            <div className="ch-etapa">
+              <div className="eixo"><div className="bola depois" /></div>
+              <div className="tx"><b>Próxima meta · {diasTxt(proxima)}</b><small>{proxima - estado.chama === 1 ? "Falta 1 dia de chama" : `Faltam ${proxima - estado.chama} dias de chama`}</small></div>
+            </div>
+          </section>
+
+          <section aria-label={`Os ${TOTAL_DIAS} dias da jornada`}>
+            <h2>Os {TOTAL_DIAS} dias</h2>
+            <ol className="ch-dias21">
+              {Array.from({ length: TOTAL_DIAS }, (_, i) => i + 1).map((n) => {
+                const st = statusDoDia(estado, n, hoje, pago);
+                return (
+                  <li key={n}>
+                    <button type="button" className={`ch-dia21 ${st}${n === atual ? " atual" : ""}`} onClick={() => (st === "hoje" ? setAba("hoje") : abrirDia(n))} aria-label={`Dia ${n}: ${ROTULO[st]}`}>
+                      {st === "feito" ? <IconeCheck tam={18} largura={2.6} /> : n}
+                    </button>
+                    <small>{ROTULO_CURTO[st]}</small>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
         </section>
       )}
 
       {aba === "liga" && (
         <section className="ch-tela">
-          <div className="ch-liga-topo">
-            <span className="ch-liga-icone" style={{ filter: `drop-shadow(0 0 12px ${sit.liga.cor})` }} aria-hidden="true">{sit.liga.icone}</span>
-            <h1>Liga {sit.liga.nome}</h1>
-            {sit.liga.descricao && <p className="ch-suave">{sit.liga.descricao}</p>}
-            <p className="ch-grande">Você está em {sit.posicao}º lugar</p>
-            <p className="ch-suave">Faltam {sit.restante.dias}d {sit.restante.horas}h para a semana acabar. Os {sit.limites.sobem} primeiros sobem{estado.liga.indice > 0 ? `; os ${sit.limites.descem} últimos descem` : ""}.</p>
-            {sit.modo === "real" && <p className="ch-liga-real">Ranking com membros de verdade da sua liga: aparecem só o primeiro nome e a foto.</p>}
-          </div>
-          <div className="ch-liga-lista">
-            {sit.linhas.map((l, i) => {
-              const zona = l.posicao <= sit.limites.sobem && estado.liga.indice < painel.ligas.ligas.length - 1 ? "sobe" : l.posicao > sit.limites.tamanho - sit.limites.descem && estado.liga.indice > 0 ? "desce" : "";
-              const antes = i > 0 ? sit.linhas[i - 1].posicao : 0;
+          <header className="ch-liga-cab">
+            <div>
+              <span className="ch-data">Liga da semana</span>
+              <h1>{sit.liga.nome}</h1>
+            </div>
+            <span className="ch-tempo">termina em {tempoLiga}</span>
+          </header>
+          <div className="ch-ligas-barra" aria-hidden="true">{painel.ligas.ligas.map((lg, i) => <i key={lg.id} className={i <= estado.liga.indice ? "on" : ""} />)}</div>
+          <p className="ch-ligas-nomes">
+            {painel.ligas.ligas.map((lg, i) => <span key={lg.id}>{i > 0 ? " · " : ""}{i === estado.liga.indice ? <b>{lg.nome}</b> : lg.nome}</span>)}
+          </p>
+          <p className="ch-suave" style={{ margin: 0 }}>
+            Você está em {sit.posicao}º lugar{eu ? ` com ${eu.xp} XP` : ""}. {sit.liga.descricao ? `${sit.liga.descricao} ` : ""}{regraLiga ? `${regraLiga}.` : ""}
+          </p>
+          {sit.modo === "real" && <p className="ch-liga-real">Ranking com membros de verdade da sua liga: aparecem só o primeiro nome e a foto.</p>}
+
+          {sit.linhas.length >= 3 && (
+            <section className="ch-podio" aria-label="Pódio">
+              {[1, 0, 2].map((idx) => {
+                const l = sit.linhas[idx];
+                const tam = idx === 0 ? 68 : 56;
+                return (
+                  <div key={`${l.nome}-${l.posicao}`} className={`p${idx + 1}`}>
+                    <span className="avatar"><Avatar nome={l.nome} foto={l.voce ? l.foto ?? painel.perfil.foto : l.foto} anonimo={l.anonimo} tamanho={tam} /></span>
+                    <span className="nome">{l.voce ? "Você" : l.nome}</span>
+                    <div className="degrau"><b>{idx + 1}</b><small>{l.xp} XP</small></div>
+                  </div>
+                );
+              })}
+            </section>
+          )}
+
+          <section className="ch-tabela" aria-label="Classificação">
+            {sit.linhas.slice(sit.linhas.length >= 3 ? 3 : 0).map((l, i, resto) => {
+              const antes = i > 0 ? resto[i - 1].posicao : l.posicao - 1;
               return (
                 <Fragment key={`${l.nome}-${l.posicao}`}>
-                  {i === 0 && estado.liga.indice < painel.ligas.ligas.length - 1 && <div className="ch-zona sobe">▲ Zona de subida</div>}
-                  {antes === sit.limites.sobem && <div className="ch-zona">Zona segura</div>}
-                  {l.posicao === sit.limites.tamanho - sit.limites.descem + 1 && sit.limites.descem > 0 && estado.liga.indice > 0 && <div className="ch-zona desce">▼ Zona de descida</div>}
-                  <div className={`${zona}${l.voce ? " voce" : ""}`} style={{ display: "flex", gap: 10, alignItems: "center", background: "var(--ch-card)", borderRadius: 14, padding: "10px 12px", border: l.voce ? "1px solid var(--ch-ouro)" : "1px solid transparent", ...(zona === "sobe" ? { background: "#12301f" } : zona === "desce" ? { background: "#3b1a1a" } : {}) }}>
+                  {proximaLiga && antes === sit.limites.sobem && <div className="ch-div sobe">até o {sit.limites.sobem}º sobe para {proximaLiga.nome}</div>}
+                  {estado.liga.indice > 0 && sit.limites.descem > 0 && l.posicao === sit.limites.tamanho - sit.limites.descem + 1 && <div className="ch-div desce">zona de descida</div>}
+                  <div className={`ch-linha${l.voce ? " voce" : ""}`}>
                     <span className="pos">{l.posicao}</span>
-                    <Avatar nome={l.nome} foto={l.voce ? l.foto ?? painel.perfil.foto : l.foto} anonimo={l.anonimo} tamanho={32} />
+                    <Avatar nome={l.nome} foto={l.voce ? l.foto ?? painel.perfil.foto : l.foto} anonimo={l.anonimo} tamanho={36} />
                     <span className="nome">{l.voce ? "Você" : l.nome}</span>
                     <span className="xp">{l.xp} XP</span>
                   </div>
                 </Fragment>
               );
             })}
-          </div>
+          </section>
         </section>
       )}
 
@@ -499,34 +669,45 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
       {aba === "conquistas" && (
         <section className="ch-tela">
-          <h1>Conquistas</h1>
-          <div className="ch-card">
-            <h2>Seu perfil</h2>
-            <p className="ch-suave">⚡ {estado.xp} XP no total · {estado.xpSemana[inicioSemana(hoje)] ?? 0} XP nesta semana · liga {sit.liga.icone} {sit.liga.nome}</p>
-            {armazem.conta && <button type="button" className="ch-btn ch-btn-claro" onClick={() => irPara({ v: "conta" })}>Minha conta (nome, foto e ranking)</button>}
-          </div>
-          <div className="ch-card ch-meta-prox">
-            <span className="ch-etiqueta">Próxima meta</span>
-            <h2>{proxima} dias{metaDe(proxima)?.nome && !metaDe(proxima)?.generica ? ` · ${metaDe(proxima)!.nome}` : ""}</h2>
-            <div className="ch-meta-barra" role="progressbar" aria-valuemin={0} aria-valuemax={proxima} aria-valuenow={estado.chama}><i style={{ width: `${Math.min(100, (estado.chama / proxima) * 100)}%` }} /></div>
-            <p className="ch-suave">{proxima - estado.chama === 1 ? "Falta 1 dia" : `Faltam ${proxima - estado.chama} dias`} de chama para esta meta.</p>
-          </div>
-          <h2>Metas alcançadas</h2>
-          {alcancadas.length === 0 ? <p className="ch-suave">As metas aparecem aqui conforme a sua chama cresce. A primeira é de 3 dias.</p> : (
-            <ul className="ch-meta-lista">
-              {alcancadas.map((m) => (
-                <li key={m.dia}>
-                  <button type="button" onClick={() => irPara({ v: "estudo", dia: m.dia })}>
-                    <span className="ch-medalha" aria-hidden="true">{estado.medalhas.includes(idEstudo(m.dia)) ? "📖" : "🏅"}</span>
-                    <div><b>{diasTxt(m.dia)} · {m.nome}</b><small>{m.estudo ? "Toque para reler o estudo" : "Meta alcançada"}</small></div>
+          <header className="ch-tela-cab">
+            <span className="ch-data">{alcancadas.length} {alcancadas.length === 1 ? "alcançada" : "alcançadas"}</span>
+            <h1>Metas da chama</h1>
+          </header>
+
+          <section className="ch-prox-meta" aria-label="Próxima meta">
+            <Anel pct={(estado.chama / proxima) * 100} tam={84} espessura={8} texto={String(proxima)} tamTexto={proxima >= 1000 ? 17 : 22} rotulo={`${estado.chama} de ${proxima} dias`} />
+            <div className="tx">
+              <span className="et">Próxima meta · {proxima - estado.chama === 1 ? "falta 1 dia" : `faltam ${proxima - estado.chama} dias`}</span>
+              <b>{nomeMeta(proxima)}</b>
+              <small>O estudo desta meta abre no dia {proxima}</small>
+            </div>
+          </section>
+
+          <ul className="ch-medalhas-grade" aria-label="Todas as metas">
+            {[...new Set([...diasMetas, ...alcancadas.map((m) => m.dia), proxima])].sort((x, y) => x - y).map((n) => {
+              const ok = alcancadas.some((m) => m.dia === n);
+              const eProx = !ok && n === proxima;
+              const tam = n >= 1000 ? " maior2" : n >= 100 ? " maior" : "";
+              const m = alcancadas.find((x) => x.dia === n);
+              return (
+                <li key={n}>
+                  <button type="button" disabled={!ok} aria-label={`Meta de ${diasTxt(n)}: ${ok ? "alcançada, abrir o estudo" : eProx ? "próxima" : "bloqueada"}`} onClick={() => ok && irPara({ v: "estudo", dia: n })}>
+                    <span className={`ch-losango${tam}${ok ? " acesa" : eProx ? " proxima" : ""}`}><span>{n}</span></span>
+                    <small>{ok ? (m?.estudo ? "estudo" : "alcançada") : eProx ? "próxima" : "bloqueada"}</small>
                   </button>
                 </li>
-              ))}
-            </ul>
-          )}
+              );
+            })}
+          </ul>
+
           {estado.medalhas.includes("jornada") && (
             <div className="ch-ganho medalha">🏆 <b>{NOME_JORNADA.nome}</b><small>{NOME_JORNADA.texto}</small></div>
           )}
+          <div className="ch-card">
+            <h2>Seu perfil</h2>
+            <p className="ch-suave">{estado.xp} XP no total · {estado.xpSemana[inicioSemana(hoje)] ?? 0} XP nesta semana · liga {sit.liga.nome}. Maior sequência: {diasTxt(estado.maior)}.</p>
+            {armazem.conta && <button type="button" className="ch-btn ch-btn-claro" onClick={() => irPara({ v: "conta" })}>Minha conta (nome, foto e ranking)</button>}
+          </div>
           {visaoInstalar !== "nada" && <InstalarApp forcar={instalarForcar} />}
           <div className="ch-card">
             <h2>Amigos</h2>
@@ -538,23 +719,43 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             <p className="ch-suave">Você ganha 1 brasa a cada 7 dias de chama (no máximo {MAX_BRASAS}). Se pular um dia, a brasa é usada sozinha e a chama não apaga.</p>
             <div className="ch-brasas grande">{Array.from({ length: MAX_BRASAS }, (_, i) => <i key={i} className={i < estado.brasas ? "" : "vazia"} />)}</div>
           </div>
-          <p className="ch-suave">Maior sequência: {diasTxt(estado.maior)}.</p>
           <button type="button" className="ch-btn ch-btn-claro" onClick={() => void papelDeParede()}>Papel de parede da chama</button>
         </section>
       )}
 
-      <nav className="ch-nav cinco" aria-label="Seções do app">
-        {([["hoje", "🔥", "Hoje"], ["jornada", "🗺️", "Jornada"], ["liga", sit.liga.icone, "Liga"], ["biblia", "📖", "Bíblia"], ["conquistas", "🏅", "Conquistas"]] as const).map(([id, ic, nome]) => (
-          <button key={id} type="button" className={aba === id ? "on" : ""} aria-current={aba === id ? "page" : undefined} onClick={() => { setAba(id); window.scrollTo({ top: 0 }); }}>
-            <span aria-hidden="true">{ic}</span>{nome}
-          </button>
-        ))}
+      <nav className="ch-nav" aria-label="Seções do app">
+        <div className="ch-nav-barra">
+          {ABAS.map((t) => (
+            <button key={t.id} type="button" className={aba === t.id ? "on" : ""} aria-current={aba === t.id ? "page" : undefined} aria-label={t.nome} onClick={() => irAba(t.id)}>
+              <IconeAba id={t.icone} />
+              <span>{t.nome}</span>
+            </button>
+          ))}
+        </div>
       </nav>
       {convidar && <ConviteSheet texto={textoConvite} link={linkConvite} onFechar={() => setConvidar(false)} chama={estado.chama} />}
       {xpPop && <div className="ch-xp-pop" key={xpPop.k} aria-live="polite">+{xpPop.n} XP</div>}
       {aviso && <p className="ch-toast" role="status">{aviso}</p>}
-    </div>
+    </Raiz>
   );
+}
+
+/** "Terça, 24 de novembro" a partir de AAAA-MM-DD. */
+function dataPorExtenso(data: string): string {
+  try {
+    const t = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${data}T12:00:00Z`)).replace("-feira", "");
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  } catch {
+    return data;
+  }
+}
+/** "8 de agosto" a partir de AAAA-MM-DD. */
+function dataCurta(data: string): string {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${data}T12:00:00Z`));
+  } catch {
+    return data;
+  }
 }
 
 const ROTULO: Record<StatusDia, string> = { feito: "concluído", hoje: "aberto para hoje", amanha: "abre amanhã", bloqueado: "bloqueado", pago: "bloqueado até a compra" };
@@ -593,33 +794,36 @@ function Hoje(p: {
     );
   }
   const c = p.checks ?? {};
-  const itens: { id: Check; nome: string; dica: string }[] = [
-    { id: "leu", nome: "Li a Palavra", dica: "versículo e reflexão" },
-    { id: "orou", nome: "Orei", dica: "a oração do dia" },
-    { id: "missao", nome: "Cumpri a missão", dica: "uma tarefa pequena" },
+  const itens: { id: Check; nome: string; dica: string; icone: React.ReactNode }[] = [
+    { id: "leu", nome: "Palavra", dica: [p.dia?.referencia, p.dia?.titulo].filter(Boolean).join(" · ") || "versículo e reflexão", icone: <IconeLivro /> },
+    { id: "orou", nome: "Oração", dica: "ore pelo que leu", icone: <IconeCoracao /> },
+    { id: "missao", nome: "Missão do dia", dica: p.dia?.missao || "uma tarefa pequena", icone: <IconeEnvio /> },
   ];
+  const feitos = itens.filter((it) => c[it.id]).length;
+  const proximaId = itens.find((it) => !c[it.id])?.id;
   return (
-    <div className="ch-card">
-      <span className="ch-etiqueta">{p.atual > TOTAL_DIAS ? `Dia ${p.atual}` : `Dia ${p.atual} de ${TOTAL_DIAS}`}</span>
-      <h2>{p.dia?.titulo ?? "Hoje"}</h2>
-      {p.dia?.referencia && <p className="ch-ref">{p.dia.referencia}</p>}
-      <ul className="ch-checks">
-        {itens.map((it) => (
-          <li key={it.id}>
-            <button type="button" className={c[it.id] ? "feito" : ""} onClick={() => p.onPasso(it.id)}>
-              <span className="ch-marca" aria-hidden="true">{c[it.id] ? "✓" : ""}</span>
-              <span><b>{it.nome}</b><small>{it.dica}</small></span>
-            </button>
-          </li>
-        ))}
-      </ul>
+    <section className="ch-dia" aria-label="Seu dia com Deus">
+      <div className="ch-dia-cab"><h2>Seu dia com Deus</h2><span>{feitos} de 3</span></div>
+      <div className="ch-dia-barra" role="progressbar" aria-label="Tarefas do dia" aria-valuemin={0} aria-valuemax={3} aria-valuenow={feitos}><i style={{ width: `${(feitos / 3) * 100}%` }} /></div>
+      <p className="ch-dia-cap">{p.atual > TOTAL_DIAS ? `Dia ${p.atual}` : `Dia ${p.atual} de ${TOTAL_DIAS}`}</p>
+      {itens.map((it) => {
+        const feito = Boolean(c[it.id]);
+        const eProxima = it.id === proximaId;
+        return (
+          <button key={it.id} type="button" className={`ch-tarefa${feito ? " feito" : ""}${eProxima ? " proxima" : ""}`} onClick={() => p.onPasso(it.id)}>
+            <span className="ico" aria-hidden="true">{feito ? <IconeCheck /> : it.icone}</span>
+            <span className="tx"><b>{it.nome}{feito ? <span className="sr-so"> (feita)</span> : null}</b><small>{it.dica}</small></span>
+            {eProxima && <span className="comecar">Começar</span>}
+          </button>
+        );
+      })}
       {p.dia?.jejum && (
         <label className="ch-jejum" aria-label="Jejum opcional">
           <input type="checkbox" checked={p.jejum} onChange={(e) => p.onJejum(e.target.checked)} />
           <span><b>Jejum (opcional)</b><small>{p.dia.jejum}</small></span>
         </label>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -656,7 +860,7 @@ function Passo({ dia, passo, feito, onVoltar, onConcluir, onAbrirBiblia }: { dia
   const pct = passo === "orou" && !feito ? ((SEGUNDOS_ORACAO - resta) / SEGUNDOS_ORACAO) * 100 : 100;
   return (
     <div className="ch-cheia ch-passo">
-      <button type="button" className="ch-link voltar" onClick={onVoltar}>‹ Voltar</button>
+      <button type="button" className="ch-voltar" aria-label="Voltar" onClick={onVoltar}><IconeVoltar /></button>
       <span className="ch-etiqueta">Dia {dia.dia} · {passo === "leu" ? "Palavra" : passo === "orou" ? "Oração" : "Missão"}</span>
       {passo === "leu" && (
         <>
@@ -698,24 +902,36 @@ function Passo({ dia, passo, feito, onVoltar, onConcluir, onAbrirBiblia }: { dia
 
 function Estudo({ meta, feito, onVoltar, onConcluir }: { meta: Meta; feito: boolean; onVoltar: () => void; onConcluir: () => void | Promise<void> }) {
   const [enviando, setEnviando] = useState(false);
+  const [resposta, setResposta] = useState("");
   return (
     <div className="ch-cheia ch-passo">
-      <button type="button" className="ch-link voltar" onClick={onVoltar}>‹ Voltar</button>
-      <span className="ch-etiqueta">Estudo · {diasTxt(meta.dia)} de chama</span>
-      <h1>{meta.nome}</h1>
-      {meta.versiculo && <blockquote className="ch-versiculo">“{meta.versiculo}”<cite>{meta.referencia}</cite></blockquote>}
-      {paragrafos(meta.estudo).map((t, i) => <p key={i} className="ch-texto">{t}</p>)}
+      <button type="button" className="ch-voltar" aria-label="Voltar" onClick={onVoltar}><IconeVoltar /></button>
+      <header className="ch-estudo-cab">
+        <span className="ch-etiqueta">Meta alcançada · {diasTxt(meta.dia)}</span>
+        <span className="num" aria-hidden="true">{meta.dia}</span>
+        <h1>{meta.nome}</h1>
+        {meta.referencia && <span className="ref">{meta.referencia}</span>}
+      </header>
+      {meta.versiculo && <blockquote className="ch-bloco-verso">{meta.versiculo}</blockquote>}
+      {meta.estudo && (
+        <section className="ch-estudo-corpo" aria-label="Estudo">
+          <h2>Estudo</h2>
+          {paragrafos(meta.estudo).map((t, i) => <p key={i}>{t}</p>)}
+        </section>
+      )}
       {meta.pergunta && (
-        <>
-          <h2>Para pensar</h2>
-          <p className="ch-pergunta">{meta.pergunta}</p>
-        </>
+        <section className="ch-pensar" aria-label="Para pensar">
+          <span className="ch-rotulo">Para pensar</span>
+          <p className="perg">{meta.pergunta}</p>
+          <label htmlFor="ch-resposta-estudo">Sua resposta não é enviada a ninguém</label>
+          <textarea id="ch-resposta-estudo" rows={3} placeholder="Escreva aqui…" value={resposta} onChange={(e) => setResposta(e.target.value)} />
+        </section>
       )}
       {meta.oracao && (
-        <>
-          <h2>Oração</h2>
-          <p className="ch-oracao">{meta.oracao}</p>
-        </>
+        <section className="ch-oracao-cartao" aria-label="Oração">
+          <span className="ch-rotulo">Oração</span>
+          <p>{meta.oracao}</p>
+        </section>
       )}
       <div className="ch-rodape">
         {feito ? (
@@ -733,7 +949,7 @@ function Estudo({ meta, feito, onVoltar, onConcluir }: { meta: Meta; feito: bool
 function Revisao({ dia, onVoltar }: { dia: Dia; onVoltar: () => void }) {
   return (
     <div className="ch-cheia ch-passo">
-      <button type="button" className="ch-link voltar" onClick={onVoltar}>‹ Voltar</button>
+      <button type="button" className="ch-voltar" aria-label="Voltar" onClick={onVoltar}><IconeVoltar /></button>
       <span className="ch-etiqueta">Dia {dia.dia} · concluído</span>
       <h1>{dia.titulo}</h1>
       <blockquote className="ch-versiculo">“{dia.versiculo}”<cite>{dia.referencia}</cite></blockquote>
