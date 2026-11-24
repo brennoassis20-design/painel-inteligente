@@ -331,6 +331,9 @@ export default function MembrosPage() {
   // Chama Acesa instalado (start_url com ?app=1) ou entrada normal na área dele: abre direto no app.
   const temChama = Boolean(home?.chama?.app);
   useEffect(() => {
+    chamaRef.current = temChama;
+  }, [temChama]);
+  useEffect(() => {
     if (!temChama) return;
     // Na área do Chama não há aulas: os produtos (grátis e pago) são só o acesso ao app. Qualquer ?p= (cadastro grátis,
     // atalho salvo no iPhone com a URL do produto) abre o app, nunca a tela vazia "Nenhuma aula disponível".
@@ -354,7 +357,18 @@ export default function MembrosPage() {
       .catch(() => undefined);
   }, [logged]);
 
+  // Na área do Chama Acesa não há aulas: "Início" e o card do produto voltam para o app, nunca para a tela vazia.
+  const chamaRef = useRef(false);
   const go = useCallback((nextSlug: string | null, nextLesson?: string | null) => {
+    if (chamaRef.current && !nextLesson) {
+      window.history.pushState(null, "", `${window.location.pathname}?chama=1`);
+      setReformaAberto(false);
+      setSlug(null);
+      setLessonId(null);
+      setChamaAberto(true);
+      window.scrollTo({ top: 0 });
+      return;
+    }
     const params = new URLSearchParams();
     if (nextSlug) params.set("p", nextSlug);
     if (nextLesson) params.set("aula", nextLesson);
