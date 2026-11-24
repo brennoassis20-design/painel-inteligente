@@ -30,7 +30,6 @@ const PRINTS = [
   { arq: "inicio-dia5", alt: "Tela inicial do app: chama acesa com 5 dias seguidos e os três passos do dia", legenda: "Todo dia: ler, orar e cumprir uma missão" },
   { arq: "checks-feitos", alt: "Tela de dia concluído com a chama crescendo", legenda: "Chama de dias seguidos que cresce a cada dia" },
   { arq: "pratica", alt: "Prática de versículos: completar a palavra que falta", legenda: "Prática para fixar os versículos" },
-  { arq: "liga", alt: "Tela de ligas semanais com XP", legenda: "Ligas semanais e pontos de XP" },
   { arq: "jornada", alt: "Mapa da jornada de 21 dias", legenda: "A jornada de 21 dias, dia a dia" },
   { arq: "medalhas", alt: "Tela de conquistas com medalhas", legenda: "Medalhas pelas marcas de 3, 7, 14 e 21 dias" },
 ];
