@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Só em desenvolvimento: deixa abrir a bancada pelo IP da rede local (iPhone na mesma Wi-Fi). Não afeta produção.
+  allowedDevOrigins: ["192.168.*.*", "10.*.*.*"],
   // O Chromium do servidor vem compactado em node_modules/@sparticuz/chromium/bin; garante que vá junto na função.
   outputFileTracingIncludes: {
     "/api/generate/pdf": ["./node_modules/@sparticuz/chromium/bin/**", "./lib/pdf-fonts/**"],
