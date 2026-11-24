@@ -1,7 +1,7 @@
 // Regra pura (sem banco): quem usa o Chama Acesa e quem já pagou.
 //   CHAMA_AREA_SLUG            área onde o app existe (padrão: chama-acesa)
-//   CHAMA_PRODUCT_SLUGS        slugs dos produtos que liberam os 21 dias (compra aprovada no webhook Cakto)
-//   CHAMA_CHECKOUT_URL         checkout Cakto mostrado ao tentar abrir o dia 4 sem compra
+//   CHAMA_PRODUCT_SLUGS        slugs dos produtos que liberam os 21 dias (compra aprovada no webhook Eduzz)
+//   CHAMA_CHECKOUT_URL         checkout Eduzz mostrado ao tentar abrir o dia 4 sem compra
 //   CHAMA_365_URL              oferta "Chama Acesa 365" mostrada ao fim do dia 21 (vazio = não mostra)
 //   CHAMA_ARMAZENAMENTO        "supabase" (padrão) ou "local" (navegador, enquanto a migration não foi aplicada)
 //   CHAMA_DEV_LIBERAR          só fora de produção: "pago" libera tudo para qualquer logado

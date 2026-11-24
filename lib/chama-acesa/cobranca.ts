@@ -42,7 +42,7 @@ export async function rodarCobranca(area: Area, hoje: string, textos: Texto[], d
   let mails = 0;
   for (const a of alvos) {
     const email = emails.get(a.candidato.user_id)!;
-    const link = (medium: "aviso-push" | "aviso-email") => (checkout && /^https:\/\//.test(checkout) ? tagLink(checkout, { medium, campaign: "chama-acesa", content: "dia-4", provider: "cakto", email }).url : "");
+    const link = (medium: "aviso-push" | "aviso-email") => (checkout && /^https:\/\//.test(checkout) ? tagLink(checkout, { medium, campaign: "chama-acesa", content: "dia-4", provider: "eduzz", email }).url : "");
     enviados += await pushParaUsuarios(area.id, [a.candidato.user_id], { title: a.titulo, body: a.corpo, url: link("aviso-push") || `${areaUrl(area)}/?app=1`, tag: "chama-cobranca" });
     if (brevoReady(area) && link("aviso-email")) {
       try {

@@ -176,7 +176,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
   const linkCompra = () => {
     if (!painel.checkoutUrl) return null;
     try {
-      return tagLink(painel.checkoutUrl, { medium: "cadeado", campaign: "chama-acesa", content: "dia-4", origin: lerUtm?.() ?? null, provider: "cakto", email }).url;
+      return tagLink(painel.checkoutUrl, { medium: "cadeado", campaign: "chama-acesa", content: "dia-4", origin: lerUtm?.() ?? null, provider: "eduzz", email }).url;
     } catch {
       return painel.checkoutUrl;
     }
