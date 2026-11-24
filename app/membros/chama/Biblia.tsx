@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ajustarFonte, CHAVE_BIBLIA_FONTE, CREDITO_BIBLIA, filtrarLivros, FONTE_PADRAO, FONTES_BIBLIA, lerUltimo, LINK_LICENCA_BIBLIA, salvarUltimo, vizinho,
+  CHAVE_BIBLIA_FONTE, CREDITO_BIBLIA, filtrarLivros, FONTE_PADRAO, FONTES_BIBLIA, lerUltimo, LINK_LICENCA_BIBLIA, salvarUltimo,
   type LivroIndice, type LivroTexto, type Posicao,
 } from "@/lib/chama-acesa/biblia";
+import type { ArmazemBiblia, PainelBiblia } from "@/lib/chama-acesa/armazem-biblia";
+import { situacaoDoPlano, type AcaoBiblia } from "@/lib/chama-acesa/biblia-estudo";
+import { BibliaLeitor } from "./BibliaLeitor";
+import { BibliaPlanos } from "./BibliaPlanos";
+import { BibliaProgresso } from "./BibliaProgresso";
+import { BibliaEstudo } from "./BibliaEstudo";
 
 const BASE = "/chama-acesa/biblia";
 const cacheLivros = new Map<string, LivroTexto>();
 let cacheIndice: LivroIndice[] | null = null;
+let ultimoPainel: PainelBiblia | null = null;
 
 async function pegar<T>(url: string): Promise<T> {
   const r = await fetch(url);
@@ -25,17 +32,71 @@ function lerFonte(): number {
   }
 }
 
-/** Aba Bíblia: grátis para sempre, fora da jornada (não conta dia, não mexe na chama). */
-export function Biblia() {
+export type Secao = "ler" | "planos" | "progresso" | "estudo";
+/** Leitura aberta a partir do plano: os capítulos do dia, na ordem, e qual dia concluir ao terminar. */
+export interface ContextoLeitura { dia: number; caps: Posicao[]; nome: string }
+export interface AbrirOpcoes { plano?: ContextoLeitura; versiculo?: number }
+
+export interface AbaBibliaProps {
+  /** Armazém da Bíblia (leitura, planos, notas, explicações). Sem ele só a leitura simples funciona. */
+  biblia?: ArmazemBiblia;
+  /** Pede a permissão de notificação (lembrete da leitura). Sem isso (bancada), só guarda o horário. */
+  onAtivarPush?: () => Promise<void>;
+}
+
+/** Aba Bíblia: grátis para sempre, fora da jornada (não conta dia, não mexe na chama). Ler · Planos · Progresso · Estudo. */
+export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
   const [indice, setIndice] = useState<LivroIndice[] | null>(cacheIndice);
   const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
+  const [secao, setSecao] = useState<Secao>("ler");
   const [livro, setLivro] = useState<LivroIndice | null>(null);
-  const [leitura, setLeitura] = useState<Posicao | null>(null);
+  const [leitura, setLeitura] = useState<(Posicao & AbrirOpcoes) | null>(null);
   const [, setCarregou] = useState(0);
   const [fonte, setFonte] = useState(lerFonte);
   const [tentativa, setTentativa] = useState(0);
-  const topo = useRef<HTMLDivElement>(null);
+  const [painel, setPainel] = useState<PainelBiblia | null>(ultimoPainel);
+  const [aviso, setAviso] = useState("");
+  const avisoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const toast = useCallback((m: string) => {
+    setAviso(m);
+    clearTimeout(avisoTimer.current);
+    avisoTimer.current = setTimeout(() => setAviso(""), 3500);
+  }, []);
+  useEffect(() => () => clearTimeout(avisoTimer.current), []);
+
+  // Estado da pessoa (plano, lidos, notas...).
+  useEffect(() => {
+    if (!biblia) return;
+    let vivo = true;
+    biblia
+      .carregar()
+      .then((p) => {
+        ultimoPainel = p;
+        if (vivo) setPainel(p);
+      })
+      .catch(() => vivo && !ultimoPainel && toast("Não deu para carregar o seu progresso agora. A leitura continua funcionando."));
+    return () => {
+      vivo = false;
+    };
+  }, [biblia, toast]);
+
+  const agir = useCallback(
+    async (acao: AcaoBiblia): Promise<boolean> => {
+      if (!biblia) return false;
+      try {
+        const p = await biblia.agir(acao);
+        ultimoPainel = p;
+        setPainel(p);
+        return true;
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "Não deu para salvar agora. Tente de novo.");
+        return false;
+      }
+    },
+    [biblia, toast],
+  );
 
   useEffect(() => {
     if (indice) return;
@@ -78,14 +139,13 @@ export function Biblia() {
   const ultimo = indice ? lerUltimo(indice) : null;
   const filtrados = useMemo(() => (indice ? filtrarLivros(indice, busca) : []), [indice, busca]);
 
-  const abrir = (p: Posicao) => {
-    setLeitura(p);
+  const abrir = useCallback((p: Posicao, opcoes: AbrirOpcoes = {}) => {
+    setLeitura({ ...p, ...opcoes });
     salvarUltimo(p);
     setErro("");
     window.scrollTo({ top: 0 });
-  };
-  const mudarFonte = (passo: 1 | -1) => {
-    const n = ajustarFonte(fonte, passo);
+  }, []);
+  const mudarFonte = (n: number) => {
     setFonte(n);
     try {
       window.localStorage.setItem(CHAVE_BIBLIA_FONTE, String(n));
@@ -106,59 +166,111 @@ export function Biblia() {
       <button type="button" className="ch-link" onClick={() => setTentativa((t) => t + 1)}>Tentar de novo</button>
     </div>
   );
+  const avisoTela = aviso && <p className="ch-toast" role="status">{aviso}</p>;
 
   // ------------------------------------------------ leitura do capítulo
   if (leitura && indice) {
-    const info = indice.find((l) => l.sigla === leitura.sigla);
-    const versiculos = texto?.capitulos[leitura.cap - 1];
-    const ant = vizinho(indice, leitura, -1);
-    const prox = vizinho(indice, leitura, 1);
     return (
-      <section className="ch-tela ch-biblia" ref={topo}>
-        <div className="ch-biblia-barra">
-          <button type="button" className="ch-link voltar" onClick={() => { setLeitura(null); setLivro(info ?? null); }}>‹ {info?.nome ?? "Livros"}</button>
-          <div className="ch-biblia-fonte" role="group" aria-label="Tamanho da letra">
-            <button type="button" onClick={() => mudarFonte(-1)} disabled={fonte === FONTES_BIBLIA[0]} aria-label="Diminuir a letra">A-</button>
-            <button type="button" onClick={() => mudarFonte(1)} disabled={fonte === FONTES_BIBLIA[FONTES_BIBLIA.length - 1]} aria-label="Aumentar a letra">A+</button>
-          </div>
-        </div>
-        <h1>{info?.nome} {leitura.cap}</h1>
-        {falha}
-        {!versiculos && !erro && <p className="ch-suave">Abrindo…</p>}
-        {versiculos && (
-          <div className="ch-biblia-texto" style={{ fontSize: fonte }}>
-            {versiculos.map((v, i) => (
-              <p key={i}><sup>{i + 1}</sup> {v}</p>
-            ))}
-          </div>
-        )}
-        <div className="ch-biblia-nav">
-          <button type="button" className="ch-btn ch-btn-claro" disabled={!ant} onClick={() => ant && abrir(ant)}>‹ Anterior</button>
-          <button type="button" className="ch-btn ch-btn-claro" disabled={!prox} onClick={() => prox && abrir(prox)}>Próximo ›</button>
-        </div>
-        {credito}
-      </section>
+      <>
+        <BibliaLeitor
+          indice={indice}
+          posicao={leitura}
+          versiculos={texto?.capitulos[leitura.cap - 1]}
+          erro={falha || null}
+          fonte={fonte}
+          onFonte={mudarFonte}
+          painel={painel}
+          biblia={biblia}
+          agir={agir}
+          toast={toast}
+          plano={leitura.plano}
+          versiculoInicial={leitura.versiculo}
+          onAbrir={abrir}
+          onVoltar={() => {
+            const info = indice.find((l) => l.sigla === leitura.sigla);
+            const veioDoPlano = Boolean(leitura.plano);
+            setLeitura(null);
+            if (veioDoPlano) setSecao("planos");
+            else if (secao === "ler") setLivro(info ?? null);
+          }}
+          rodape={credito}
+        />
+        {avisoTela}
+      </>
     );
   }
 
   // ------------------------------------------------ escolha do capítulo
-  if (livro) {
+  if (secao === "ler" && livro) {
     return (
       <section className="ch-tela ch-biblia">
         <button type="button" className="ch-link voltar" onClick={() => setLivro(null)}>‹ Todos os livros</button>
         <h1>{livro.nome}</h1>
         <p className="ch-suave">Escolha o capítulo.</p>
         <div className="ch-biblia-grade">
-          {Array.from({ length: livro.capitulos }, (_, i) => i + 1).map((n) => (
-            <button key={n} type="button" onClick={() => abrir({ sigla: livro.sigla, cap: n })}>{n}</button>
-          ))}
+          {Array.from({ length: livro.capitulos }, (_, i) => i + 1).map((n) => {
+            const lido = painel?.estado.lidos[livro.sigla]?.includes(n);
+            return (
+              <button key={n} type="button" className={lido ? "lido" : ""} aria-label={`Capítulo ${n}${lido ? ", já lido" : ""}`} onClick={() => abrir({ sigla: livro.sigla, cap: n })}>{n}</button>
+            );
+          })}
         </div>
         {credito}
       </section>
     );
   }
 
-  // ------------------------------------------------ lista de livros
+  const menu = biblia && (
+    <div className="ch-biblia-menu" role="tablist" aria-label="Seções da Bíblia">
+      {(
+        [["ler", "📖", "Ler"], ["planos", "🗓️", "Planos"], ["progresso", "📊", "Progresso"], ["estudo", "✍️", "Estudo"]] as const
+      ).map(([id, ic, nome]) => (
+        <button key={id} type="button" role="tab" aria-selected={secao === id} className={secao === id ? "on" : ""} onClick={() => { setSecao(id); setLivro(null); window.scrollTo({ top: 0 }); }}>
+          <span aria-hidden="true">{ic}</span>{nome}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (secao === "planos" && biblia) {
+    return (
+      <section className="ch-tela ch-biblia">
+        {menu}
+        <BibliaPlanos painel={painel} agir={agir} toast={toast} onAbrir={abrir} onAtivarPush={onAtivarPush} />
+        {avisoTela}
+      </section>
+    );
+  }
+  if (secao === "progresso" && biblia) {
+    return (
+      <section className="ch-tela ch-biblia">
+        {menu}
+        <BibliaProgresso
+          painel={painel}
+          onAbrirLivro={(s) => {
+            const l = indice?.find((x) => x.sigla === s);
+            if (l) {
+              setSecao("ler");
+              setLivro(l);
+              window.scrollTo({ top: 0 });
+            }
+          }}
+          onPlanos={() => setSecao("planos")}
+        />
+      </section>
+    );
+  }
+  if (secao === "estudo" && biblia) {
+    return (
+      <section className="ch-tela ch-biblia">
+        {menu}
+        <BibliaEstudo painel={painel} agir={agir} onAbrir={abrir} />
+        {avisoTela}
+      </section>
+    );
+  }
+
+  // ------------------------------------------------ Ler: lista de livros
   const grupo = (t: "at" | "nt", titulo: string) => {
     const ls = filtrados.filter((l) => l.testamento === t);
     if (ls.length === 0) return null;
@@ -174,16 +286,24 @@ export function Biblia() {
     );
   };
   const nomeUltimo = ultimo ? indice?.find((l) => l.sigla === ultimo.sigla)?.nome : null;
+  const sitPlano = painel?.estado.plano ? situacaoDoPlano(painel.estado.plano, painel.hoje) : null;
+  const hojePlano = sitPlano?.hoje && !sitPlano.hoje.feito ? sitPlano.hoje : null;
   return (
     <section className="ch-tela ch-biblia">
+      {menu}
       <h1>Bíblia</h1>
       <p className="ch-suave">Grátis para sempre. Ler aqui não muda a sua jornada nem a sua chama.</p>
       {falha}
       {!indice && !erro && <p className="ch-suave">Abrindo…</p>}
       {indice && (
         <>
+          {hojePlano && sitPlano && (
+            <button type="button" className="ch-btn" onClick={() => abrir(hojePlano.capitulos[0], { plano: { dia: hojePlano.dia, caps: hojePlano.capitulos, nome: hojePlano.nome } })}>
+              Leitura de hoje: {hojePlano.nome}
+            </button>
+          )}
           {ultimo && nomeUltimo && (
-            <button type="button" className="ch-btn" onClick={() => abrir(ultimo)}>Continuar: {nomeUltimo} {ultimo.cap}</button>
+            <button type="button" className={hojePlano ? "ch-btn ch-btn-claro" : "ch-btn"} onClick={() => abrir(ultimo)}>Continuar: {nomeUltimo} {ultimo.cap}</button>
           )}
           <input className="ch-biblia-busca" type="search" inputMode="search" placeholder="Buscar livro (ex.: João, Salmos)" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar livro" />
           {grupo("at", "Antigo Testamento")}
@@ -192,6 +312,7 @@ export function Biblia() {
         </>
       )}
       {credito}
+      {avisoTela}
     </section>
   );
 }

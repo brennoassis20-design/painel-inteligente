@@ -2,6 +2,7 @@
 //  - remoto: servidor (rota /api/membros/chama; as regras rodam lá)
 //  - local: no navegador (bancada /membros/chama-dev e uso sem a migração aplicada); roda as MESMAS regras.
 import type { Dia } from "./dias.ts";
+import { criarBibliaLocal, criarBibliaRemoto, type ArmazemBiblia, type ArmazemBibliaLocal } from "./armazem-biblia.ts";
 import { aleatorio, atualizarLiga, type ConfigLigas } from "./ligas.ts";
 import { escolherTexto, montarMensagem, perfilDeEstado, preencher, type Mensagem, type Texto, type Tipo } from "./lembretes.ts";
 import { diasLiberados, type Painel } from "./painel.ts";
@@ -19,6 +20,8 @@ export interface Armazem {
   tipo: "local" | "remoto";
   carregar(): Promise<Painel>;
   agir(acao: Acao): Promise<RespostaAcao>;
+  /** Bíblia (leitura, planos, notas, explicações): grátis e separada da jornada. */
+  biblia?: ArmazemBiblia;
 }
 
 export type Chamada = <T = unknown>(path: string, init?: { method?: string; body?: unknown }) => Promise<T>;
@@ -26,6 +29,7 @@ export type Chamada = <T = unknown>(path: string, init?: { method?: string; body
 export function criarArmazemRemoto(chamar: Chamada): Armazem {
   return {
     tipo: "remoto",
+    biblia: criarBibliaRemoto(chamar),
     carregar: () => chamar<Painel>("/api/membros/chama"),
     agir: (acao) => {
       const corpo =
@@ -52,6 +56,7 @@ interface Guardado {
 export interface Conteudo { dias: Dia[]; versiculos: Versiculo[]; ligas: ConfigLigas; textos: Texto[] }
 
 export interface ArmazemLocal extends Armazem {
+  biblia: ArmazemBibliaLocal;
   /** Controles de teste (bancada). */
   dev: {
     avancar(dias: number): void;
@@ -102,6 +107,7 @@ export function criarArmazemLocal(
     const hoje = hojeDe(g);
     return atualizarLiga(atualizarParaHoje(registrarAcesso(g.estado, hoje), hoje), hoje, SEMENTE_LOCAL, c.ligas);
   };
+  const biblia = criarBibliaLocal(chave, { storage: st, hoje: () => hojeDe(ler()) });
   const painel = (g: Guardado, c: Conteudo): Painel => ({
     estado: g.estado, hoje: hojeDe(g), hora: horaSP(), pago: g.pago, dias: diasLiberados(c.dias, g.pago), versiculos: c.versiculos, ligas: c.ligas,
     semente: SEMENTE_LOCAL, nome: "Você", codigo: "dev12345", conviteBase: opcoes.conviteBase ?? "http://localhost:3000/membros/chama-dev",
@@ -109,6 +115,7 @@ export function criarArmazemLocal(
   });
   return {
     tipo: "local",
+    biblia,
     async carregar() {
       const c = await opcoes.buscarConteudo();
       const g = ler();
@@ -139,6 +146,7 @@ export function criarArmazemLocal(
       },
       zerar() {
         st?.removeItem(k);
+        biblia.dev.zerar();
       },
       ganharXp(n) {
         const g = ler();

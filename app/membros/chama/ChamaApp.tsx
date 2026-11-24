@@ -403,7 +403,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         </section>
       )}
 
-      {aba === "biblia" && <Biblia />}
+      {aba === "biblia" && <Biblia biblia={armazem.biblia} onAtivarPush={onAtivarPush} />}
 
       {aba === "conquistas" && (
         <section className="ch-tela">

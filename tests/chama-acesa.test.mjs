@@ -9,6 +9,14 @@ import { normalizarDias } from "../lib/chama-acesa/dias.ts";
 import { montarSessao, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
 import { atualizarLiga, classificar, gerarBots, normalizarLigas, xpDoBot, zonaDe } from "../lib/chama-acesa/ligas.ts";
 import { categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio } from "../lib/chama-acesa/lembretes.ts";
+import { LIVROS_BIBLIA } from "../lib/chama-acesa/biblia-planos-dados.ts";
+import {
+  aplicarBiblia, agruparNotasPorLivro, capitulosDosTrechos, diaDoPlano, estadoBibliaVazio, filtrarNotas, montarMensagemBiblia, nomeDosTrechos, PLANOS,
+  progressoBiblia, quemRecebeBiblia, sequenciaBiblia, situacaoDoPlano, TEXTOS_COM_PLANO, textoDoLembrete, TOTAL_CAPITULOS,
+} from "../lib/chama-acesa/biblia-estudo.ts";
+import { checarLimite, chaveExplicacao, compactarVersiculos, explicacaoMock, formatarCitacao, LIMITE_IA_DIA, montarPrompt, normalizarExplicacao, validarPedido } from "../lib/chama-acesa/biblia-ia.ts";
+import { criarBibliaLocal } from "../lib/chama-acesa/armazem-biblia.ts";
+import { criarArmazemLocal } from "../lib/chama-acesa/armazem.ts";
 import { readFileSync } from "node:fs";
 import { completouHoje } from "../lib/chama-acesa/selo.ts";
 
@@ -406,4 +414,413 @@ test("música da oração: acordes em tom maior, graves a agudos, sem batida", (
     assert.equal(a.length, 4);
     assert.ok(a.every((f) => f > 80 && f < 600));
   }
+});
+
+
+// ================================================================== Bíblia: planos, progresso, notas, lembrete e IA
+
+const caps = (plano) => plano.dias.flatMap(capitulosDosTrechos).map((p) => `${p.sigla}:${p.cap}`);
+const TODOS = LIVROS_BIBLIA.flatMap(([sigla, , n]) => Array.from({ length: n }, (_, i) => `${sigla}:${i + 1}`));
+const plano = (id) => PLANOS.find((p) => p.id === id);
+const novoId = (() => { let n = 0; return () => `id-${++n}`; })();
+const bib = (e, acao, hoje = D0) => aplicarBiblia(e, acao, hoje, { novoId, agora: `${hoje}T10:00:00.000Z` });
+
+test("Bíblia: são 66 livros e 1189 capítulos, e o texto de cada livro bate com o índice", () => {
+  assert.equal(LIVROS_BIBLIA.length, 66);
+  assert.equal(TODOS.length, TOTAL_CAPITULOS);
+  assert.equal(TOTAL_CAPITULOS, 1189);
+  for (const [sigla, , n] of LIVROS_BIBLIA) {
+    const t = JSON.parse(readFileSync(new URL(`../public/chama-acesa/biblia/${sigla}.json`, import.meta.url), "utf8"));
+    assert.equal(t.capitulos.length, n, sigla);
+  }
+});
+
+test("plano completo em 1 ano: 365 leituras, ordem canônica e os 1189 capítulos exatamente uma vez", () => {
+  const p = plano("completa-1-ano");
+  assert.equal(p.dias.length, 365);
+  assert.ok(p.dias.every((d) => d.length > 0));
+  const lista = caps(p);
+  assert.deepEqual(lista, TODOS, "mesma ordem da Bíblia, sem repetir nem faltar");
+});
+
+test("plano cronológico: 365 leituras, os 1189 capítulos exatamente uma vez e ordem histórica (não a canônica)", () => {
+  const p = plano("cronologica-1-ano");
+  assert.equal(p.dias.length, 365);
+  assert.ok(p.dias.every((d) => d.length > 0));
+  const lista = caps(p);
+  assert.equal(lista.length, 1189);
+  assert.deepEqual([...lista].sort(), [...TODOS].sort());
+  assert.notDeepEqual(lista, TODOS);
+  const pos = (k) => lista.indexOf(k);
+  assert.ok(pos("gen:11") < pos("job:1") && pos("job:42") < pos("gen:12"), "Jó entra depois de Gênesis 11 e antes de Gênesis 12");
+  assert.ok(pos("2sa:11") < pos("psa:51") && pos("psa:51") < pos("2sa:13"), "Salmo 51 junto do pecado de Davi");
+  assert.ok(pos("psa:90") > pos("num:1") && pos("psa:90") < pos("deu:1"), "Salmo 90 (Moisés) em Números");
+  assert.ok(pos("jon:1") < pos("amo:1") && pos("amo:9") < pos("hos:1"), "profetas na ordem dos reinados");
+  assert.ok(pos("act:12") < pos("gal:1") && pos("gal:6") < pos("act:15") && pos("1th:1") < pos("1co:1") && pos("1co:16") < pos("rom:1"), "cartas de Paulo dentro de Atos");
+  assert.ok(pos("act:28") < pos("eph:1") && pos("rev:22") === lista.length - 1, "cartas da prisão após Atos; Apocalipse por último");
+  assert.ok(pos("mal:4") < pos("joh:1"), "Antigo Testamento antes dos Evangelhos");
+});
+
+test("os dias dos planos são trechos válidos e as cargas ficam equilibradas", () => {
+  const versos = (sigla, cap) => JSON.parse(readFileSync(new URL(`../public/chama-acesa/biblia/${sigla}.json`, import.meta.url), "utf8")).capitulos[cap - 1].length;
+  const cache = {};
+  const v = (s, c) => (cache[`${s}${c}`] ??= versos(s, c));
+  for (const p of PLANOS) {
+    for (const d of p.dias) for (const [s, a, b] of d) {
+      const l = LIVROS_BIBLIA.find((x) => x[0] === s);
+      assert.ok(l && a >= 1 && b >= a && b <= l[2], `${p.id}: trecho ${s} ${a}-${b}`);
+    }
+  }
+  for (const id of ["completa-1-ano", "cronologica-1-ano"]) {
+    const cargas = plano(id).dias.map((d) => capitulosDosTrechos(d).reduce((t, c) => t + v(c.sigla, c.cap), 0));
+    assert.ok(Math.min(...cargas) >= 40, `${id}: nenhuma leitura minúscula`);
+    assert.ok(Math.max(...cargas) <= 176, `${id}: só o Salmo 119 passa de 150 versículos`);
+  }
+});
+
+test("Conhecer Jesus: 30 dias, cada capítulo dos 4 Evangelhos uma vez e os textos-chave", () => {
+  const p = plano("conhecer-jesus");
+  assert.equal(p.dias.length, 30);
+  assert.equal(p.titulos.length, 30);
+  const lista = caps(p);
+  const ev = lista.filter((k) => /^(mat|mar|luk|joh):/.test(k));
+  assert.equal(ev.length, 89);
+  assert.equal(new Set(ev).size, 89);
+  for (const [s, n] of [["mat", 28], ["mar", 16], ["luk", 24], ["joh", 21]]) for (let c = 1; c <= n; c++) assert.ok(lista.includes(`${s}:${c}`), `${s} ${c}`);
+  for (const k of ["isa:53", "psa:22", "1co:15"]) assert.ok(lista.includes(k), k);
+  assert.equal(new Set(lista).size, lista.length, "nada repetido");
+});
+
+test("Novo Testamento em 90 dias e Salmos e Provérbios em 31 dias", () => {
+  const nt = plano("novo-testamento-90");
+  assert.equal(nt.dias.length, 90);
+  assert.deepEqual(caps(nt), TODOS.filter((k) => /^(mat|mar|luk|joh|act|rom|1co|2co|gal|eph|phi|col|1th|2th|1ti|2ti|tit|phm|heb|jam|1pe|2pe|1jo|2jo|3jo|jud|rev):/.test(k)));
+  assert.equal(caps(nt).length, 260);
+  const sp = plano("salmos-proverbios-31");
+  assert.equal(sp.dias.length, 31);
+  const lista = caps(sp);
+  assert.equal(lista.filter((k) => k.startsWith("psa:")).length, 150);
+  assert.equal(lista.filter((k) => k.startsWith("pro:")).length, 31);
+  // dia N tem Provérbios N (como o dia do mês)
+  sp.dias.forEach((d, i) => assert.ok(capitulosDosTrechos(d).some((c) => c.sigla === "pro" && c.cap === i + 1), `dia ${i + 1}`));
+  assert.equal(new Set(lista).size, 181);
+});
+
+test("nome dos trechos em português", () => {
+  assert.equal(nomeDosTrechos([["joh", 3, 3]]), "João 3");
+  assert.equal(nomeDosTrechos([["gen", 1, 3]]), "Gênesis 1–3");
+  assert.equal(nomeDosTrechos([["gen", 11, 11], ["job", 1, 2]]), "Gênesis 11 e Jó 1–2");
+});
+
+test("plano: o dia 1 é o dia do início; escolher, trocar e encerrar", () => {
+  assert.equal(diaDoPlano("2026-12-01", "2026-12-01"), 1);
+  assert.equal(diaDoPlano("2026-12-01", "2026-12-10"), 10);
+  let e = estadoBibliaVazio();
+  assert.match(bib(e, { tipo: "plano", id: "nao-existe" }).erro, /desconhecido/);
+  e = bib(e, { tipo: "plano", id: "conhecer-jesus" }, D0).estado;
+  assert.deepEqual(e.plano, { id: "conhecer-jesus", inicio: D0, feitos: [] });
+  const mesmo = bib(e, { tipo: "plano", id: "conhecer-jesus" }, somarDias(D0, 3));
+  assert.equal(mesmo.estado.plano.inicio, D0, "escolher o mesmo plano não zera");
+  const troca = bib(e, { tipo: "plano", id: "novo-testamento-90" }, somarDias(D0, 3)).estado;
+  assert.deepEqual(troca.plano, { id: "novo-testamento-90", inicio: somarDias(D0, 3), feitos: [] });
+  assert.equal(bib(troca, { tipo: "plano", id: null }).estado.plano, null);
+});
+
+test("leitura de hoje, marcar como lida, atrasadas e recuperação", () => {
+  let e = bib(estadoBibliaVazio(), { tipo: "plano", id: "conhecer-jesus" }, D0).estado;
+  let s = situacaoDoPlano(e.plano, D0);
+  assert.equal(s.diaHoje, 1);
+  assert.equal(s.hoje.dia, 1);
+  assert.equal(s.hoje.nome, "João 1 e Isaías 53");
+  assert.equal(s.hoje.titulo, "Quem é Jesus");
+  assert.equal(s.atrasadas.length, 0);
+  // dia 4 sem ter lido nada: 3 atrasadas
+  const d4 = somarDias(D0, 3);
+  s = situacaoDoPlano(e.plano, d4);
+  assert.equal(s.diaHoje, 4);
+  assert.deepEqual(s.atrasadas.map((x) => x.dia), [1, 2, 3]);
+  // dia futuro não vale
+  assert.match(bib(e, { tipo: "marcarDia", dia: 4 }, D0).erro, /ainda não chegou/);
+  assert.match(bib(e, { tipo: "marcarDia", dia: 99 }, D0).erro, /não existe/);
+  assert.match(bib(estadoBibliaVazio(), { tipo: "marcarDia", dia: 1 }, D0).erro, /plano/);
+  // marca o dia 2 (recupera atrasada): conta os capítulos como lidos e o dia 2 sai das atrasadas
+  const r = bib(e, { tipo: "marcarDia", dia: 2 }, d4);
+  assert.deepEqual(r.novosLidos.map((p) => `${p.sigla}:${p.cap}`), ["luk:1", "luk:2"]);
+  e = r.estado;
+  s = situacaoDoPlano(e.plano, d4);
+  assert.deepEqual(s.atrasadas.map((x) => x.dia), [1, 3]);
+  assert.equal(s.feitos, 1);
+  assert.equal(s.percentual, 3);
+  assert.deepEqual(e.lidos.luk, [1, 2]);
+  assert.deepEqual(e.dias, [d4]);
+  // marcar de novo é idempotente
+  assert.equal(bib(e, { tipo: "marcarDia", dia: 2 }, d4).novosLidos.length, 0);
+});
+
+test("plano passou do último dia: mostra o que falta; todos feitos = concluído", () => {
+  let e = bib(estadoBibliaVazio(), { tipo: "plano", id: "salmos-proverbios-31" }, D0).estado;
+  const tarde = somarDias(D0, 60);
+  let s = situacaoDoPlano(e.plano, tarde);
+  assert.equal(s.hoje.dia, 1);
+  assert.equal(s.atrasadas.length, 30);
+  for (let d = 1; d <= 31; d++) e = bib(e, { tipo: "marcarDia", dia: d }, tarde).estado;
+  s = situacaoDoPlano(e.plano, tarde);
+  assert.equal(s.concluido, true);
+  assert.equal(s.hoje, null);
+  assert.equal(s.percentual, 100);
+});
+
+test("capítulo lido: 'Li este capítulo' conta uma vez, desmarcar tira, capítulo inexistente é recusado", () => {
+  let e = estadoBibliaVazio();
+  assert.match(bib(e, { tipo: "lido", sigla: "joh", cap: 22 }).erro, /inexistente/);
+  assert.match(bib(e, { tipo: "lido", sigla: "xxx", cap: 1 }).erro, /inexistente/);
+  e = bib(e, { tipo: "lido", sigla: "joh", cap: 3 }).estado;
+  e = bib(e, { tipo: "lido", sigla: "joh", cap: 3 }).estado;
+  assert.deepEqual(e.lidos.joh, [3]);
+  let p = progressoBiblia(e.lidos);
+  assert.equal(p.lidos, 1);
+  e = bib(e, { tipo: "lido", sigla: "joh", cap: 1 }).estado;
+  assert.deepEqual(e.lidos.joh, [1, 3]);
+  e = bib(e, { tipo: "lido", sigla: "joh", cap: 3, valor: false }).estado;
+  assert.deepEqual(e.lidos.joh, [1]);
+  assert.equal(progressoBiblia(e.lidos).lidos, 1);
+});
+
+test("progresso: % da Bíblia, por livro e dias seguidos separados da chama", () => {
+  const lidos = { joh: Array.from({ length: 21 }, (_, i) => i + 1), gen: [1, 2, 3, 3, 99], xxx: [1] };
+  const p = progressoBiblia(lidos);
+  assert.equal(p.total, 1189);
+  assert.equal(p.lidos, 24, "únicos, só capítulos que existem");
+  assert.equal(p.percentual, Math.round((24 / 1189) * 1000) / 10);
+  const joao = p.porLivro.find((l) => l.sigla === "joh");
+  assert.equal(joao.percentual, 100);
+  const gen = p.porLivro.find((l) => l.sigla === "gen");
+  assert.deepEqual([gen.lidos, gen.total, gen.percentual], [3, 50, 6]);
+  assert.equal(p.porLivro.length, 66);
+  assert.equal(progressoBiblia({}).percentual, 0);
+  // sequência
+  assert.deepEqual(sequenciaBiblia([], D0), { atual: 0, lidoHoje: false });
+  assert.deepEqual(sequenciaBiblia(["2026-11-29", "2026-11-30", D0], D0), { atual: 3, lidoHoje: true });
+  assert.deepEqual(sequenciaBiblia(["2026-11-29", "2026-11-30"], D0), { atual: 2, lidoHoje: false }, "ontem ainda vale");
+  assert.deepEqual(sequenciaBiblia(["2026-11-28"], D0), { atual: 0, lidoHoje: false }, "quebrou");
+  assert.deepEqual(sequenciaBiblia(["2026-11-20", "2026-11-21", D0], D0), { atual: 1, lidoHoje: true }, "buraco zera");
+  // ler a Bíblia não mexe na chama da jornada
+  const j = estadoVazio();
+  const antes = JSON.stringify(j);
+  bib(estadoBibliaVazio(), { tipo: "lido", sigla: "joh", cap: 3 });
+  assert.equal(JSON.stringify(j), antes);
+});
+
+test("notas: criar, editar, apagar, buscar por texto/tema/livro e agrupar por livro", () => {
+  let e = estadoBibliaVazio();
+  assert.match(bib(e, { tipo: "nota", sigla: "joh", cap: 3, vIni: 16, vFim: 16, texto: "   " }).erro, /Escreva/);
+  assert.match(bib(e, { tipo: "nota", sigla: "joh", cap: 3, vIni: 18, vFim: 16, texto: "x" }).erro, /inválido/);
+  assert.match(bib(e, { tipo: "nota", sigla: "joh", cap: 40, vIni: 1, vFim: 1, texto: "x" }).erro, /inexistente/);
+  let r = bib(e, { tipo: "nota", sigla: "joh", cap: 3, vIni: 16, vFim: 17, texto: "Deus amou primeiro", tema: "  Graça   de Deus " });
+  e = r.estado;
+  const id = r.nota.id;
+  assert.equal(r.nota.tema, "Graça de Deus");
+  e = bib(e, { tipo: "nota", sigla: "rom", cap: 5, vIni: 8, vFim: 8, texto: "Cristo morreu por nós", tema: "Graça de Deus" }).estado;
+  e = bib(e, { tipo: "nota", sigla: "gen", cap: 1, vIni: 1, vFim: 1, texto: "No princípio", tema: "Criação" }).estado;
+  assert.equal(e.notas.length, 3);
+  assert.deepEqual(agruparNotasPorLivro(e.notas).map((g) => g.nome), ["Gênesis", "João", "Romanos"], "ordem da Bíblia");
+  assert.equal(filtrarNotas(e.notas, "graca").length, 2, "sem acento");
+  assert.equal(filtrarNotas(e.notas, "", "Criação").length, 1);
+  assert.equal(filtrarNotas(e.notas, "joão 3:16").length, 1, "por referência");
+  assert.equal(filtrarNotas(e.notas, "inexistente").length, 0);
+  // editar mantém id e data de criação
+  r = bib(e, { tipo: "nota", id, sigla: "joh", cap: 3, vIni: 16, vFim: 16, texto: "Editada", tema: "" }, "2026-12-05");
+  assert.equal(r.nota.id, id);
+  assert.equal(r.nota.criado, "2026-12-01T10:00:00.000Z");
+  assert.equal(r.estado.notas.find((n) => n.id === id).texto, "Editada");
+  assert.equal(r.estado.notas.length, 3);
+  assert.match(bib(e, { tipo: "nota", id: "alheio", sigla: "joh", cap: 3, vIni: 1, vFim: 1, texto: "x" }).erro, /não encontrada/, "id de outra pessoa não vale");
+  e = bib(r.estado, { tipo: "apagarNota", id }).estado;
+  assert.equal(e.notas.length, 2);
+  assert.match(bib(e, { tipo: "apagarNota", id }).erro, /não encontrada/);
+});
+
+test("destaques: colorir vários versículos, trocar a cor e tirar", () => {
+  let e = estadoBibliaVazio();
+  assert.match(bib(e, { tipo: "destaque", sigla: "joh", cap: 3, versiculos: [16], cor: "preto" }).erro, /Cor/);
+  assert.match(bib(e, { tipo: "destaque", sigla: "joh", cap: 3, versiculos: [], cor: "verde" }).erro, /ao menos um/);
+  e = bib(e, { tipo: "destaque", sigla: "joh", cap: 3, versiculos: [16, 17, 16], cor: "amarelo" }).estado;
+  assert.deepEqual(e.destaques.map((d) => [d.v, d.cor]), [[16, "amarelo"], [17, "amarelo"]]);
+  e = bib(e, { tipo: "destaque", sigla: "joh", cap: 3, versiculos: [17], cor: "azul" }).estado;
+  assert.deepEqual(e.destaques.map((d) => [d.v, d.cor]).sort(), [[16, "amarelo"], [17, "azul"]]);
+  e = bib(e, { tipo: "destaque", sigla: "joh", cap: 3, versiculos: [16, 17], cor: null }).estado;
+  assert.equal(e.destaques.length, 0);
+});
+
+test("lembrete da leitura: horário próprio, liga e desliga, e não mexe no lembrete da jornada", () => {
+  let e = estadoBibliaVazio();
+  assert.match(bib(e, { tipo: "lembrete", horario: "25:00" }).erro, /inválido/);
+  e = bib(e, { tipo: "lembrete", horario: "06:30" }, D0).estado;
+  assert.equal(e.lembrete, "06:30");
+  assert.equal(e.lembreteDesde, D0);
+  assert.equal(bib(e, { tipo: "lembrete", horario: null }).estado.lembrete, null);
+  assert.equal(estadoVazio().lembrete, null, "o lembrete da jornada é outro campo");
+});
+
+const perfil = (o = {}) => ({ user_id: "u1", nome: "Maria Silva", horario_lembrete: "07:00", lembrete_desde: "2026-11-25", plano_id: null, plano_inicio: null, plano_feitos: [], ultima_leitura: null, ...o });
+
+test("quem recebe o lembrete da leitura: só na hora certa, só quem ligou, e nunca quem já leu hoje", () => {
+  const hoje = "2026-12-01";
+  const lista = [
+    perfil({ user_id: "a" }),
+    perfil({ user_id: "b", horario_lembrete: null }),
+    perfil({ user_id: "c", horario_lembrete: "08:15" }),
+    perfil({ user_id: "d", ultima_leitura: hoje }),
+    perfil({ user_id: "e", horario_lembrete: "07:45" }),
+  ];
+  assert.deepEqual(quemRecebeBiblia(lista, "07", hoje).map((x) => x.perfil.user_id), ["a", "e"]);
+  assert.deepEqual(quemRecebeBiblia(lista, "08", hoje).map((x) => x.perfil.user_id), ["c"]);
+  assert.deepEqual(quemRecebeBiblia(lista, "09", hoje), []);
+});
+
+test("lembrete da leitura: plano em dia ou concluído não recebe; com plano mostra a leitura de hoje", () => {
+  const hoje = "2026-12-03";
+  const com = perfil({ plano_id: "conhecer-jesus", plano_inicio: "2026-12-01", plano_feitos: [1, 2] });
+  assert.match(montarMensagemBiblia(com, hoje).corpo + montarMensagemBiblia(com, hoje).titulo, /Mateus 1–2/, "dia 3 = Mateus 1–2");
+  const feito = perfil({ plano_id: "conhecer-jesus", plano_inicio: "2026-12-01", plano_feitos: [1, 2, 3] });
+  assert.equal(montarMensagemBiblia(feito, hoje), null, "leitura de hoje já feita");
+  const tudo = perfil({ plano_id: "salmos-proverbios-31", plano_inicio: "2026-11-01", plano_feitos: Array.from({ length: 31 }, (_, i) => i + 1), lembrete_desde: "2026-11-30" });
+  assert.equal(montarMensagemBiblia(tudo, hoje), null, "plano concluído");
+  const sem = montarMensagemBiblia(perfil(), hoje);
+  assert.ok(sem && !sem.titulo.includes("{") && !sem.corpo.includes("{"), "sem plano: texto genérico, sem chaves");
+});
+
+test("lembrete da leitura: para de insistir depois de 14 dias sem ler e o texto varia a cada dia", () => {
+  assert.ok(montarMensagemBiblia(perfil({ ultima_leitura: "2026-11-20", lembrete_desde: "2026-11-01" }), "2026-12-03"), "13 dias: ainda lembra");
+  assert.equal(montarMensagemBiblia(perfil({ ultima_leitura: "2026-11-10" }), "2026-12-03"), null, "23 dias sem ler: para");
+  assert.equal(montarMensagemBiblia(perfil({ ultima_leitura: null, lembrete_desde: "2026-11-01" }), "2026-12-03"), null, "nunca leu e ligou há mais de 14 dias");
+  assert.ok(montarMensagemBiblia(perfil({ ultima_leitura: null, lembrete_desde: "2026-12-01" }), "2026-12-03"), "ligou há 2 dias: lembra");
+  let anterior = "";
+  const vistos = new Set();
+  for (let i = 0; i < 16; i++) {
+    const t = textoDoLembrete("u1", somarDias("2026-12-01", i), true).corpo;
+    assert.notEqual(t, anterior, "nunca o mesmo texto dois dias seguidos");
+    anterior = t;
+    vistos.add(t);
+  }
+  assert.equal(vistos.size, TEXTOS_COM_PLANO.length);
+  for (const t of TEXTOS_COM_PLANO) assert.ok(t.titulo.length <= 40 && t.corpo.length <= 70, `curto: ${t.corpo}`);
+  // não repete o aviso da jornada: é outra tag e outro módulo; perfilDeEstado não precisa do estado da chama
+  const chat = montarMensagemBiblia(perfil({ nome: null }), "2026-12-03");
+  assert.ok(chat);
+});
+
+test("chave do cache: mesma passagem = mesma chave, em qualquer ordem; capítulo e versículos são diferentes", () => {
+  assert.equal(compactarVersiculos([18, 16, 17, 20, 16]), "16-18,20");
+  assert.equal(compactarVersiculos([5]), "5");
+  const a = chaveExplicacao({ tipo: "versiculos", sigla: "joh", cap: 3, versiculos: [17, 16, 18, 20] });
+  const b = chaveExplicacao({ tipo: "versiculos", sigla: "joh", cap: 3, versiculos: [16, 17, 18, 20, 20] });
+  assert.equal(a, b);
+  assert.equal(a, "v1|versiculos|joh|3|16-18,20");
+  assert.equal(chaveExplicacao({ tipo: "capitulo", sigla: "joh", cap: 3 }), "v1|capitulo|joh|3|todos");
+  assert.notEqual(a, chaveExplicacao({ tipo: "versiculos", sigla: "joh", cap: 3, versiculos: [16] }));
+  assert.notEqual(a, chaveExplicacao({ tipo: "versiculos", sigla: "joh", cap: 4, versiculos: [16, 17, 18, 20] }));
+});
+
+test("pedido de explicação: valida livro, capítulo e versículos (nunca confia no cliente)", () => {
+  assert.equal(validarPedido({ tipo: "capitulo", sigla: "JOH", cap: 3 }).pedido.sigla, "joh");
+  assert.equal(validarPedido({ tipo: "capitulo", sigla: "joh", cap: 22 }).ok, false);
+  assert.equal(validarPedido({ tipo: "capitulo", sigla: "../x", cap: 1 }).ok, false);
+  assert.equal(validarPedido({ tipo: "outro", sigla: "joh", cap: 1 }).ok, false);
+  assert.equal(validarPedido({ tipo: "versiculos", sigla: "joh", cap: 3, versiculos: [] }).ok, false);
+  assert.equal(validarPedido({ tipo: "versiculos", sigla: "joh", cap: 3, versiculos: [0, -1, "a"] }).ok, false);
+  assert.deepEqual(validarPedido({ tipo: "versiculos", sigla: "joh", cap: 3, versiculos: [17, "16", 16, 999] }).pedido.versiculos, [16, 17]);
+  assert.equal(validarPedido({ tipo: "versiculos", sigla: "psa", cap: 119, versiculos: Array.from({ length: 41 }, (_, i) => i + 1) }).ok, false);
+  assert.equal(validarPedido(null).ok, false);
+});
+
+test("limite diário da IA: 30 gerações novas por pessoa por dia, zera no dia seguinte", () => {
+  assert.equal(LIMITE_IA_DIA, 30);
+  assert.deepEqual(checarLimite(null, D0), { permitido: true, usadas: 0, restantes: 30 });
+  assert.deepEqual(checarLimite({ dia: D0, n: 29 }, D0), { permitido: true, usadas: 29, restantes: 1 });
+  assert.deepEqual(checarLimite({ dia: D0, n: 30 }, D0), { permitido: false, usadas: 30, restantes: 0 });
+  assert.deepEqual(checarLimite({ dia: D0, n: 45 }, D0), { permitido: false, usadas: 45, restantes: 0 });
+  assert.deepEqual(checarLimite({ dia: "2026-11-30", n: 30 }, D0), { permitido: true, usadas: 0, restantes: 30 }, "outro dia");
+  assert.equal(checarLimite({ dia: D0, n: 5 }, D0, 5).permitido, false);
+});
+
+test("resposta da IA: normaliza, limita e recusa resposta vazia", () => {
+  assert.equal(normalizarExplicacao(null), null);
+  assert.equal(normalizarExplicacao({ foo: 1 }), null);
+  const e = normalizarExplicacao({
+    contexto: "  Contexto\n\n histórico ", autor_destinatarios: "João", antes_depois: "x", explicacao: "Explica", palavras_chave: [{ palavra: "amor", original: "agapē", significado: "amor que se dá" }, { palavra: "", significado: "lixo" }],
+    referencias: [{ ref: "Romanos 5:8", motivo: "ligação" }, "texto solto"], pontos_de_vista: [{ leitura: "A", descricao: "descrição" }], consenso: "Não há consenso: ...", aplicacao: "Aplique", esboco: ["1", "2", "3", "4"],
+  });
+  assert.equal(e.contexto, "Contexto histórico");
+  assert.equal(e.palavrasChave.length, 1);
+  assert.equal(e.referencias.length, 1);
+  assert.equal(e.esboco.length, 3, "esboço de 3 tópicos");
+  assert.equal(e.pontosDeVista[0].leitura, "A");
+  const m = explicacaoMock({ tipo: "capitulo", sigla: "joh", cap: 3 });
+  assert.ok(normalizarExplicacao({ contexto: m.contexto, autor_destinatarios: m.autorDestinatarios, explicacao: m.explicacao, esboco: m.esboco }));
+});
+
+test("prompt da IA manda não inventar e dizer 'não há consenso'; texto bíblico e referência entram no pedido", () => {
+  const { system, user } = montarPrompt({ tipo: "versiculos", sigla: "joh", cap: 3, versiculos: [16, 17] }, "16. Porque Deus amou o mundo");
+  assert.match(system, /NÃO invente/);
+  assert.match(system, /não há consenso/i);
+  assert.match(system, /sem atacar/);
+  assert.match(system, /exatamente 3 tópicos/);
+  assert.match(user, /João 3:16–17/);
+  assert.match(user, /Porque Deus amou/);
+  assert.match(montarPrompt({ tipo: "capitulo", sigla: "joh", cap: 3 }, "").user, /capítulo inteiro João 3/);
+  assert.equal(formatarCitacao("joh", 3, [[17, "B"], [16, "A"]]), "“16 A 17 B”\n— João 3:16–17 (Bíblia Livre)");
+});
+
+function memoria() {
+  const m = new Map();
+  return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) };
+}
+
+test("armazém local da Bíblia: guarda no navegador e a IA de teste usa cache e limite como o servidor", async () => {
+  const st = memoria();
+  let hoje = D0;
+  const b = criarBibliaLocal("t", { storage: st, hoje: () => hoje });
+  let p = await b.carregar();
+  assert.equal(p.ia.restantes, 30);
+  p = await b.agir({ tipo: "plano", id: "completa-1-ano" });
+  assert.equal(p.estado.plano.id, "completa-1-ano");
+  p = await b.agir({ tipo: "lido", sigla: "gen", cap: 1 });
+  // recarregando de novo (outra instância, mesmo storage) mantém
+  const b2 = criarBibliaLocal("t", { storage: st, hoje: () => hoje });
+  assert.deepEqual((await b2.carregar()).estado.lidos.gen, [1]);
+  await assert.rejects(() => b.agir({ tipo: "marcarDia", dia: 50 }), /ainda não chegou/);
+  // IA: a primeira gera, a segunda igual vem do cache e não gasta
+  const r1 = await b.explicar({ tipo: "capitulo", sigla: "gen", cap: 1 });
+  assert.equal(r1.ok, true);
+  assert.equal(r1.cache, false);
+  assert.equal(r1.restantes, 29);
+  const r2 = await b.explicar({ tipo: "capitulo", sigla: "gen", cap: 1 });
+  assert.equal(r2.cache, true);
+  assert.equal(r2.restantes, 29);
+  for (let c = 2; c <= 30; c++) assert.equal((await b.explicar({ tipo: "capitulo", sigla: "gen", cap: c })).ok, true);
+  const bloqueada = await b.explicar({ tipo: "capitulo", sigla: "gen", cap: 31 });
+  assert.equal(bloqueada.ok, false);
+  assert.equal(bloqueada.motivo, "limite");
+  assert.equal((await b.explicar({ tipo: "capitulo", sigla: "gen", cap: 1 })).ok, true, "o que já está no cache continua abrindo");
+  hoje = somarDias(D0, 1);
+  assert.equal((await b.explicar({ tipo: "capitulo", sigla: "gen", cap: 31 })).ok, true, "no dia seguinte o limite volta");
+  assert.equal((await b.explicar({ tipo: "versiculos", sigla: "gen", cap: 1, versiculos: [] })).ok, false);
+  b.dev.zerar();
+  assert.equal((await b.carregar()).estado.plano, null);
+});
+
+test("bancada: a Bíblia usa o relógio simulado e 'zerar' limpa também a Bíblia", async () => {
+  const st = memoria();
+  const conteudo = async () => ({ dias: [], versiculos: [], ligas: normalizarLigas(null), textos: [] });
+  const a = criarArmazemLocal("b", { buscarConteudo: conteudo, storage: st, relogio: () => D0 });
+  await a.biblia.agir({ tipo: "plano", id: "conhecer-jesus" });
+  a.dev.avancar(3);
+  const p = await a.biblia.carregar();
+  assert.equal(p.hoje, somarDias(D0, 3));
+  assert.equal(situacaoDoPlano(p.estado.plano, p.hoje).diaHoje, 4);
+  const m = await a.biblia.dev.previa();
+  assert.ok(m, "prévia do lembrete com plano em andamento");
+  a.dev.zerar();
+  assert.equal((await a.biblia.carregar()).estado.plano, null);
 });

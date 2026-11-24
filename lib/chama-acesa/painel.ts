@@ -2,7 +2,7 @@
 import type { Dia } from "./dias";
 import type { ConfigLigas } from "./ligas";
 import type { Versiculo } from "./pratica";
-import { DIAS_GRATIS, type Estado } from "./regras";
+import { DIAS_GRATIS, type Estado } from "./regras.ts";
 
 export interface Painel {
   estado: Estado;

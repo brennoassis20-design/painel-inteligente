@@ -41,6 +41,10 @@ export default function ChamaDev() {
     setVersao((v) => v + 1);
   };
   const ver = async (rotulo: string, tipo: "manha" | "noite" | "dia4") => setPrevia({ rotulo, m: await armazem.dev.previa(tipo, semAbrir) });
+  const verBiblia = async () => {
+    const m = await armazem.biblia.dev.previa();
+    setPrevia({ rotulo: "Lembrete da leitura da Bíblia", m: m ? { tipo: "manha", categoria: "biblia", chave: "biblia", titulo: m.titulo, corpo: m.corpo } : null });
+  };
   return (
     <div className="gp" style={{ ["--gp-bg" as string]: "#0a0f1f", ["--gp-accent" as string]: "#ff8a1f", minHeight: "100dvh" }}>
       <div className="ch-dev">
@@ -72,6 +76,7 @@ export default function ChamaDev() {
               <button type="button" onClick={() => void ver("Lembrete da manhã", "manha")}>Prévia manhã</button>
               <button type="button" onClick={() => void ver("Lembrete das 21h", "noite")}>Prévia noite</button>
               <button type="button" onClick={() => void ver("Cobrança do dia 4", "dia4")}>Prévia dia 4</button>
+              <button type="button" onClick={() => void verBiblia()}>Prévia leitura Bíblia</button>
             </div>
             {previa && (
               <div className="ch-dev-previa">
