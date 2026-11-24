@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { readUtm, track } from "./pixel";
+import { readRef, readUtm, track } from "./pixel";
 import { areaHeaders, writeSession } from "./session";
 
 // (11) 98765-4321 enquanto digita.
@@ -53,7 +53,7 @@ export default function Login({
         const response = await fetch("/api/membros/cadastro", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...areaHeaders() },
-          body: JSON.stringify({ email: email.trim().toLowerCase(), whatsapp, senha: password, utm: readUtm() }),
+          body: JSON.stringify({ email: email.trim().toLowerCase(), whatsapp, senha: password, utm: readUtm(), ref: readRef() || undefined }),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Não foi possível criar o acesso.");

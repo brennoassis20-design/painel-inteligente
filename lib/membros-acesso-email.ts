@@ -72,6 +72,17 @@ function sender(area: Area) {
   return { from, replyTo };
 }
 
+// E-mail simples com assunto e HTML próprios (ex.: cobrança do Chama Acesa). Só chamar com brevoReady().
+export async function sendCustomViaBrevo(area: Area, email: string, subject: string, html: string, tag: string) {
+  const { from, replyTo } = sender(area);
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "api-key": process.env.BREVO_API_KEY as string, "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ sender: from, replyTo: { email: replyTo }, to: [{ email }], subject, htmlContent: html, tags: ["genio-play", `area-${area.id}`, tag] }),
+  });
+  if (!response.ok) throw new Error(`brevo ${response.status} ${(await response.text()).slice(0, 160)}`);
+}
+
 // Gera o link e manda pela Brevo. Lança erro se falhar (quem chama decide o plano B). Só chamar com brevoReady().
 export async function sendAccessViaBrevo(
   area: Area,

@@ -16,7 +16,23 @@ create table if not exists public.chama_perfil (
   ultima_data date,
   medalhas text[] not null default '{}',
   avisos text[] not null default '{}',
-  atualizado timestamptz not null default now()
+  atualizado timestamptz not null default now(),
+  -- XP, prática, liga semanal e lembretes (v2)
+  xp integer not null default 0 check (xp >= 0),
+  xp_semana jsonb not null default '{}'::jsonb,     -- {"2026-11-30": 120} semana (segunda) -> XP
+  praticas jsonb not null default '{}'::jsonb,      -- {"jo-3-16": 2} versículo -> vezes que caiu na prática
+  liga jsonb not null default '{"indice":0,"semana":null,"historico":[],"resultado":null}'::jsonb,
+  ultimo_acesso date,
+  lembretes_hist jsonb not null default '{}'::jsonb, -- chave da mensagem -> data do último envio (não repete em 7 dias)
+  dias_feitos integer not null default 0,
+  nome text,
+  -- convite de amigo
+  codigo text unique,
+  convidado_por uuid references auth.users (id) on delete set null,
+  convite_premiado boolean not null default false,
+  amigos integer not null default 0,
+  -- cobrança do dia 4 (push + e-mail): data do envio, para não repetir
+  cobranca3_enviada date
 );
 
 -- Um dia da jornada por linha (1 a 21). concluido_em fica nulo enquanto faltar algum dos 3 checks.
@@ -31,6 +47,8 @@ create table if not exists public.chama_dias (
 );
 
 -- Para o lembrete diário achar rápido quem tem horário marcado.
+create index if not exists chama_perfil_convidado_idx on public.chama_perfil (convidado_por) where convidado_por is not null;
+create index if not exists chama_dias_dia3_idx on public.chama_dias (concluido_em) where dia = 3;
 create index if not exists chama_perfil_lembrete_idx on public.chama_perfil (horario_lembrete) where horario_lembrete is not null;
 
 alter table public.chama_perfil enable row level security;

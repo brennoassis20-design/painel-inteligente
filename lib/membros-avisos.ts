@@ -18,7 +18,7 @@ export function cleanWhatsapp(value: unknown) {
   return digits;
 }
 
-type Signup = { nome?: string; email?: string; whatsapp?: string; senha?: string; utm?: Record<string, unknown> };
+type Signup = { nome?: string; email?: string; whatsapp?: string; senha?: string; utm?: Record<string, unknown>; ref?: string };
 
 export const NO_FREE_MESSAGE = "Esta área não tem conteúdo grátis. Use o mesmo e-mail da compra para entrar ou fale com o suporte.";
 
@@ -87,6 +87,11 @@ export async function signupFree(input: Signup, area: Area) {
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({ area_id: area.id, email, kind: "cadastro_gratis", meta: utm }),
   }).catch(() => undefined);
+
+  // Chama Acesa: cadastro feito pelo link de um amigo (?ref=<código>) grava quem convidou. Falha aqui nunca trava o cadastro.
+  if (input.ref) {
+    await import("@/lib/chama-acesa/persistencia").then((m) => m.registrarConvite(area.id, user.id, String(input.ref))).catch(() => undefined);
+  }
 
   const login = await supabaseAuthRequest("/token?grant_type=password", {
     method: "POST",

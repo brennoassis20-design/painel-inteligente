@@ -34,6 +34,24 @@ export function captureUtm() {
   }
 }
 
+// Código do amigo que convidou (?ref=): guardado até o cadastro grátis.
+const REF_KEY = "gp-ref";
+export function captureRef() {
+  try {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref && /^[A-Za-z0-9]{3,12}$/.test(ref)) localStorage.setItem(REF_KEY, ref.toLowerCase());
+  } catch {
+    /* armazenamento bloqueado */
+  }
+}
+export function readRef(): string {
+  try {
+    return localStorage.getItem(REF_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
 export function readUtm(): Record<string, string> {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) || "{}") as { t?: number; utm?: Record<string, string> } & Record<string, string>;

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { enablePush, isInstalled, platform, refreshPush, registerWorker } from "./app";
 import { Bell, InstallGuide, LiveBar, PushInvite, type NoticeItem } from "./Extras";
-import { captureUtm, loadPixel, readUtm, track } from "./pixel";
+import { captureRef, captureUtm, loadPixel, readUtm, track } from "./pixel";
 import { compactOrigin, tagPlainLink, type UtmMedium } from "@/lib/membros-utm";
 import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Promo";
 import Login from "./Login";
@@ -203,6 +203,7 @@ export default function MembrosPage() {
     setShowInstallLink(platform() !== "desktop" && !isInstalled());
     void registerWorker();
     captureUtm();
+    captureRef();
     const slug = areaSlug();
     // App instalado de cada área abre na área certa.
     if (slug) document.querySelector('link[rel="manifest"]')?.setAttribute("href", `/api/membros/manifest?area=${encodeURIComponent(slug)}`);

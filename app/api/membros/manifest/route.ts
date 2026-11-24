@@ -1,5 +1,6 @@
 import { getArea } from "@/lib/membros";
 import { appIcons } from "@/lib/membros-icones";
+import { areaDoChama } from "@/lib/chama-acesa/acesso-regra";
 
 // Manifesto do app (instalar na tela inicial). Em membros.bagencymidia.site o app abre na raiz;
 // no endereço do painel, em /membros.
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
   const root = own ? "" : "/membros";
   const areaPath = settings && settings.id !== 1 ? `/${settings.slug}` : "";
   const base = `${root}${areaPath}` || "/";
-  const name = settings?.brand_name || "Gênio Play";
+  const name = settings && settings.slug === areaDoChama() ? "Chama Acesa" : settings?.brand_name || "Gênio Play";
   const icons = appIcons(settings?.slug);
   const bg = /^#[0-9a-f]{6}$/i.test(settings?.bg_color || "") ? settings!.bg_color : "#0A0C12";
   return Response.json(

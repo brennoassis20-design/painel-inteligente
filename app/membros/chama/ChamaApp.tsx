@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Archivo_Black, Inter } from "next/font/google";
 import type { Armazem, RespostaAcao } from "@/lib/chama-acesa/armazem";
 import type { Dia } from "@/lib/chama-acesa/dias";
 import type { Painel } from "@/lib/chama-acesa/painel";
-import { diaAtual, diasConcluidos, MAX_BRASAS, NOMES_MEDALHA, podeAbrir, statusDoDia, TOTAL_DIAS, type Check, type Medalha, type StatusDia } from "@/lib/chama-acesa/regras";
+import { diaAtual, diasConcluidos, inicioSemana, MAX_BRASAS, NOMES_MEDALHA, podeAbrir, statusDoDia, TOTAL_DIAS, XP, type Check, type Medalha, type StatusDia } from "@/lib/chama-acesa/regras";
+import { situacaoNaLiga } from "@/lib/chama-acesa/ligas";
+import { montarSessao, type Pergunta } from "@/lib/chama-acesa/pratica";
+import { InstalarApp, useVisaoInstalar, type ForcarInstalacao } from "./Instalar";
 import { compartilharCartao, gerarCartao, gerarPapelDeParede } from "@/lib/chama-acesa/cartao";
 import { atualizarSelo, completouHoje } from "@/lib/chama-acesa/selo";
 import { tagLink } from "@/lib/membros-utm";
@@ -18,13 +21,14 @@ const FONTES = `${titulo.variable} ${texto.variable}`;
 
 const SEGUNDOS_ORACAO = 20;
 
-type Aba = "hoje" | "jornada" | "conquistas";
+type Aba = "hoje" | "jornada" | "liga" | "conquistas";
 type Vista =
   | { v: "abas" }
   | { v: "passo"; dia: number; passo: Check }
+  | { v: "pratica" }
   | { v: "dia"; dia: number }
   | { v: "pagamento" }
-  | { v: "acendeu"; r: Pick<RespostaAcao, "completouDia" | "novasMedalhas" | "ganhouBrasa"> }
+  | { v: "acendeu"; r: Pick<RespostaAcao, "completouDia" | "novasMedalhas" | "ganhouBrasa" | "xpGanho"> }
   | { v: "lembrete" }
   | { v: "celebracao" };
 
@@ -37,18 +41,28 @@ export interface ChamaAppProps {
   /** Origem (UTM) salva do aluno, repassada ao checkout. */
   lerUtm?: () => Record<string, string>;
   email?: string;
+  /** Bancada: força a visualização das instruções de instalação (iPhone, Android...). */
+  instalarForcar?: ForcarInstalacao;
 }
 
 const paragrafos = (t: string) => t.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 const diasTxt = (n: number) => `${n} ${n === 1 ? "dia" : "dias"}`;
 
-export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtivarPush, lerUtm, email }: ChamaAppProps) {
+export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtivarPush, lerUtm, email, instalarForcar = "auto" }: ChamaAppProps) {
   const [painel, setPainel] = useState<Painel | null>(null);
   const [erro, setErro] = useState("");
   const [aba, setAba] = useState<Aba>("hoje");
   const [vista, setVista] = useState<Vista>({ v: "abas" });
   const [aviso, setAviso] = useState("");
   const ocupado = useRef(false);
+  const [xpPop, setXpPop] = useState<{ n: number; k: number } | null>(null);
+  const [convidar, setConvidar] = useState(false);
+  const [cartaoInstalarFechado, setCartaoInstalarFechado] = useState(false);
+  const visaoInstalar = useVisaoInstalar(instalarForcar);
+  // O título da aba é sempre o do app (a área pode ainda estar com o nome do Gênio Play).
+  useEffect(() => {
+    document.title = marca === "Gênio Play" ? "Chama Acesa" : marca;
+  }, [marca]);
 
   const carregar = useCallback(() => {
     void armazem
@@ -108,6 +122,11 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     try {
       const r = await armazem.agir(a);
       setPainel(r);
+      if (r.xpGanho > 0) {
+        const k = Date.now();
+        setXpPop({ n: r.xpGanho, k });
+        window.setTimeout(() => setXpPop((x) => (x && x.k === k ? null : x)), 1700);
+      }
       return r;
     } catch (e) {
       toast(e instanceof Error ? e.message : "Não deu certo. Tente de novo.");
@@ -120,7 +139,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
   const marcar = async (dia: number, check: Check) => {
     const r = await agir({ tipo: "check", dia, check });
     if (!r) return;
-    if (r.completouDia) irPara({ v: "acendeu", r: { completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa } });
+    if (r.completouDia) irPara({ v: "acendeu", r: { completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa, xpGanho: r.xpGanho } });
     else irPara({ v: "abas" });
   };
 
@@ -161,9 +180,28 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     }
   };
 
+  const linkConvite = `${painel.conviteBase}?ref=${painel.codigo}`;
+  const textoConvite = `Tô fazendo um desafio de 21 dias com Deus, 5 minutos por dia, e tô com ${estado.chama} ${estado.chama === 1 ? "dia" : "dias"} de chama acesa 🔥 Começa comigo, os primeiros dias são grátis: ${linkConvite}`;
+  const sit = situacaoNaLiga(estado, hoje, painel.hora, painel.semente, painel.ligas, painel.nome);
+  const res = estado.liga.resultado;
+
   // ------------------------------------------------------------ vistas de tela cheia
   let corpo: React.ReactNode = null;
-  if (vista.v === "passo") {
+  if (vista.v === "abas" && res) {
+    const de = painel.ligas.ligas[Math.min(res.liga, painel.ligas.ligas.length - 1)];
+    const para = painel.ligas.ligas[Math.min(res.para, painel.ligas.ligas.length - 1)];
+    corpo = (
+      <div className="ch-cheia">
+        <span className="ch-liga-icone" aria-hidden="true">{res.resultado === "subiu" ? "🚀" : res.resultado === "desceu" ? "📉" : "🛡️"}</span>
+        <h1>{res.resultado === "subiu" ? "Você subiu de liga!" : res.resultado === "desceu" ? "Você desceu de liga" : "Você ficou na liga"}</h1>
+        <p className="ch-grande">{res.resultado === "ficou" ? `${de.icone} ${de.nome}` : `${de.icone} ${de.nome} → ${para.icone} ${para.nome}`}</p>
+        <p className="ch-suave">Você terminou a semana em {res.posicao}º lugar com {res.xp} XP. {res.resultado === "subiu" ? "A disputa agora é mais forte. Vamos!" : res.resultado === "desceu" ? "Semana nova, chance nova: volte a ganhar XP todo dia." : "Mais uma semana para tentar subir."}</p>
+        <button type="button" className="ch-btn ch-btn-grande" onClick={() => void agir({ tipo: "limparResultadoLiga" })}>Começar a nova semana</button>
+      </div>
+    );
+  } else if (vista.v === "pratica") {
+    corpo = <Pratica banco={painel.versiculos} vistos={estado.praticas} onFim={(acertos, ids) => agir({ tipo: "pratica", acertos, ids })} onSair={() => irPara({ v: "abas" })} />;
+  } else if (vista.v === "passo") {
     const d = conteudo(vista.dia);
     corpo = d ? (
       <Passo
@@ -201,6 +239,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
       <Acendeu
         chama={estado.chama}
         r={vista.r}
+        cobrar={vista.r.completouDia === 3 && !pago ? linkCompra() ?? "" : null}
         onCompartilhar={() => void compartilhar()}
         onContinuar={() => {
           if (vista.r.completouDia === 1 && !estado.lembrete) irPara({ v: "lembrete" });
@@ -224,6 +263,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
           await agir({ tipo: "lembrete", horario });
           irPara({ v: "abas" });
         }}
+        instalarForcar={instalarForcar}
         semPush={!onAtivarPush}
         onDepois={() => irPara({ v: "abas" })}
       />
@@ -254,6 +294,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     return (
       <div className={`ch ${FONTES}`}>
         {corpo}
+        {xpPop && <div className="ch-xp-pop" key={xpPop.k} aria-live="polite">+{xpPop.n} XP</div>}
         {aviso && <p className="ch-toast" role="status">{aviso}</p>}
       </div>
     );
@@ -280,6 +321,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             <Chama dias={estado.chama} />
             <div className="ch-num">{estado.chama}</div>
             <div className="ch-num-sub">{estado.chama === 1 ? "dia de chama acesa" : "dias de chama acesa"}</div>
+            <div className="ch-pills"><span className="ch-pill">⚡ {estado.xp} XP</span><span className="ch-pill">Semana: {estado.xpSemana[inicioSemana(hoje)] ?? 0} XP</span></div>
             {estado.brasas > 0 && <div className="ch-brasas" title="Brasa guardada">{Array.from({ length: estado.brasas }, (_, i) => <i key={i} />)}<span>{estado.brasas === 1 ? "1 brasa guardada" : `${estado.brasas} brasas guardadas`}</span></div>}
           </div>
           <Hoje
@@ -295,6 +337,9 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             onPagamento={() => irPara({ v: "pagamento" })}
             onCelebracao={() => irPara({ v: "celebracao" })}
           />
+          {visaoInstalar !== "nada" && !cartaoInstalarFechado && concl === 0 && <InstalarApp forcar={instalarForcar} onFechar={() => setCartaoInstalarFechado(true)} />}
+          <button type="button" className="ch-btn ch-btn-claro" onClick={() => setVista({ v: "pratica" })}>Ler mais versículos</button>
+          {feitoHoje && <button type="button" className="ch-btn ch-btn-claro" onClick={() => setConvidar(true)}>Convidar um amigo</button>}
           <button type="button" className="ch-btn ch-btn-claro" onClick={() => void compartilhar()} disabled={estado.chama === 0 && concl === 0}>
             Compartilhar minha chama
           </button>
@@ -323,9 +368,49 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         </section>
       )}
 
+      {aba === "liga" && (
+        <section className="ch-tela">
+          <div className="ch-liga-topo">
+            <span className="ch-liga-icone" style={{ filter: `drop-shadow(0 0 12px ${sit.liga.cor})` }} aria-hidden="true">{sit.liga.icone}</span>
+            <h1>Liga {sit.liga.nome}</h1>
+            {sit.liga.descricao && <p className="ch-suave">{sit.liga.descricao}</p>}
+            <p className="ch-grande">Você está em {sit.posicao}º lugar</p>
+            <p className="ch-suave">Faltam {sit.restante.dias}d {sit.restante.horas}h para a semana acabar. Os {painel.ligas.sobem} primeiros sobem{estado.liga.indice > 0 ? `; os ${painel.ligas.descem} últimos descem` : ""}.</p>
+          </div>
+          <div className="ch-liga-lista">
+            {sit.linhas.map((l, i) => {
+              const zona = l.posicao <= painel.ligas.sobem && estado.liga.indice < painel.ligas.ligas.length - 1 ? "sobe" : l.posicao > painel.ligas.tamanho - painel.ligas.descem && estado.liga.indice > 0 ? "desce" : "";
+              const antes = i > 0 ? sit.linhas[i - 1].posicao : 0;
+              return (
+                <Fragment key={`${l.nome}-${l.posicao}`}>
+                  {i === 0 && estado.liga.indice < painel.ligas.ligas.length - 1 && <div className="ch-zona sobe">▲ Zona de subida</div>}
+                  {antes === painel.ligas.sobem && <div className="ch-zona">Zona segura</div>}
+                  {l.posicao === painel.ligas.tamanho - painel.ligas.descem + 1 && estado.liga.indice > 0 && <div className="ch-zona desce">▼ Zona de descida</div>}
+                  <div className={`${zona}${l.voce ? " voce" : ""}`} style={{ display: "flex", gap: 10, alignItems: "center", background: "var(--ch-card)", borderRadius: 14, padding: "10px 12px", border: l.voce ? "1px solid var(--ch-ouro)" : "1px solid transparent", ...(zona === "sobe" ? { background: "#12301f" } : zona === "desce" ? { background: "#3b1a1a" } : {}) }}>
+                    <span className="pos">{l.posicao}</span>
+                    <span className="nome">{l.voce ? "Você" : l.nome}</span>
+                    <span className="xp">{l.xp} XP</span>
+                  </div>
+                </Fragment>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {aba === "conquistas" && (
         <section className="ch-tela">
           <h1>Conquistas</h1>
+          <div className="ch-card">
+            <h2>Seu perfil</h2>
+            <p className="ch-suave">⚡ {estado.xp} XP no total · {estado.xpSemana[inicioSemana(hoje)] ?? 0} XP nesta semana · liga {sit.liga.icone} {sit.liga.nome}</p>
+          </div>
+          {visaoInstalar !== "nada" && <InstalarApp forcar={instalarForcar} />}
+          <div className="ch-card">
+            <h2>Amigos</h2>
+            <p className="ch-suave">{estado.amigos === 0 ? "Nenhum amigo aceitou ainda." : estado.amigos === 1 ? "1 amigo aceitou o convite e começou a jornada." : `${estado.amigos} amigos aceitaram o convite e começaram a jornada.`} Quando um amigo completa o dia 1, você ganha {XP.convite} XP e 1 brasa guardada.</p>
+            <button type="button" className="ch-btn" onClick={() => setConvidar(true)}>Convidar um amigo</button>
+          </div>
           <div className="ch-card">
             <h2>Brasas guardadas</h2>
             <p className="ch-suave">Você ganha 1 brasa a cada 7 dias de chama (no máximo {MAX_BRASAS}). Se pular um dia, a brasa é usada sozinha e a chama não apaga.</p>
@@ -350,13 +435,15 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         </section>
       )}
 
-      <nav className="ch-nav" aria-label="Seções do app">
-        {([["hoje", "🔥", "Hoje"], ["jornada", "🗺️", "Jornada"], ["conquistas", "🏅", "Conquistas"]] as const).map(([id, ic, nome]) => (
+      <nav className="ch-nav quatro" aria-label="Seções do app">
+        {([["hoje", "🔥", "Hoje"], ["jornada", "🗺️", "Jornada"], ["liga", sit.liga.icone, "Liga"], ["conquistas", "🏅", "Conquistas"]] as const).map(([id, ic, nome]) => (
           <button key={id} type="button" className={aba === id ? "on" : ""} aria-current={aba === id ? "page" : undefined} onClick={() => { setAba(id); window.scrollTo({ top: 0 }); }}>
             <span aria-hidden="true">{ic}</span>{nome}
           </button>
         ))}
       </nav>
+      {convidar && <ConviteSheet texto={textoConvite} link={linkConvite} onFechar={() => setConvidar(false)} chama={estado.chama} />}
+      {xpPop && <div className="ch-xp-pop" key={xpPop.k} aria-live="polite">+{xpPop.n} XP</div>}
       {aviso && <p className="ch-toast" role="status">{aviso}</p>}
     </div>
   );
@@ -508,13 +595,22 @@ function Vazio({ onVoltar }: { onVoltar: () => void }) {
   );
 }
 
-function Acendeu({ chama, r, onContinuar, onCompartilhar }: { chama: number; r: Pick<RespostaAcao, "completouDia" | "novasMedalhas" | "ganhouBrasa">; onContinuar: () => void; onCompartilhar: () => void }) {
+function Acendeu({ chama, r, cobrar, onContinuar, onCompartilhar }: { chama: number; r: Pick<RespostaAcao, "completouDia" | "novasMedalhas" | "ganhouBrasa" | "xpGanho">; cobrar: string | null; onContinuar: () => void; onCompartilhar: () => void }) {
   return (
     <div className="ch-cheia ch-acendeu">
       <Chama dias={chama} acendendo tamanho={130} />
       <h1>Chama acesa!</h1>
       <p className="ch-grande">{diasTxt(chama)} de chama</p>
       <p className="ch-suave">Dia {r.completouDia} concluído. Volte amanhã para alimentar o fogo.</p>
+      {r.xpGanho > 0 && <div className="ch-pill">⚡ +{r.xpGanho} XP neste dia</div>}
+      {cobrar !== null && (
+        <div className="ch-card ch-oferta">
+          <span className="ch-etiqueta">Seu dia 3 está feito</span>
+          <h2>Garanta a sua jornada</h2>
+          <p>Você acendeu a chama por 3 dias. Os outros 18 dias estão trancados. Libere agora e não deixe ela apagar.</p>
+          {cobrar ? <a className="ch-btn ch-btn-grande" href={cobrar} target="_blank" rel="noreferrer">Garantir a minha jornada</a> : <p className="ch-nota">O link de compra ainda não foi configurado (CHAMA_CHECKOUT_URL).</p>}
+        </div>
+      )}
       {r.ganhouBrasa && <div className="ch-ganho"><i className="ch-brasa-i" /> Você ganhou uma <b>brasa guardada</b>. Ela salva a chama se você pular um dia.</div>}
       {r.novasMedalhas.map((m) => (
         <div key={m} className="ch-ganho medalha">🏅 Nova medalha: <b>{NOMES_MEDALHA[m].nome}</b><small>{NOMES_MEDALHA[m].texto}</small></div>
@@ -525,16 +621,17 @@ function Acendeu({ chama, r, onContinuar, onCompartilhar }: { chama: number; r: 
   );
 }
 
-function Lembrete({ chama, onSalvar, onDepois, semPush }: { chama: number; onSalvar: (h: string) => Promise<void>; onDepois: () => void; semPush: boolean }) {
+function Lembrete({ chama, onSalvar, onDepois, semPush, instalarForcar }: { chama: number; onSalvar: (h: string) => Promise<void>; onDepois: () => void; semPush: boolean; instalarForcar: ForcarInstalacao }) {
   const [hora, setHora] = useState("07:00");
   const [enviando, setEnviando] = useState(false);
   const exemplo = useMemo(() => `🔥 Sua chama de ${chama} ${chama === 1 ? "dia" : "dias"} está te esperando`, [chama]);
   return (
     <div className="ch-cheia ch-lembrete">
-      <span className="ch-sino" aria-hidden="true">🔔</span>
+      <div className="ch-mascote"><Chama dias={Math.max(chama, 1)} tamanho={70} /><small>A Brasinha</small></div>
       <h1>Quer um lembrete?</h1>
       <p className="ch-suave">Escolha a hora em que você quer lembrar de Deus todo dia. A gente avisa no seu celular.</p>
       <div className="ch-aviso-exemplo">{exemplo}</div>
+      <InstalarApp forcar={instalarForcar} motivo="O lembrete só funciona com o app instalado na tela de início. Instale primeiro e depois ative o lembrete." />
       <label className="ch-hora">
         <span>Horário</span>
         <input type="time" value={hora} onChange={(e) => setHora(e.target.value || "07:00")} />
@@ -544,6 +641,102 @@ function Lembrete({ chama, onSalvar, onDepois, semPush }: { chama: number; onSal
         Ativar o lembrete
       </button>
       <button type="button" className="ch-link" onClick={onDepois}>Agora não</button>
+    </div>
+  );
+}
+
+function ConviteSheet({ texto, link, onFechar, chama }: { texto: string; link: string; onFechar: () => void; chama: number }) {
+  const [msg, setMsg] = useState("");
+  const podeCompartilhar = typeof navigator !== "undefined" && "share" in navigator;
+  return (
+    <div className="ch-sheet" role="dialog" aria-modal="true" aria-label="Convidar um amigo">
+      <div>
+        <div className="ch-mascote"><Chama dias={Math.max(chama, 1)} tamanho={64} /><small>A Brasinha</small></div>
+        <h2>Convide um amigo</h2>
+        <p className="ch-suave">{texto}</p>
+        {podeCompartilhar && (
+          <button type="button" className="ch-btn" onClick={() => void navigator.share({ text: texto }).catch(() => undefined)}>Compartilhar</button>
+        )}
+        <a className="ch-btn ch-btn-claro" href={`https://wa.me/?text=${encodeURIComponent(texto)}`} target="_blank" rel="noreferrer">Abrir no WhatsApp</a>
+        <button
+          type="button"
+          className="ch-btn ch-btn-claro"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(texto);
+              setMsg("Texto copiado.");
+            } catch {
+              setMsg(`Copie o link: ${link}`);
+            }
+          }}
+        >
+          Copiar o texto
+        </button>
+        {msg && <p className="ch-suave" role="status">{msg}</p>}
+        <button type="button" className="ch-link" onClick={onFechar}>Fechar</button>
+      </div>
+    </div>
+  );
+}
+
+function Pratica({ banco, vistos, onFim, onSair }: { banco: Parameters<typeof montarSessao>[0]; vistos: Record<string, number>; onFim: (acertos: number, ids: string[]) => Promise<unknown>; onSair: () => void }) {
+  const [perguntas] = useState<Pergunta[]>(() => montarSessao(banco, vistos));
+  const [i, setI] = useState(0);
+  const [escolha, setEscolha] = useState<number | null>(null);
+  const [acertos, setAcertos] = useState(0);
+  const [fim, setFim] = useState(false);
+  const total = perguntas.length;
+  if (total === 0) return <Vazio onVoltar={onSair} />;
+  if (fim) {
+    const perfeita = total === 5 && acertos === 5;
+    const xp = acertos * XP.acertoPratica + (perfeita ? XP.praticaPerfeita : 0);
+    return (
+      <div className="ch-cheia">
+        <Chama dias={acertos >= 3 ? 7 : 2} acendendo tamanho={100} />
+        <h1>{perfeita ? "Sessão perfeita!" : "Sessão concluída"}</h1>
+        <p className="ch-grande">⚡ +{xp} XP</p>
+        <p className="ch-suave">Você acertou {acertos} de {total}. A prática não muda o seu dia nem a sua chama: é só para fixar a Palavra.</p>
+        <button type="button" className="ch-btn ch-btn-grande" onClick={onSair}>Continuar</button>
+      </div>
+    );
+  }
+  const p = perguntas[i];
+  const respondeu = escolha !== null;
+  const acertou = escolha === p.correta;
+  const proxima = async () => {
+    const novoAcertos = acertos;
+    if (i + 1 >= total) {
+      await onFim(novoAcertos, perguntas.map((x) => x.id));
+      setFim(true);
+    } else {
+      setI(i + 1);
+      setEscolha(null);
+    }
+  };
+  return (
+    <div className="ch-cheia ch-passo">
+      <div className="ch-pratica-topo">
+        <button type="button" onClick={onSair} aria-label="Sair da prática">✕</button>
+        <div className="ch-barra" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={i + (respondeu ? 1 : 0)}><i style={{ width: `${((i + (respondeu ? 1 : 0)) / total) * 100}%` }} /></div>
+      </div>
+      <span className="ch-etiqueta">{p.enunciado}</span>
+      <p className="ch-trecho">{p.trecho}</p>
+      <div className="ch-opcoes">
+        {p.opcoes.map((o, k) => (
+          <button key={o} type="button" disabled={respondeu} className={respondeu ? (k === p.correta ? "certa" : k === escolha ? "errada" : "") : ""} onClick={() => { setEscolha(k); if (k === p.correta) setAcertos((a) => a + 1); }}>
+            {o}
+          </button>
+        ))}
+      </div>
+      {respondeu && (
+        <>
+          <div className={`ch-feedback ${acertou ? "certa" : "errada"}`} role="status">
+            {acertou ? `Certo! +${XP.acertoPratica} XP` : `Não foi dessa vez. Resposta: ${p.opcoes[p.correta]}`}
+            <small style={{ display: "block", fontWeight: 400 }}>{p.referencia}</small>
+          </div>
+          <div className="ch-rodape"><button type="button" className="ch-btn ch-btn-grande" onClick={() => void proxima()}>{i + 1 >= total ? "Ver resultado" : "Continuar"}</button></div>
+        </>
+      )}
     </div>
   );
 }

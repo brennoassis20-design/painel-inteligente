@@ -6,7 +6,8 @@ import { calcularAcesso } from "../lib/chama-acesa/acesso-regra.ts";
 import { normalizarDias } from "../lib/chama-acesa/dias.ts";
 import { montarSessao, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
 import { atualizarLiga, classificar, gerarBots, normalizarLigas, xpDoBot, zonaDe } from "../lib/chama-acesa/ligas.ts";
-import { quemRecebe, textoLembrete } from "../lib/chama-acesa/lembretes.ts";
+import { categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio } from "../lib/chama-acesa/lembretes.ts";
+import { readFileSync } from "node:fs";
 import { completouHoje } from "../lib/chama-acesa/selo.ts";
 
 const D0 = "2026-12-01";
@@ -163,17 +164,72 @@ test("conteúdo: normaliza o dias.json e descarta lixo", () => {
   assert.equal(dias[0].jejum, "x");
 });
 
-test("lembretes: manhã na hora escolhida, noite às 21h, só quem não completou hoje", () => {
+const TEXTOS = normalizarTextos(JSON.parse(readFileSync(new URL("../lib/chama-acesa/lembretes-textos.json", import.meta.url), "utf8")));
+const CFG_L = normalizarLigas({ ligas: Array.from({ length: 4 }, (_, i) => ({ id: `l${i}`, nome: `L${i}` })), nomes: Array.from({ length: 60 }, (_, i) => `Nome ${i}`) });
+
+test("lembretes: manhã na hora escolhida, noite às 21h, só quem ligou e não completou hoje", () => {
   const hoje = "2026-12-05";
-  const P = (id, h, ult, n = 3) => ({ user_id: id, chama_atual: n, ultima_data: ult, horario_lembrete: h });
-  const perfis = [P("a", "07:00", "2026-12-04"), P("b", "07:30", hoje), P("c", null, "2026-12-04"), P("d", "21:00", "2026-12-04"), P("e", "09:00", "2026-12-04")];
-  assert.deepEqual(quemRecebe(perfis, "07", hoje).map((x) => [x.perfil.user_id, x.tipo]), [["a", "manha"]]);
-  // 21h: só quem ainda não completou e ligou o lembrete (b completou, c não ligou); d (que escolheu 21h) recebe um só
-  assert.deepEqual(quemRecebe(perfis, "21", hoje).map((x) => [x.perfil.user_id, x.tipo]), [["a", "noite"], ["d", "noite"], ["e", "noite"]]);
-  assert.deepEqual(quemRecebe(perfis, "15", hoje), []);
-  assert.equal(textoLembrete("noite", 5).title, "🔥 Sua chama de 5 dias apaga à meia-noite");
-  assert.equal(textoLembrete("noite", 5).body, "Faltam 5 minutos.");
-  assert.equal(textoLembrete("manha", 1).title, "🔥 Sua chama de 1 dia está te esperando");
+  const P = (id, h, ult, n = 3, acesso = "2026-12-04") => ({ user_id: id, nome: "Ana Silva", chama_atual: n, ultima_data: ult, ultimo_acesso: acesso, horario_lembrete: h, dias_feitos: 3, xp_semana: {}, lembretes_hist: {} });
+  const perfis = [P("a", "07:00", "2026-12-04"), P("b", "07:30", hoje, 3, hoje), P("c", null, "2026-12-04"), P("d", "21:00", "2026-12-04"), P("e", "09:00", "2026-12-04")];
+  assert.deepEqual(quemRecebe(perfis, "07", hoje, TEXTOS, CFG_L).map((x) => [x.perfil.user_id, x.mensagem.tipo]), [["a", "manha"]]);
+  assert.deepEqual(quemRecebe(perfis, "21", hoje, TEXTOS, CFG_L).map((x) => [x.perfil.user_id, x.mensagem.tipo]), [["a", "noite"], ["d", "noite"], ["e", "noite"]]);
+  assert.deepEqual(quemRecebe(perfis, "15", hoje, TEXTOS, CFG_L), []);
+  const m = quemRecebe(perfis, "21", hoje, TEXTOS, CFG_L)[0].mensagem;
+  assert.ok(!/[{}]/.test(m.titulo + m.corpo), "variáveis preenchidas");
+});
+
+test("lembretes: categoria certa para cada situação", () => {
+  const base = { tipo: "manha", hoje: "2026-12-04", chama: 3, maior: 3, ultimaData: "2026-12-03", ultimoAcesso: "2026-12-03", diasFeitos: 3, posicao: 15, zona: "neutra", sobem: 7 };
+  assert.equal(categoriaDoLembrete({ ...base, chama: 2 }), "medalha_perto"); // amanhã é o 3º dia
+  assert.equal(categoriaDoLembrete({ ...base, chama: 4 }), "manha_normal");
+  assert.equal(categoriaDoLembrete({ ...base, zona: "desce", chama: 4 }), "liga_risco_descer");
+  assert.equal(categoriaDoLembrete({ ...base, posicao: 9, chama: 4 }), "liga_perto_subir");
+  assert.equal(categoriaDoLembrete({ ...base, chama: 1, maior: 5 }), "voltou");
+  // sábado (2026-12-05): convite de amigo quando nada mais se aplica
+  assert.equal(categoriaDoLembrete({ ...base, chama: 4, hoje: "2026-12-05", ultimaData: "2026-12-04", ultimoAcesso: "2026-12-04" }), "convite_amigo");
+  // noite
+  assert.equal(categoriaDoLembrete({ ...base, tipo: "noite", chama: 4 }), "noite_risco");
+  assert.equal(categoriaDoLembrete({ ...base, tipo: "noite", chama: 9 }), "chama_alta_risco");
+  assert.equal(categoriaDoLembrete({ ...base, tipo: "noite", chama: 4, zona: "desce" }), "liga_risco_descer");
+});
+
+test("lembretes: sumiu 2, 5 e 14 dias; passou de 14 para; noite não insiste em quem sumiu", () => {
+  const c = (n, extra = {}) => ({ tipo: "manha", hoje: "2026-12-20", chama: 0, maior: 3, ultimaData: null, ultimoAcesso: `2026-12-${String(20 - n).padStart(2, "0")}`, diasFeitos: 3, posicao: 15, zona: "neutra", sobem: 7, ...extra });
+  assert.equal(categoriaDoLembrete(c(1)), "manha_normal");
+  assert.equal(categoriaDoLembrete(c(2)), "sumiu_2_dias");
+  assert.equal(categoriaDoLembrete(c(4)), "sumiu_2_dias");
+  assert.equal(categoriaDoLembrete(c(5)), "sumiu_5_dias");
+  assert.equal(categoriaDoLembrete(c(13)), "sumiu_5_dias");
+  assert.equal(categoriaDoLembrete(c(14)), "sumiu_14_dias");
+  assert.equal(categoriaDoLembrete(c(15)), null);
+  assert.equal(categoriaDoLembrete(c(3, { tipo: "noite" })), null);
+});
+
+test("lembretes: não repete a mesma mensagem em 7 dias; volta à mais antiga quando acabam", () => {
+  const textos = normalizarTextos([{ cat: "x", tom: "a", titulo: "A", corpo: "" }, { cat: "x", tom: "b", titulo: "B", corpo: "" }]);
+  let hist = {};
+  const vistas = [];
+  for (let d = 0; d < 2; d += 1) {
+    const t = escolherTexto(textos, "x", hist, `2026-12-0${d + 1}`, () => 0);
+    vistas.push(t.titulo);
+    hist = registrarEnvio(hist, `x|${t.titulo}`, `2026-12-0${d + 1}`);
+  }
+  assert.deepEqual(vistas.sort(), ["A", "B"]);
+  // acabaram: volta à mais antiga (a de 01/12)
+  const antiga = Object.entries(hist).sort((a, b) => a[1].localeCompare(b[1]))[0][0].split("|")[1];
+  assert.equal(escolherTexto(textos, "x", hist, "2026-12-03", () => 0.9).titulo, antiga);
+  // passados 7 dias, a antiga volta a valer e a outra continua barrada
+  const t8 = escolherTexto(textos, "x", hist, "2026-12-08", () => 0);
+  assert.equal(t8.titulo, antiga);
+  assert.equal(preencher("{nome} tem {dias} dias na liga {liga}", { nome: "Ana", dias: 3, liga: "Faísca" }), "Ana tem 3 dias na liga Faísca");
+});
+
+test("cobrança do dia 4: só no dia seguinte ao dia 3, sem compra e sem aviso anterior", () => {
+  const hoje = "2026-12-05";
+  const C = (id, dia3, extra = {}) => ({ user_id: id, nome: "Rita", chama_atual: 3, dia3, pago: false, enviada: false, ...extra });
+  const r = quemRecebeCobranca([C("a", "2026-12-04"), C("b", "2026-12-04", { pago: true }), C("c", "2026-12-04", { enviada: true }), C("d", "2026-12-03"), C("e", hoje), C("f", null)], hoje, TEXTOS);
+  assert.deepEqual(r.map((x) => x.candidato.user_id), ["a"]);
+  assert.ok(r[0].titulo.length > 0 && !/[{}]/.test(r[0].titulo + r[0].corpo));
 });
 
 test("selo: só aceso enquanto hoje não foi completado", () => {

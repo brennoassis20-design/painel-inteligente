@@ -1,6 +1,8 @@
 // Lado do servidor: lê e grava o estado da jornada nas tabelas chama_perfil e chama_dias (sempre filtrando por user_id).
 import { supabaseRest } from "@/lib/panel-server";
-import { checksVazios, estadoVazio, type Aviso, type Checks, type Estado, type Medalha } from "./regras";
+import { premiarConvite, checksVazios, estadoVazio, type Aviso, type Checks, type Estado, type LigaEstado, type Medalha } from "./regras";
+
+const enc = encodeURIComponent;
 
 type LinhaPerfil = {
   inicio: string | null;
@@ -11,12 +13,24 @@ type LinhaPerfil = {
   ultima_data: string | null;
   medalhas: string[];
   avisos: string[];
+  xp: number;
+  xp_semana: Record<string, number> | null;
+  praticas: Record<string, number> | null;
+  amigos: number;
+  ultimo_acesso: string | null;
+  lembretes_hist: Record<string, string> | null;
+  liga: LigaEstado | null;
 };
 type LinhaDia = { dia: number; concluido_em: string | null; checks: Partial<Checks> | null; jejum: boolean };
 
+/** Código curto de convite (primeiros 8 caracteres do id). */
+export const codigoDe = (userId: string) => userId.replace(/-/g, "").slice(0, 8).toLowerCase();
+
+const COLUNAS = "inicio,horario_lembrete,brasas,chama_atual,maior_chama,ultima_data,medalhas,avisos,xp,xp_semana,praticas,amigos,ultimo_acesso,lembretes_hist,liga";
+
 export async function carregarEstado(userId: string): Promise<Estado> {
   const [perfis, dias] = await Promise.all([
-    supabaseRest<LinhaPerfil[]>(`/chama_perfil?user_id=eq.${userId}&select=inicio,horario_lembrete,brasas,chama_atual,maior_chama,ultima_data,medalhas,avisos`),
+    supabaseRest<LinhaPerfil[]>(`/chama_perfil?user_id=eq.${userId}&select=${COLUNAS}`),
     supabaseRest<LinhaDia[]>(`/chama_dias?user_id=eq.${userId}&select=dia,concluido_em,checks,jejum&order=dia.asc`),
   ]);
   const e = estadoVazio();
@@ -30,6 +44,13 @@ export async function carregarEstado(userId: string): Promise<Estado> {
     e.ultimaData = p.ultima_data;
     e.medalhas = (p.medalhas || []) as Medalha[];
     e.avisos = (p.avisos || []) as Aviso[];
+    e.xp = p.xp ?? 0;
+    e.xpSemana = p.xp_semana ?? {};
+    e.praticas = p.praticas ?? {};
+    e.amigos = p.amigos ?? 0;
+    e.ultimoAcesso = p.ultimo_acesso;
+    e.lembretesHist = p.lembretes_hist ?? {};
+    e.liga = p.liga ? { ...e.liga, ...p.liga } : e.liga;
   }
   for (const d of dias) {
     if (d.concluido_em) e.concluidos[d.dia] = d.concluido_em;
@@ -39,7 +60,7 @@ export async function carregarEstado(userId: string): Promise<Estado> {
   return e;
 }
 
-export async function salvarEstado(userId: string, areaId: number, e: Estado) {
+export async function salvarEstado(userId: string, areaId: number, e: Estado, nome?: string) {
   const agora = new Date().toISOString();
   await supabaseRest(`/chama_perfil?on_conflict=user_id`, {
     method: "POST",
@@ -47,6 +68,8 @@ export async function salvarEstado(userId: string, areaId: number, e: Estado) {
     body: JSON.stringify({
       user_id: userId,
       area_id: areaId,
+      codigo: codigoDe(userId),
+      ...(nome ? { nome: nome.slice(0, 60) } : {}),
       inicio: e.inicio,
       horario_lembrete: e.lembrete,
       brasas: e.brasas,
@@ -55,6 +78,14 @@ export async function salvarEstado(userId: string, areaId: number, e: Estado) {
       ultima_data: e.ultimaData,
       medalhas: e.medalhas,
       avisos: e.avisos,
+      xp: e.xp,
+      xp_semana: e.xpSemana,
+      praticas: e.praticas,
+      amigos: e.amigos,
+      ultimo_acesso: e.ultimoAcesso,
+      lembretes_hist: e.lembretesHist,
+      liga: e.liga,
+      dias_feitos: Object.keys(e.concluidos).length,
       atualizado: agora,
     }),
   });
@@ -74,4 +105,33 @@ export async function salvarEstado(userId: string, areaId: number, e: Estado) {
       body: JSON.stringify(linhas),
     });
   }
+}
+
+// ---------------------------------------------------------------- convite de amigo
+
+/** Cadastro grátis feito com ?ref=<código>: grava quem convidou (ignora código desconhecido ou o próprio). */
+export async function registrarConvite(areaId: number, novoUserId: string, ref: string) {
+  const codigo = String(ref || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12);
+  if (!codigo) return false;
+  const quem = await supabaseRest<{ user_id: string }[]>(`/chama_perfil?area_id=eq.${areaId}&codigo=eq.${enc(codigo)}&select=user_id&limit=1`);
+  const convidador = quem[0]?.user_id;
+  if (!convidador || convidador === novoUserId) return false;
+  await supabaseRest(`/chama_perfil?on_conflict=user_id`, {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ user_id: novoUserId, area_id: areaId, codigo: codigoDe(novoUserId), convidado_por: convidador }),
+  });
+  return true;
+}
+
+/** O amigo completou o dia 1: quem convidou ganha +50 XP e 1 brasa guardada (uma vez só). */
+export async function premiarConvidador(areaId: number, userId: string, hoje: string) {
+  const eu = await supabaseRest<{ convidado_por: string | null; convite_premiado: boolean | null }[]>(`/chama_perfil?user_id=eq.${userId}&select=convidado_por,convite_premiado`);
+  const l = eu[0];
+  if (!l?.convidado_por || l.convite_premiado) return false;
+  // Marca primeiro (evita pagar duas vezes numa corrida) e só então premia.
+  await supabaseRest(`/chama_perfil?user_id=eq.${userId}&convite_premiado=is.false`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ convite_premiado: true }) });
+  const convidador = await carregarEstado(l.convidado_por);
+  await salvarEstado(l.convidado_por, areaId, premiarConvite(convidador, hoje));
+  return true;
 }
