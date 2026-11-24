@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { isInstalled, platform, refreshPush, registerWorker } from "./app";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { enablePush, isInstalled, platform, refreshPush, registerWorker } from "./app";
 import { Bell, InstallGuide, LiveBar, PushInvite, type NoticeItem } from "./Extras";
 import { captureUtm, loadPixel, readUtm, track } from "./pixel";
 import { compactOrigin, tagPlainLink, type UtmMedium } from "@/lib/membros-utm";
 import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Promo";
 import Login from "./Login";
 import { ReformaApp, type AcessoReforma } from "./reforma/ReformaApp";
+import { ChamaApp } from "./chama/ChamaApp";
+import { criarArmazemRemoto } from "@/lib/chama-acesa/armazem";
+import type { ChamaAcesso } from "@/lib/chama-acesa/acesso-regra";
 import { api, areaBase, areaHeaders, areaSlug, AuthError, brl, readSession, writeSession } from "./session";
 
 type Item = {
@@ -61,6 +64,8 @@ type Home = {
   redirect?: string | null;
   // App da Reforma: só vem preenchido na área dele.
   reforma?: AcessoReforma | null;
+  // Chama Acesa: só vem preenchido na área dele.
+  chama?: ChamaAcesso | null;
 };
 
 type LessonView = {
@@ -147,6 +152,7 @@ export default function MembrosPage() {
   const [slug, setSlug] = useState<string | null>(null);
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [reformaAberto, setReformaAberto] = useState(false);
+  const [chamaAberto, setChamaAberto] = useState(false);
   const [locked, setLocked] = useState<Item | null>(null);
   const [promoOpen, setPromoOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
@@ -218,6 +224,7 @@ export default function MembrosPage() {
       setSlug(params.get("p"));
       setLessonId(params.get("aula"));
       setReformaAberto(params.get("reforma") === "1");
+      setChamaAberto(params.get("chama") === "1");
     };
     readRoute();
     window.addEventListener("popstate", readRoute);
@@ -319,6 +326,19 @@ export default function MembrosPage() {
     }
   }, [temReforma]);
 
+  // Chama Acesa instalado (start_url com ?app=1) ou entrada normal na área dele: abre direto no app.
+  const temChama = Boolean(home?.chama?.app);
+  useEffect(() => {
+    if (!temChama) return;
+    const query = new URLSearchParams(window.location.search);
+    if (!query.get("p") && !query.get("chama")) {
+      window.history.replaceState(null, "", `${window.location.pathname}?chama=1`);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- lê o endereço de abertura do app instalado
+      setChamaAberto(true);
+    }
+  }, [temChama]);
+  const armazemChama = useMemo(() => criarArmazemRemoto((path, init) => api(path, init)), []);
+
   // Celular que já ligou os avisos: mantém a inscrição em dia.
   useEffect(() => {
     if (!logged) return;
@@ -335,6 +355,7 @@ export default function MembrosPage() {
     const query = params.toString();
     window.history.pushState(null, "", query ? `?${query}` : window.location.pathname);
     setReformaAberto(false);
+    setChamaAberto(false);
     setSlug(nextSlug);
     setLessonId(nextLesson || null);
     window.scrollTo({ top: 0 });
@@ -606,7 +627,21 @@ export default function MembrosPage() {
         </div>
       )}
 
-      {reformaAberto && home.reforma?.app && !slug ? (
+      {chamaAberto && home.chama?.app && !slug ? (
+        <main className="gp-wrap">
+          <ChamaApp
+            armazem={armazemChama}
+            marca={home.settings.brand_name}
+            email={home.email}
+            lerUtm={readUtm}
+            onAreaMembros={() => go(null)}
+            onAtivarPush={async () => {
+              const { vapid } = await api<{ vapid: string }>("/api/membros/avisos");
+              await enablePush(vapid);
+            }}
+          />
+        </main>
+      ) : reformaAberto && home.reforma?.app && !slug ? (
         <main className="gp-wrap">
           <ReformaApp
             acesso={home.reforma}

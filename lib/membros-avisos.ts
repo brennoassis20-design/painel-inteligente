@@ -410,6 +410,11 @@ async function vapid() {
   return { pub, priv };
 }
 
+// Aviso no celular só para estas pessoas (Chama Acesa: lembrete diário).
+export async function pushParaUsuarios(areaId: number, userIds: string[], payload: { title: string; body: string; url: string; tag: string }) {
+  return pushAll(areaId, payload, userIds);
+}
+
 export async function vapidPublicKey() {
   return (await vapid()).pub;
 }
@@ -432,10 +437,13 @@ export async function removePushSub(endpoint: string, area?: Pick<Area, "id">) {
   return { ok: true };
 }
 
-async function pushAll(areaId: number, payload: { title: string; body: string; url: string; tag: string }) {
+async function pushAll(areaId: number, payload: { title: string; body: string; url: string; tag: string }, userIds?: string[]) {
   const { pub, priv } = await vapid();
   webpush.setVapidDetails(MEMBROS_URL, pub, priv);
-  const subs = await supabaseRest<{ endpoint: string; p256dh: string; auth: string }[]>(`/mp_push_subs?area_id=eq.${areaId}&select=endpoint,p256dh,auth`);
+  // userIds = só estas pessoas (ex.: lembrete diário do Chama Acesa); sem lista = a área inteira.
+  if (userIds && !userIds.length) return 0;
+  const filtro = userIds ? `&user_id=in.(${userIds.filter((id) => /^[0-9a-f-]{36}$/i.test(id)).join(",")})` : "";
+  const subs = await supabaseRest<{ endpoint: string; p256dh: string; auth: string }[]>(`/mp_push_subs?area_id=eq.${areaId}${filtro}&select=endpoint,p256dh,auth`);
   const data = JSON.stringify(payload);
   let sent = 0;
   for (let i = 0; i < subs.length; i += 50) {

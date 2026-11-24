@@ -7,6 +7,7 @@ import { deliverSaleAccess } from "@/lib/membros-acesso-email";
 import { areaStats } from "@/lib/membros-stats";
 import { normalizeMedium, tagLink } from "@/lib/membros-utm";
 import { calcularAcesso } from "@/lib/reforma-app-acesso-regra";
+import { calcularAcesso as calcularAcessoChama } from "@/lib/chama-acesa/acesso-regra";
 import { cleanUrl, createNotice, inviteBuyersWithoutAccount, listLeads, nextLive, noticeNewModule, noticeNewProduct, studentEmails, studentNotices } from "@/lib/membros-avisos";
 import { valoresDaVenda } from "@/lib/membros-valor";
 
@@ -472,6 +473,8 @@ export async function studentHome(user: { id: string; email: string }, area: Are
     email: user.email,
     // App da Reforma (só na área dele): quem tem o app/kit, escolhido por variável de ambiente.
     reforma: calcularAcesso({ areaSlug: settings.slug, produtos: items.map((item) => ({ slug: item.slug, owned: item.owned })), admin }),
+    // Chama Acesa (só na área dele): quem está logado tem os dias 1 a 3; compra libera o resto.
+    chama: calcularAcessoChama({ areaSlug: settings.slug, produtos: items.map((item) => ({ slug: item.slug, owned: item.owned })), admin }),
   };
 }
 

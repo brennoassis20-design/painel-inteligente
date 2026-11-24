@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // O Chromium do servidor vem compactado em node_modules/@sparticuz/chromium/bin; garante que vá junto na função.
   outputFileTracingIncludes: {
     "/api/generate/pdf": ["./node_modules/@sparticuz/chromium/bin/**", "./lib/pdf-fonts/**"],
+    // Conteúdo dos 21 dias do Chama Acesa (lido do disco no servidor).
+    "/api/membros/chama": ["./lib/chama-acesa/*.json"],
+    "/api/chama-dev": ["./lib/chama-acesa/*.json"],
   },
   // genio.brennolimaoficial.com abre direto na página de vendas do Método Gênio.
   async rewrites() {
