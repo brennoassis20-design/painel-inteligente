@@ -18,7 +18,7 @@ export default function ChamaDev() {
   const [forcar, setForcar] = useState<ForcarInstalacao>("auto");
   const [semAbrir, setSemAbrir] = useState(0);
   const [previa, setPrevia] = useState<{ rotulo: string; m: Mensagem | null } | null>(null);
-  const [aberto, setAberto] = useState(true);
+  const [aberto, setAberto] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- só renderiza no navegador (localStorage)
   useEffect(() => setMontado(true), []);
 
