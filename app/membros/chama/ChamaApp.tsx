@@ -482,17 +482,6 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             <h2>Seu perfil</h2>
             <p className="ch-suave">⚡ {estado.xp} XP no total · {estado.xpSemana[inicioSemana(hoje)] ?? 0} XP nesta semana · liga {sit.liga.icone} {sit.liga.nome}</p>
           </div>
-          {visaoInstalar !== "nada" && <InstalarApp forcar={instalarForcar} />}
-          <div className="ch-card">
-            <h2>Amigos</h2>
-            <p className="ch-suave">{estado.amigos === 0 ? "Nenhum amigo aceitou ainda." : estado.amigos === 1 ? "1 amigo aceitou o convite e começou a jornada." : `${estado.amigos} amigos aceitaram o convite e começaram a jornada.`} Quando um amigo completa o dia 1, você ganha {XP.convite} XP e 1 brasa guardada.</p>
-            <button type="button" className="ch-btn" onClick={() => setConvidar(true)}>Convidar um amigo</button>
-          </div>
-          <div className="ch-card">
-            <h2>Brasas guardadas</h2>
-            <p className="ch-suave">Você ganha 1 brasa a cada 7 dias de chama (no máximo {MAX_BRASAS}). Se pular um dia, a brasa é usada sozinha e a chama não apaga.</p>
-            <div className="ch-brasas grande">{Array.from({ length: MAX_BRASAS }, (_, i) => <i key={i} className={i < estado.brasas ? "" : "vazia"} />)}</div>
-          </div>
           <div className="ch-card ch-meta-prox">
             <span className="ch-etiqueta">Próxima meta</span>
             <h2>{proxima} dias{metaDe(proxima)?.nome && !metaDe(proxima)?.generica ? ` · ${metaDe(proxima)!.nome}` : ""}</h2>
@@ -515,6 +504,17 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
           {estado.medalhas.includes("jornada") && (
             <div className="ch-ganho medalha">🏆 <b>{NOME_JORNADA.nome}</b><small>{NOME_JORNADA.texto}</small></div>
           )}
+          {visaoInstalar !== "nada" && <InstalarApp forcar={instalarForcar} />}
+          <div className="ch-card">
+            <h2>Amigos</h2>
+            <p className="ch-suave">{estado.amigos === 0 ? "Nenhum amigo aceitou ainda." : estado.amigos === 1 ? "1 amigo aceitou o convite e começou a jornada." : `${estado.amigos} amigos aceitaram o convite e começaram a jornada.`} Quando um amigo completa o dia 1, você ganha {XP.convite} XP e 1 brasa guardada.</p>
+            <button type="button" className="ch-btn" onClick={() => setConvidar(true)}>Convidar um amigo</button>
+          </div>
+          <div className="ch-card">
+            <h2>Brasas guardadas</h2>
+            <p className="ch-suave">Você ganha 1 brasa a cada 7 dias de chama (no máximo {MAX_BRASAS}). Se pular um dia, a brasa é usada sozinha e a chama não apaga.</p>
+            <div className="ch-brasas grande">{Array.from({ length: MAX_BRASAS }, (_, i) => <i key={i} className={i < estado.brasas ? "" : "vazia"} />)}</div>
+          </div>
           <p className="ch-suave">Maior sequência: {diasTxt(estado.maior)}.</p>
           <button type="button" className="ch-btn ch-btn-claro" onClick={() => void papelDeParede()}>Papel de parede da chama</button>
         </section>

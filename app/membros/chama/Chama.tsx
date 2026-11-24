@@ -10,9 +10,7 @@ export function Chama({ dias, acendendo, tamanho }: { dias: number; acendendo?: 
   const px = tamanho ?? 84 + Math.min(nivel, 4) * 26;
   const id = `ch-${nivel}-${tamanho ?? 0}`;
   return (
-    <span className={`ch-chama n${nivel}${acendendo ? " acendendo" : ""}`} style={{ width: px * (nivel >= 6 ? 2.7 : nivel >= 3 ? 1.9 : 1), height: px * 1.3 }} aria-hidden="true">
-      {nivel >= 6 && <Uma classe="lado longe esq" id={`${id}c`} apagada={false} />}
-      {nivel >= 6 && <Uma classe="lado longe dir" id={`${id}d`} apagada={false} />}
+    <span className={`ch-chama n${nivel}${acendendo ? " acendendo" : ""}`} style={{ width: px * (nivel >= 3 ? 1.9 : 1), height: px * 1.3 }} aria-hidden="true">
       {nivel >= 3 && <Uma classe="lado esq" id={`${id}a`} apagada={false} />}
       {nivel >= 3 && <Uma classe="lado dir" id={`${id}b`} apagada={false} />}
       <Uma classe="centro" id={id} apagada={nivel === 0} />

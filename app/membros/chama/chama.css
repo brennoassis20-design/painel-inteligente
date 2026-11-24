@@ -46,9 +46,7 @@
 .ch-uma.esq { transform: translateX(-165%); animation: ch-tremer-l 2.1s ease-in-out infinite; }
 .ch-uma.dir { transform: translateX(65%); animation: ch-tremer-l 1.9s ease-in-out infinite reverse; }
 .ch-chama.n0 .ch-uma { filter: none; animation: none; opacity: 0.8; }
-.ch-uma.lado.longe { height: 46%; opacity: 0.8; }
-.ch-uma.lado.longe.esq { transform: translateX(-290%); }
-.ch-uma.lado.longe.dir { transform: translateX(190%); }
+.ch-chama.n6 .ch-uma.lado, .ch-chama.n7 .ch-uma.lado, .ch-chama.n8 .ch-uma.lado { height: 74%; opacity: 1; }
 .ch-chama.n5 .ch-uma.centro { filter: drop-shadow(0 0 32px #ffb13de6); }
 .ch-chama.n6 .ch-uma.centro { filter: drop-shadow(0 0 38px #ffc857f0); }
 .ch-chama.n7 .ch-uma.centro { filter: drop-shadow(0 0 46px #ffd36bff) drop-shadow(0 0 14px #fff3c4); }
