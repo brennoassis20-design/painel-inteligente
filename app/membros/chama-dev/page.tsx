@@ -63,8 +63,8 @@ export default function ChamaDev() {
               <button type="button" onClick={() => mexer(() => armazem.dev.virarSemana())}>Virar a semana</button>
               <button type="button" onClick={() => mexer(() => armazem.dev.simularAmigo())}>Amigo aceitou</button>
               <button type="button" onClick={() => mexer(() => armazem.dev.simularMembros(0))}>Ranking fictício</button>
-              <button type="button" onClick={() => mexer(() => armazem.dev.simularMembros(9))}>Simular 9 membros reais</button>
-              <button type="button" onClick={() => mexer(() => armazem.dev.simularMembros(14))}>Simular 14 membros reais</button>
+              <button type="button" onClick={() => mexer(() => armazem.dev.simularMembros(8))}>Simular 8 membros reais (9 com você, fica fictício)</button>
+              <button type="button" onClick={() => mexer(() => armazem.dev.simularMembros(14))}>Simular 14 membros reais (15 com você)</button>
               <button type="button" className="perigo" onClick={() => mexer(() => armazem.dev.zerar())}>Zerar</button>
             </div>
             <div className="ch-dev-linha" style={{ marginTop: 6 }}>

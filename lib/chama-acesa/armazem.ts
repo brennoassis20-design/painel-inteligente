@@ -118,7 +118,7 @@ export function criarArmazemLocal(
       if (bruto) {
         const d = JSON.parse(bruto) as Partial<Guardado>;
         const base = estadoVazio();
-        return { estado: { ...base, ...(d.estado ?? {}), liga: { ...base.liga, ...(d.estado?.liga ?? {}) } }, deslocamento: Number(d.deslocamento) || 0, pago: Boolean(d.pago) };
+        return { estado: { ...base, ...(d.estado ?? {}), liga: { ...base.liga, ...(d.estado?.liga ?? {}) } }, deslocamento: Number(d.deslocamento) || 0, pago: Boolean(d.pago), simulados: Number(d.simulados) || 0, conta: d.conta };
       }
     } catch {
       /* dado corrompido: começa vazio */
