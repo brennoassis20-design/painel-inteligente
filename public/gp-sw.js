@@ -12,6 +12,10 @@ self.addEventListener("push", (event) => {
   } catch {
     data = { title: "Gênio Play", body: event.data ? event.data.text() : "" };
   }
+  // Chama Acesa: o lembrete do dia também põe o selo no ícone do app (se o aparelho aceitar).
+  if (data.tag === "chama-lembrete" && self.navigator && self.navigator.setAppBadge) {
+    self.navigator.setAppBadge(1).catch(() => {});
+  }
   event.waitUntil(
     self.registration.showNotification(data.title || "Gênio Play", {
       body: data.body || "Novidade na sua área.",

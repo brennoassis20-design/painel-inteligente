@@ -34,6 +34,61 @@ export function versiculoCurto(texto: string, max = 140): string {
   return corte.slice(0, Math.max(corte.lastIndexOf(" "), 40)).replace(/[\s,.;:!?]*$/, "") + "…";
 }
 
+
+/** Desenha a chama (mesmos caminhos do SVG da tela) centrada em (cx, cy). */
+function desenharChama(c: CanvasRenderingContext2D, cx: number, cy: number, escala: number) {
+  c.save();
+  c.translate(cx - (CHAMA_LARGURA * escala) / 2, cy - (CHAMA_ALTURA * escala) / 2);
+  c.scale(escala, escala);
+  const g1 = c.createLinearGradient(50, 0, 50, CHAMA_ALTURA);
+  g1.addColorStop(0, "#FFD36B");
+  g1.addColorStop(0.5, "#FF8A1F");
+  g1.addColorStop(1, "#E5421A");
+  c.fillStyle = g1;
+  c.fill(new Path2D(CHAMA_EXTERNA));
+  const g2 = c.createLinearGradient(50, 50, 50, 120);
+  g2.addColorStop(0, "#FFF3C4");
+  g2.addColorStop(1, "#FFC247");
+  c.fillStyle = g2;
+  c.fill(new Path2D(CHAMA_INTERNA));
+  c.restore();
+}
+
+export const PAPEL_L = 1170;
+export const PAPEL_A = 2532;
+
+/** Papel de parede 1170x2532 para a tela de bloqueio: chama e o número de dias, com espaço livre no topo para o relógio. */
+export async function gerarPapelDeParede(args: { chama: number; app?: string }): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = PAPEL_L;
+  canvas.height = PAPEL_A;
+  const c = canvas.getContext("2d");
+  if (!c) throw new Error("Seu navegador não conseguiu montar a imagem.");
+  const fonte = (peso: number, px: number) => `${peso} ${px}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  const fundo = c.createLinearGradient(0, 0, 0, PAPEL_A);
+  fundo.addColorStop(0, "#070B18");
+  fundo.addColorStop(1, "#14090A");
+  c.fillStyle = fundo;
+  c.fillRect(0, 0, PAPEL_L, PAPEL_A);
+  const brilho = c.createRadialGradient(585, 1500, 40, 585, 1500, 820);
+  brilho.addColorStop(0, "rgba(255,140,40,0.5)");
+  brilho.addColorStop(1, "rgba(255,140,40,0)");
+  c.fillStyle = brilho;
+  c.fillRect(0, 0, PAPEL_L, PAPEL_A);
+  desenharChama(c, 585, 1500, 5.6);
+  c.textAlign = "center";
+  c.fillStyle = "#FFFFFF";
+  c.font = fonte(900, 130);
+  c.fillText(String(args.chama), 585, 1960);
+  c.fillStyle = "#FFC857";
+  c.font = fonte(800, 62);
+  c.fillText(`${args.chama === 1 ? "1 dia" : `${args.chama} dias`} de chama acesa`, 585, 2050);
+  c.fillStyle = "#AAB2CF";
+  c.font = fonte(700, 44);
+  c.fillText(args.app || "Chama Acesa", 585, 2300);
+  return new Promise((ok, erro) => canvas.toBlob((b) => (b ? ok(b) : erro(new Error("Não deu para gerar a imagem."))), "image/png"));
+}
+
 export async function gerarCartao(args: { chama: number; versiculo: string; referencia: string; app?: string }): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = CARTAO_L;
@@ -54,23 +109,7 @@ export async function gerarCartao(args: { chama: number; versiculo: string; refe
   c.fillStyle = brilho;
   c.fillRect(0, 0, CARTAO_L, CARTAO_A);
 
-  // chama
-  const escala = 5.2;
-  c.save();
-  c.translate(540 - (CHAMA_LARGURA * escala) / 2, 760 - (CHAMA_ALTURA * escala) / 2);
-  c.scale(escala, escala);
-  const g1 = c.createLinearGradient(50, 0, 50, CHAMA_ALTURA);
-  g1.addColorStop(0, "#FFD36B");
-  g1.addColorStop(0.5, "#FF8A1F");
-  g1.addColorStop(1, "#E5421A");
-  c.fillStyle = g1;
-  c.fill(new Path2D(CHAMA_EXTERNA));
-  const g2 = c.createLinearGradient(50, 50, 50, 120);
-  g2.addColorStop(0, "#FFF3C4");
-  g2.addColorStop(1, "#FFC247");
-  c.fillStyle = g2;
-  c.fill(new Path2D(CHAMA_INTERNA));
-  c.restore();
+  desenharChama(c, 540, 760, 5.2);
 
   c.textAlign = "center";
   c.fillStyle = "#FFFFFF";
@@ -101,8 +140,8 @@ export async function gerarCartao(args: { chama: number; versiculo: string; refe
 }
 
 /** Compartilha pela Web Share API; sem suporte, baixa a imagem. Devolve como foi. */
-export async function compartilharCartao(blob: Blob, texto: string): Promise<"compartilhado" | "baixado" | "cancelado"> {
-  const arquivo = new File([blob], "minha-chama.png", { type: "image/png" });
+export async function compartilharCartao(blob: Blob, texto: string, nome = "minha-chama.png"): Promise<"compartilhado" | "baixado" | "cancelado"> {
+  const arquivo = new File([blob], nome, { type: "image/png" });
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   if (nav.share && nav.canShare?.({ files: [arquivo] })) {
     try {
@@ -115,7 +154,7 @@ export async function compartilharCartao(blob: Blob, texto: string): Promise<"co
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "minha-chama.png";
+  a.download = nome;
   document.body.appendChild(a);
   a.click();
   a.remove();

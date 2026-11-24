@@ -3,12 +3,13 @@ import { areaUrl, getArea } from "@/lib/membros";
 import { pushParaUsuarios } from "@/lib/membros-avisos";
 import { areaDoChama } from "@/lib/chama-acesa/acesso-regra";
 import { dataSP } from "@/lib/chama-acesa/regras";
+import { quemRecebe, textoLembrete, type PerfilLembrete, type Tipo } from "@/lib/chama-acesa/lembretes";
 
 export const maxDuration = 60;
 
 // Lembrete diário do Chama Acesa ("Sua chama de N dias está te esperando"). PRECISA SER CHAMADO DE HORA EM HORA
 // (cron externo ou Vercel Pro: "0 * * * *"). Ainda NÃO está em vercel.json de propósito. Mesmo segredo dos outros crons (CRON_SECRET).
-// Manda para quem escolheu a hora atual (fuso de São Paulo) e ainda não completou o dia hoje. ?dry=1 só conta; ?hora=07 força a hora.
+// Manda o lembrete da hora escolhida e o das 21h (São Paulo) só para quem ainda não completou o dia hoje. ?dry=1 só conta; ?hora=07 força a hora.
 function authorized(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) return false;
@@ -24,23 +25,21 @@ export async function GET(request: Request) {
     if (!/^([01]\d|2[0-3])$/.test(hora)) return jsonError("Hora inválida.", 400);
     const hoje = dataSP();
     const area = await getArea(areaDoChama());
-    const perfis = await supabaseRest<{ user_id: string; chama_atual: number; ultima_data: string | null }[]>(
-      `/chama_perfil?area_id=eq.${area.id}&horario_lembrete=like.${hora}:*&select=user_id,chama_atual,ultima_data`,
-    );
-    // Quem já completou o dia hoje não é incomodado.
-    const alvos = perfis.filter((p) => p.ultima_data !== hoje);
+    // Todos com lembrete ligado; a regra pura (lib/chama-acesa/lembretes.ts) decide quem recebe o da manhã e o das 21h.
+    const perfis = await supabaseRest<PerfilLembrete[]>(`/chama_perfil?area_id=eq.${area.id}&horario_lembrete=not.is.null&select=user_id,chama_atual,ultima_data,horario_lembrete`);
+    const alvos = quemRecebe(perfis, hora, hoje);
     if (params.get("dry") === "1") return Response.json({ dry: true, hora, total: alvos.length });
     let enviados = 0;
-    // O texto depende do tamanho da chama: agrupa por N.
-    const porChama = new Map<number, string[]>();
-    for (const p of alvos) porChama.set(p.chama_atual, [...(porChama.get(p.chama_atual) || []), p.user_id]);
-    for (const [n, ids] of porChama) {
-      enviados += await pushParaUsuarios(area.id, ids, {
-        title: n > 0 ? `🔥 Sua chama de ${n} ${n === 1 ? "dia" : "dias"} está te esperando` : "🔥 Acenda a sua chama hoje",
-        body: "São só 5 minutos com Deus. Não deixe apagar.",
-        url: `${areaUrl(area)}/?app=1`,
-        tag: "chama-lembrete",
-      });
+    // O texto depende do tipo e do tamanho da chama: agrupa.
+    const grupos = new Map<string, { tipo: Tipo; chama: number; ids: string[] }>();
+    for (const { tipo, perfil } of alvos) {
+      const k = `${tipo}:${perfil.chama_atual}`;
+      const g = grupos.get(k) ?? { tipo, chama: perfil.chama_atual, ids: [] };
+      g.ids.push(perfil.user_id);
+      grupos.set(k, g);
+    }
+    for (const g of grupos.values()) {
+      enviados += await pushParaUsuarios(area.id, g.ids, { ...textoLembrete(g.tipo, g.chama), url: `${areaUrl(area)}/?app=1`, tag: "chama-lembrete" });
     }
     return Response.json({ dry: false, hora, alvos: alvos.length, enviados });
   } catch (error) {

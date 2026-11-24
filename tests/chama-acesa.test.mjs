@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { aplicarAcao, atualizarParaHoje, dataSP, diaAtual, estadoVazio, podeAbrir, somarDias, statusDoDia, nivelChama } from "../lib/chama-acesa/regras.ts";
 import { calcularAcesso } from "../lib/chama-acesa/acesso-regra.ts";
 import { normalizarDias } from "../lib/chama-acesa/dias.ts";
+import { quemRecebe, textoLembrete } from "../lib/chama-acesa/lembretes.ts";
+import { completouHoje } from "../lib/chama-acesa/selo.ts";
 
 const D0 = "2026-12-01";
 
@@ -157,4 +159,22 @@ test("conteúdo: normaliza o dias.json e descarta lixo", () => {
   assert.deepEqual(dias.map((d) => d.dia), [1, 2]);
   assert.equal(dias[1].jejum, null);
   assert.equal(dias[0].jejum, "x");
+});
+
+test("lembretes: manhã na hora escolhida, noite às 21h, só quem não completou hoje", () => {
+  const hoje = "2026-12-05";
+  const P = (id, h, ult, n = 3) => ({ user_id: id, chama_atual: n, ultima_data: ult, horario_lembrete: h });
+  const perfis = [P("a", "07:00", "2026-12-04"), P("b", "07:30", hoje), P("c", null, "2026-12-04"), P("d", "21:00", "2026-12-04"), P("e", "09:00", "2026-12-04")];
+  assert.deepEqual(quemRecebe(perfis, "07", hoje).map((x) => [x.perfil.user_id, x.tipo]), [["a", "manha"]]);
+  // 21h: só quem ainda não completou e ligou o lembrete (b completou, c não ligou); d (que escolheu 21h) recebe um só
+  assert.deepEqual(quemRecebe(perfis, "21", hoje).map((x) => [x.perfil.user_id, x.tipo]), [["a", "noite"], ["d", "noite"], ["e", "noite"]]);
+  assert.deepEqual(quemRecebe(perfis, "15", hoje), []);
+  assert.equal(textoLembrete("noite", 5).title, "🔥 Sua chama de 5 dias apaga à meia-noite");
+  assert.equal(textoLembrete("noite", 5).body, "Faltam 5 minutos.");
+  assert.equal(textoLembrete("manha", 1).title, "🔥 Sua chama de 1 dia está te esperando");
+});
+
+test("selo: só aceso enquanto hoje não foi completado", () => {
+  assert.equal(completouHoje({ 1: "2026-12-04" }, "2026-12-05"), false);
+  assert.equal(completouHoje({ 1: "2026-12-04", 2: "2026-12-05" }, "2026-12-05"), true);
 });

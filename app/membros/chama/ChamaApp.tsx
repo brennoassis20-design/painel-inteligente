@@ -6,7 +6,8 @@ import type { Armazem, RespostaAcao } from "@/lib/chama-acesa/armazem";
 import type { Dia } from "@/lib/chama-acesa/dias";
 import type { Painel } from "@/lib/chama-acesa/painel";
 import { diaAtual, diasConcluidos, MAX_BRASAS, NOMES_MEDALHA, podeAbrir, statusDoDia, TOTAL_DIAS, type Check, type Medalha, type StatusDia } from "@/lib/chama-acesa/regras";
-import { compartilharCartao, gerarCartao } from "@/lib/chama-acesa/cartao";
+import { compartilharCartao, gerarCartao, gerarPapelDeParede } from "@/lib/chama-acesa/cartao";
+import { atualizarSelo, completouHoje } from "@/lib/chama-acesa/selo";
 import { tagLink } from "@/lib/membros-utm";
 import { Chama } from "./Chama";
 import "./chama.css";
@@ -59,6 +60,22 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
       .catch((e) => setErro(e instanceof Error ? e.message : "Não deu para carregar a sua chama."));
   }, [armazem]);
   useEffect(() => carregar(), [carregar]);
+
+  // Selo no ícone: aceso enquanto o dia de hoje não estiver completo; confere ao abrir e ao voltar ao foco.
+  const feitoHoje = painel ? completouHoje(painel.estado.concluidos, painel.hoje) : true;
+  const jornadaAcabou = painel ? diaAtual(painel.estado) > TOTAL_DIAS : false;
+  const painelOk = Boolean(painel);
+  useEffect(() => {
+    if (!painelOk) return;
+    const aplicar = () => void atualizarSelo(!feitoHoje && !jornadaAcabou && document.visibilityState === "visible");
+    aplicar();
+    document.addEventListener("visibilitychange", aplicar);
+    window.addEventListener("focus", aplicar);
+    return () => {
+      document.removeEventListener("visibilitychange", aplicar);
+      window.removeEventListener("focus", aplicar);
+    };
+  }, [painelOk, feitoHoje, jornadaAcabou]);
 
   const toast = (t: string) => {
     setAviso(t);
@@ -120,6 +137,16 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
       const blob = await gerarCartao({ chama: estado.chama, versiculo: d?.versiculo ?? "O fogo arderá continuamente sobre o altar; não se apagará.", referencia: d?.referencia ?? "Levítico 6:13", app: marca });
       const como = await compartilharCartao(blob, `🔥 ${diasTxt(estado.chama)} de chama acesa`);
       if (como === "baixado") toast("Imagem salva. Agora é só postar no seu story.");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Não deu para gerar a imagem.");
+    }
+  };
+
+  const papelDeParede = async () => {
+    try {
+      const blob = await gerarPapelDeParede({ chama: estado.chama, app: marca });
+      const como = await compartilharCartao(blob, `🔥 ${diasTxt(estado.chama)} de chama acesa`, "papel-de-parede-chama.png");
+      if (como === "baixado") toast("Imagem salva. Abra nas fotos e use como tela de bloqueio.");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Não deu para gerar a imagem.");
     }
@@ -319,6 +346,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             })}
           </ul>
           <p className="ch-suave">Maior sequência: {diasTxt(estado.maior)}.</p>
+          <button type="button" className="ch-btn ch-btn-claro" onClick={() => void papelDeParede()}>Papel de parede da chama</button>
         </section>
       )}
 
