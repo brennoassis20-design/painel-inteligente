@@ -1,0 +1,278 @@
+[
+  {
+    "cat": "manha_normal",
+    "tom": "carinhoso",
+    "titulo": "Bom dia, {nome} ☀️",
+    "corpo": "5 minutos com Deus antes do mundo te puxar. Bora?"
+  },
+  {
+    "cat": "manha_normal",
+    "tom": "biblico",
+    "titulo": "Novas são cada manhã 🔥",
+    "corpo": "As misericórdias de Deus chegaram hoje. Sua chama de {dias} dias também quer lenha."
+  },
+  {
+    "cat": "manha_normal",
+    "tom": "engracado",
+    "titulo": "O café tá passando ☕",
+    "corpo": "Dá tempo de ler um versículo enquanto ele esfria. Prometo."
+  },
+  {
+    "cat": "manha_normal",
+    "tom": "confronto",
+    "titulo": "Antes do Instagram…",
+    "corpo": "…que tal abrir a Palavra? O feed pode esperar 5 minutos. Deus não deveria."
+  },
+  {
+    "cat": "manha_normal",
+    "tom": "carinhoso",
+    "titulo": "Seu altar te espera 🙏",
+    "corpo": "Dia novo, chama de {dias} dias. Coloca a lenha de hoje."
+  },
+  {
+    "cat": "manha_normal",
+    "tom": "engracado",
+    "titulo": "Notificação importante",
+    "corpo": "Mais importante que o grupo da família. Tá, quase. Abre aí 😅"
+  },
+  {
+    "cat": "noite_risco",
+    "tom": "confronto",
+    "titulo": "Hoje não, {nome}?",
+    "corpo": "Sua chama de {dias} dias apaga à meia-noite. São só 5 minutos."
+  },
+  {
+    "cat": "noite_risco",
+    "tom": "engracado",
+    "titulo": "A Brasinha tá tremendo 🥶",
+    "corpo": "Ela não quer apagar. Faltam poucas horas. Salva ela?"
+  },
+  {
+    "cat": "noite_risco",
+    "tom": "biblico",
+    "titulo": "Vigiai e orai 🌙",
+    "corpo": "Ainda dá tempo de colocar lenha no altar hoje. Sua chama: {dias} dias."
+  },
+  {
+    "cat": "noite_risco",
+    "tom": "confronto",
+    "titulo": "Você assistiu série hoje?",
+    "corpo": "Então dá tempo de 5 minutos com Deus. A chama apaga à meia-noite."
+  },
+  {
+    "cat": "noite_risco",
+    "tom": "carinhoso",
+    "titulo": "Ainda dá tempo ❤️",
+    "corpo": "Antes de dormir, uma oração. Sua chama de {dias} dias agradece."
+  },
+  {
+    "cat": "noite_risco",
+    "tom": "engracado",
+    "titulo": "Última chamada ✈️",
+    "corpo": "Embarque para o dia {dias} fechando à meia-noite. Portão: este botão."
+  },
+  {
+    "cat": "noite_risco",
+    "tom": "confronto",
+    "titulo": "Vai deixar apagar assim?",
+    "corpo": "{dias} dias de chama. Não joga isso fora por causa de 5 minutos."
+  },
+  {
+    "cat": "chama_alta_risco",
+    "tom": "confronto",
+    "titulo": "{dias} dias. Sério?",
+    "corpo": "Você construiu isso dia após dia. Não deixa apagar hoje."
+  },
+  {
+    "cat": "chama_alta_risco",
+    "tom": "engracado",
+    "titulo": "Alerta de incêndio… ao contrário 🚒",
+    "corpo": "Sua chama de {dias} dias está quase apagando. Corre!"
+  },
+  {
+    "cat": "chama_alta_risco",
+    "tom": "biblico",
+    "titulo": "O fogo não se apagará",
+    "corpo": "Levítico 6:13. Sua chama de {dias} dias depende da lenha de hoje."
+  },
+  {
+    "cat": "chama_alta_risco",
+    "tom": "carinhoso",
+    "titulo": "Tô torcendo por você 🔥",
+    "corpo": "{dias} dias é muita coisa. Só mais 5 minutos hoje."
+  },
+  {
+    "cat": "sumiu_2_dias",
+    "tom": "carinhoso",
+    "titulo": "Sentimos sua falta, {nome}",
+    "corpo": "Sua chama apagou, mas o altar continua aqui. Volta hoje?"
+  },
+  {
+    "cat": "sumiu_2_dias",
+    "tom": "engracado",
+    "titulo": "A Brasinha mandou um áudio",
+    "corpo": "…é só choro. Volta, por favor 😭"
+  },
+  {
+    "cat": "sumiu_2_dias",
+    "tom": "biblico",
+    "titulo": "O pai correu ao encontro",
+    "corpo": "Na parábola, o filho voltou e foi abraçado. Seu lugar continua aqui."
+  },
+  {
+    "cat": "sumiu_2_dias",
+    "tom": "confronto",
+    "titulo": "2 dias sem altar",
+    "corpo": "A gente não perde a fé de uma vez. Perde assim, um dia de cada vez. Volta hoje."
+  },
+  {
+    "cat": "sumiu_5_dias",
+    "tom": "confronto",
+    "titulo": "Isso é o começo do esfriamento",
+    "corpo": "5 dias longe. Você sabe como termina. Reacende hoje, leva 5 minutos."
+  },
+  {
+    "cat": "sumiu_5_dias",
+    "tom": "engracado",
+    "titulo": "A Brasinha foi procurar você",
+    "corpo": "Checou a geladeira, o sofá e o grupo do WhatsApp. Cadê você? 🔦"
+  },
+  {
+    "cat": "sumiu_5_dias",
+    "tom": "carinhoso",
+    "titulo": "Sem cobrança, só saudade",
+    "corpo": "Recomeçar não é vergonha. É graça. Te esperamos no dia {proximo_dia}."
+  },
+  {
+    "cat": "sumiu_5_dias",
+    "tom": "biblico",
+    "titulo": "Volte ao primeiro amor",
+    "corpo": "Apocalipse 2:4. Deus não desistiu de você. Recomeça hoje?"
+  },
+  {
+    "cat": "sumiu_14_dias",
+    "tom": "carinhoso",
+    "titulo": "Essa é a última, prometo",
+    "corpo": "Não vamos mais insistir. Mas, quando quiser voltar, a chama acende de novo em 5 minutos. 🔥"
+  },
+  {
+    "cat": "sumiu_14_dias",
+    "tom": "engracado",
+    "titulo": "A Brasinha vai dar um tempo",
+    "corpo": "Ela entendeu o recado. Mas deixou a luz acesa pra quando você voltar 🕯️"
+  },
+  {
+    "cat": "sumiu_14_dias",
+    "tom": "biblico",
+    "titulo": "Novas misericórdias",
+    "corpo": "Deus nunca fechou essa porta. Quando quiser, é só voltar."
+  },
+  {
+    "cat": "voltou",
+    "tom": "carinhoso",
+    "titulo": "Que alegria te ver de volta 🔥",
+    "corpo": "A chama acendeu de novo. Amanhã é dia de alimentar."
+  },
+  {
+    "cat": "voltou",
+    "tom": "engracado",
+    "titulo": "A Brasinha tá dando cambalhota",
+    "corpo": "Você voltou! Agora não some mais, combinado? 🤸"
+  },
+  {
+    "cat": "voltou",
+    "tom": "biblico",
+    "titulo": "Houve festa no céu",
+    "corpo": "Quem volta é recebido com festa. Bem-vindo de volta ao altar."
+  },
+  {
+    "cat": "medalha_perto",
+    "tom": "engracado",
+    "titulo": "Uma medalha te espera 🏅",
+    "corpo": "Falta 1 dia para a medalha de {meta} dias. Não vai deixar escapar né?"
+  },
+  {
+    "cat": "medalha_perto",
+    "tom": "confronto",
+    "titulo": "Tão perto…",
+    "corpo": "Amanhã você chega a {meta} dias. Não para agora."
+  },
+  {
+    "cat": "medalha_perto",
+    "tom": "carinhoso",
+    "titulo": "Quase lá ✨",
+    "corpo": "Mais um dia e você conquista {meta} dias de chama acesa."
+  },
+  {
+    "cat": "liga_risco_descer",
+    "tom": "confronto",
+    "titulo": "Você está caindo na {liga} 📉",
+    "corpo": "{posicao}º lugar, na zona de descida. Uma prática de versículos te tira daí."
+  },
+  {
+    "cat": "liga_risco_descer",
+    "tom": "engracado",
+    "titulo": "Tão te passando na {liga}",
+    "corpo": "Até o Seu Antônio te ultrapassou. E ele digita com um dedo 😂"
+  },
+  {
+    "cat": "liga_risco_descer",
+    "tom": "carinhoso",
+    "titulo": "Ainda dá pra subir",
+    "corpo": "Você está em {posicao}º na {liga}. 5 perguntas e você sai da zona vermelha."
+  },
+  {
+    "cat": "liga_perto_subir",
+    "tom": "engracado",
+    "titulo": "Sobe, sobe, sobe 🚀",
+    "corpo": "Você está em {posicao}º na {liga}. Mais um pouco e sobe de liga."
+  },
+  {
+    "cat": "liga_perto_subir",
+    "tom": "confronto",
+    "titulo": "A {liga} está pequena pra você",
+    "corpo": "Faltam poucos XP para a zona de subida. Vai deixar pra semana que vem?"
+  },
+  {
+    "cat": "liga_perto_subir",
+    "tom": "biblico",
+    "titulo": "Corra de modo a ganhar",
+    "corpo": "1 Coríntios 9:24. Você está em {posicao}º. A subida está logo ali."
+  },
+  {
+    "cat": "convite_amigo",
+    "tom": "carinhoso",
+    "titulo": "Fogo se espalha 🔥",
+    "corpo": "Chama alguém pra caminhar com você. Os primeiros dias são grátis pra ele."
+  },
+  {
+    "cat": "convite_amigo",
+    "tom": "engracado",
+    "titulo": "Desafio é melhor em dupla",
+    "corpo": "Convida aquele amigo que vive dizendo que vai começar a ler a Bíblia 👀"
+  },
+  {
+    "cat": "convite_amigo",
+    "tom": "biblico",
+    "titulo": "Dois são melhores do que um",
+    "corpo": "Eclesiastes 4:9. Convida um amigo e ganha uma brasa guardada."
+  },
+  {
+    "cat": "checkout_dia4",
+    "tom": "confronto",
+    "titulo": "Sua chama de 3 dias vai apagar",
+    "corpo": "O dia 4 está trancado. Garante sua jornada e não perde o que começou."
+  },
+  {
+    "cat": "checkout_dia4",
+    "tom": "carinhoso",
+    "titulo": "Você começou tão bem ❤️",
+    "corpo": "3 dias seguidos com Deus. Libera os outros 18 e termina o que começou."
+  },
+  {
+    "cat": "checkout_dia4",
+    "tom": "engracado",
+    "titulo": "A Brasinha está na porta do dia 4",
+    "corpo": "Ela não tem a chave. Você tem. 🔑"
+  }
+]

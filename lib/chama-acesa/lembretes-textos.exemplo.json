@@ -1,0 +1,13 @@
+[
+  {"cat":"manha_normal","tom":"carinhoso","titulo":"🔥 Sua chama de {dias} dias está te esperando","corpo":"{nome}, são só 5 minutos com Deus hoje."},
+  {"cat":"noite_risco","tom":"engracado","titulo":"🔥 Sua chama apaga à meia-noite","corpo":"{nome}, faltam 5 minutos. Dá tempo."},
+  {"cat":"chama_alta_risco","tom":"confronto","titulo":"🔥 {dias} dias de chama. Vai jogar tudo fora?","corpo":"Faltam 5 minutos para não deixar apagar."},
+  {"cat":"sumiu_2_dias","tom":"carinhoso","titulo":"{nome}, a chama sente a sua falta","corpo":"Faz 2 dias. Volta hoje, são 5 minutos."},
+  {"cat":"sumiu_5_dias","tom":"confronto","titulo":"5 dias sem falar com Deus por aqui","corpo":"{nome}, recomece hoje. A jornada continua de onde parou."},
+  {"cat":"sumiu_14_dias","tom":"biblico","titulo":"“Volta para mim, e eu voltarei para você”","corpo":"{nome}, a porta está aberta. Acenda de novo."},
+  {"cat":"voltou","tom":"carinhoso","titulo":"🔥 Que bom que você voltou, {nome}","corpo":"A chama acendeu de novo. Vamos manter?"},
+  {"cat":"medalha_perto","tom":"engracado","titulo":"Falta 1 dia para a sua medalha 🏅","corpo":"{nome}, complete hoje e ela é sua."},
+  {"cat":"liga_risco_descer","tom":"confronto","titulo":"Você está na zona de queda da liga {liga}","corpo":"Posição {posicao}. Ganhe XP hoje para não descer."},
+  {"cat":"liga_perto_subir","tom":"engracado","titulo":"Você está a um passo da liga acima","corpo":"Posição {posicao} na liga {liga}. Mais um dia e você sobe."},
+  {"cat":"convite_amigo","tom":"carinhoso","titulo":"Que tal chamar um amigo para a jornada?","corpo":"Quando ele completar o dia 1, você ganha 50 XP e uma brasa guardada."}
+]

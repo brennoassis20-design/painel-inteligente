@@ -1,9 +1,11 @@
 // Testes do Chama Acesa (regras sem tela): node --test --experimental-strip-types tests/chama-acesa.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aplicarAcao, atualizarParaHoje, dataSP, diaAtual, estadoVazio, podeAbrir, somarDias, statusDoDia, nivelChama } from "../lib/chama-acesa/regras.ts";
+import { inicioSemana, premiarConvite, tSemana, XP, aplicarAcao, atualizarParaHoje, dataSP, diaAtual, estadoVazio, podeAbrir, somarDias, statusDoDia, nivelChama } from "../lib/chama-acesa/regras.ts";
 import { calcularAcesso } from "../lib/chama-acesa/acesso-regra.ts";
 import { normalizarDias } from "../lib/chama-acesa/dias.ts";
+import { montarSessao, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
+import { atualizarLiga, classificar, gerarBots, normalizarLigas, xpDoBot, zonaDe } from "../lib/chama-acesa/ligas.ts";
 import { quemRecebe, textoLembrete } from "../lib/chama-acesa/lembretes.ts";
 import { completouHoje } from "../lib/chama-acesa/selo.ts";
 
@@ -177,4 +179,125 @@ test("lembretes: manhã na hora escolhida, noite às 21h, só quem não completo
 test("selo: só aceso enquanto hoje não foi completado", () => {
   assert.equal(completouHoje({ 1: "2026-12-04" }, "2026-12-05"), false);
   assert.equal(completouHoje({ 1: "2026-12-04", 2: "2026-12-05" }, "2026-12-05"), true);
+});
+
+// ---------------------------------------------------------------- XP, prática, ligas
+test("XP: 10 + 10 + 15 + 15 de bônus = 50 por dia; jejum 10 só na primeira vez", () => {
+  let e = estadoVazio();
+  const g = [];
+  for (const check of ["leu", "orou", "missao"]) {
+    const r = aplicarAcao(e, { tipo: "check", dia: 1, check }, D0, false);
+    g.push(r.xpGanho);
+    e = r.estado;
+  }
+  assert.deepEqual(g, [10, 10, 30]);
+  assert.equal(e.xp, 50);
+  assert.equal(e.xpSemana[inicioSemana(D0)], 50);
+  // repetir o mesmo check não rende de novo
+  let r = aplicarAcao(estadoVazio(), { tipo: "check", dia: 1, check: "leu" }, D0, false);
+  assert.equal(aplicarAcao(r.estado, { tipo: "check", dia: 1, check: "leu" }, D0, false).xpGanho, 0);
+  r = aplicarAcao(estadoVazio(), { tipo: "jejum", dia: 1, valor: true }, D0, false);
+  assert.equal(r.xpGanho, XP.jejum);
+  r = aplicarAcao(aplicarAcao(r.estado, { tipo: "jejum", dia: 1, valor: false }, D0, false).estado, { tipo: "jejum", dia: 1, valor: true }, D0, false);
+  assert.equal(r.xpGanho, 0);
+});
+
+test("prática: +5 por acerto, +10 se perfeita, não completa o dia nem mexe na chama", () => {
+  const base = completar(estadoVazio(), 1, D0).estado;
+  const ids = ["a", "b", "c", "d", "e"];
+  const r = aplicarAcao(base, { tipo: "pratica", acertos: 5, ids }, D0, false);
+  assert.equal(r.xpGanho, 35);
+  assert.equal(r.estado.chama, base.chama);
+  assert.deepEqual(r.estado.concluidos, base.concluidos);
+  assert.equal(r.estado.praticas.a, 1);
+  assert.equal(aplicarAcao(base, { tipo: "pratica", acertos: 3, ids }, D0, false).xpGanho, 15);
+  assert.ok(aplicarAcao(base, { tipo: "pratica", acertos: 6, ids }, D0, false).erro);
+});
+
+test("prática: 5 perguntas sem repetir versículo, menos vistos primeiro, duas modalidades", () => {
+  const banco = normalizarVersiculos(Array.from({ length: 12 }, (_, i) => ({ id: `v${i}`, referencia: `Livro ${i}:1`, texto: `texto numero ${i} com palavra${i} dentro`, lacuna: `palavra${i}`, distratores: ["x", "y", "z"] })));
+  let n = 1;
+  const rnd = () => ((n = (n * 16807) % 2147483647) / 2147483647);
+  const vistos = Object.fromEntries(banco.slice(0, 7).map((v) => [v.id, 3]));
+  const s = montarSessao(banco, vistos, rnd);
+  assert.equal(s.length, 5);
+  assert.equal(new Set(s.map((p) => p.id)).size, 5);
+  assert.ok(s.every((p) => !vistos[p.id])); // os 5 não vistos vêm primeiro
+  for (const p of s) {
+    assert.equal(p.opcoes.length, 4);
+    assert.equal(p.opcoes[p.correta], p.tipo === "lacuna" ? p.texto.match(/palavra\d+/)[0] : p.referencia);
+    if (p.tipo === "lacuna") assert.ok(p.trecho.includes("_____"));
+  }
+  assert.ok(montarSessao(banco, {}, () => 0.9).every((p) => p.tipo === "lacuna"));
+});
+
+const CFG = normalizarLigas({ ligas: Array.from({ length: 4 }, (_, i) => ({ id: `l${i}`, nome: `L${i}` })), nomes: Array.from({ length: 60 }, (_, i) => `Nome ${i}`) });
+const segunda = "2026-11-30";
+
+test("ligas: grupo de 30, determinístico, XP cresce na semana", () => {
+  const a = gerarBots("user-1", segunda, 0, CFG);
+  const b = gerarBots("user-1", segunda, 0, CFG);
+  assert.equal(a.length, 29);
+  assert.deepEqual(a, b);
+  assert.notDeepEqual(a.map((x) => x.nome), gerarBots("user-2", segunda, 0, CFG).map((x) => x.nome));
+  assert.equal(new Set(a.map((x) => x.nome)).size, 29);
+  for (const bot of a) {
+    let ant = -1;
+    for (let t = 0; t <= 7; t += 0.5) {
+      const x = xpDoBot(bot, t);
+      assert.ok(x >= ant);
+      ant = x;
+    }
+  }
+  assert.equal(xpDoBot(a[0], 0), 0);
+  assert.ok(a.some((x) => x.perfil === "parado") && a.some((x) => x.perfil === "ativo"));
+});
+
+test("ligas: calibragem — 350 XP na semana fica no topo da primeira liga; zero fica no fundo", () => {
+  const bots = gerarBots("u", segunda, 0, CFG);
+  assert.ok(classificar(350, bots, 7).find((l) => l.voce).posicao <= 7);
+  assert.ok(classificar(0, bots, 7).find((l) => l.voce).posicao >= 25);
+});
+
+test("ligas: promoção, rebaixamento e limites da primeira e da última liga", () => {
+  assert.equal(zonaDe(7, 1, CFG), "sobe");
+  assert.equal(zonaDe(8, 1, CFG), "neutra");
+  assert.equal(zonaDe(25, 1, CFG), "neutra");
+  assert.equal(zonaDe(26, 1, CFG), "desce");
+  assert.equal(zonaDe(30, 0, CFG), "neutra"); // primeira liga: ninguém desce
+  assert.equal(zonaDe(1, 3, CFG), "neutra"); // última: ninguém sobe
+  const prox = "2026-12-07";
+  let e = atualizarLiga(estadoVazio(), segunda, "u", CFG);
+  assert.equal(e.liga.semana, segunda);
+  e = { ...e, xpSemana: { [segunda]: 400 } };
+  e = atualizarLiga(e, prox, "u", CFG);
+  assert.equal(e.liga.indice, 1);
+  assert.equal(e.liga.resultado.resultado, "subiu");
+  assert.equal(e.liga.historico.length, 1);
+  assert.equal(atualizarLiga(e, prox, "u", CFG), e); // idempotente
+  // zero XP na liga 1 desce; na liga 0 fica
+  const sem = atualizarLiga({ ...estadoVazio(), liga: { indice: 1, semana: segunda, historico: [], resultado: null } }, prox, "u", CFG);
+  assert.equal(sem.liga.indice, 0);
+  assert.equal(sem.liga.resultado.resultado, "desceu");
+  const prim = atualizarLiga({ ...estadoVazio(), liga: { indice: 0, semana: segunda, historico: [], resultado: null } }, prox, "u", CFG);
+  assert.equal(prim.liga.indice, 0);
+  assert.equal(prim.liga.resultado.resultado, "ficou");
+});
+
+test("semana vira na segunda 00h de São Paulo", () => {
+  assert.equal(inicioSemana("2026-12-06"), "2026-11-30"); // domingo
+  assert.equal(inicioSemana("2026-12-07"), "2026-12-07"); // segunda
+  assert.equal(inicioSemana(dataSP(new Date("2026-12-07T02:59:00Z"))), "2026-11-30"); // domingo 23:59 em SP
+  assert.equal(inicioSemana(dataSP(new Date("2026-12-07T03:00:00Z"))), "2026-12-07");
+  assert.equal(tSemana("2026-12-02", 12), 2.5);
+});
+
+test("convite: +50 XP e 1 brasa guardada, respeitando o máximo de 2", () => {
+  let e = premiarConvite(estadoVazio(), D0);
+  assert.equal(e.xp, 50);
+  assert.equal(e.brasas, 1);
+  assert.equal(e.amigos, 1);
+  e = premiarConvite(premiarConvite(e, D0), D0);
+  assert.equal(e.brasas, 2);
+  assert.equal(e.amigos, 3);
 });

@@ -1,0 +1,8 @@
+[
+  {"id":"lv-6-13","referencia":"Levítico 6:13","texto":"O fogo arderá continuamente sobre o altar; não se apagará.","lacuna":"continuamente","distratores":["de manhã","apenas à noite","raramente"],"tema":"constância"},
+  {"id":"jo-3-16","referencia":"João 3:16","texto":"Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.","lacuna":"amou","distratores":["criou","julgou","viu"],"tema":"amor"},
+  {"id":"sl-119-105","referencia":"Salmos 119:105","texto":"Lâmpada para os meus pés é a tua palavra e luz para o meu caminho.","lacuna":"Lâmpada","distratores":["Espada","Muralha","Rocha"],"tema":"palavra"},
+  {"id":"fp-4-13","referencia":"Filipenses 4:13","texto":"Tudo posso naquele que me fortalece.","lacuna":"fortalece","distratores":["ensina","abençoa","chama"],"tema":"força"},
+  {"id":"pv-3-5","referencia":"Provérbios 3:5","texto":"Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento.","lacuna":"coração","distratores":["tempo","dinheiro","caminho"],"tema":"confiança"},
+  {"id":"1ts-5-19","referencia":"1 Tessalonicenses 5:19","texto":"Não apaguem o Espírito.","lacuna":"apaguem","distratores":["entristeçam","esqueçam","percam"],"tema":"constância"}
+]

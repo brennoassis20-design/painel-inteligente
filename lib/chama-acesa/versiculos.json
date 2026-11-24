@@ -1,0 +1,1022 @@
+[
+  {
+    "id": "joao-3-16",
+    "referencia": "João 3:16",
+    "texto": "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.",
+    "lacuna": "amou",
+    "distratores": [
+      "criou",
+      "julgou",
+      "viu"
+    ],
+    "tema": "amor"
+  },
+  {
+    "id": "salmos-23-1",
+    "referencia": "Salmos 23:1",
+    "texto": "O Senhor é o meu pastor; nada me faltará.",
+    "lacuna": "pastor",
+    "distratores": [
+      "rei",
+      "escudo",
+      "juiz"
+    ],
+    "tema": "cuidado"
+  },
+  {
+    "id": "filipenses-4-13",
+    "referencia": "Filipenses 4:13",
+    "texto": "Posso todas as coisas naquele que me fortalece.",
+    "lacuna": "fortalece",
+    "distratores": [
+      "chama",
+      "perdoa",
+      "conhece"
+    ],
+    "tema": "força"
+  },
+  {
+    "id": "proverbios-3-5",
+    "referencia": "Provérbios 3:5",
+    "texto": "Confia no Senhor de todo o teu coração, e não te estribes no teu próprio entendimento.",
+    "lacuna": "coração",
+    "distratores": [
+      "dinheiro",
+      "caminho",
+      "trabalho"
+    ],
+    "tema": "confiança"
+  },
+  {
+    "id": "isaias-41-10",
+    "referencia": "Isaías 41:10",
+    "texto": "Não temas, porque eu sou contigo; não te assombres, porque eu sou teu Deus.",
+    "lacuna": "temas",
+    "distratores": [
+      "fujas",
+      "durmas",
+      "chores"
+    ],
+    "tema": "coragem"
+  },
+  {
+    "id": "josue-1-9",
+    "referencia": "Josué 1:9",
+    "texto": "Esforça-te, e tem bom ânimo; não temas, nem te espantes; porque o Senhor teu Deus é contigo por onde quer que andares.",
+    "lacuna": "ânimo",
+    "distratores": [
+      "sono",
+      "dinheiro",
+      "descanso"
+    ],
+    "tema": "coragem"
+  },
+  {
+    "id": "mateus-11-28",
+    "referencia": "Mateus 11:28",
+    "texto": "Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei.",
+    "lacuna": "cansados",
+    "distratores": [
+      "ricos",
+      "perdidos",
+      "famintos"
+    ],
+    "tema": "descanso"
+  },
+  {
+    "id": "romanos-8-28",
+    "referencia": "Romanos 8:28",
+    "texto": "E sabemos que todas as coisas contribuem juntamente para o bem daqueles que amam a Deus.",
+    "lacuna": "bem",
+    "distratores": [
+      "mal",
+      "fim",
+      "lucro"
+    ],
+    "tema": "confiança"
+  },
+  {
+    "id": "salmos-46-1",
+    "referencia": "Salmos 46:1",
+    "texto": "Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.",
+    "lacuna": "refúgio",
+    "distratores": [
+      "juiz",
+      "segredo",
+      "caminho"
+    ],
+    "tema": "proteção"
+  },
+  {
+    "id": "jeremias-29-11",
+    "referencia": "Jeremias 29:11",
+    "texto": "Porque eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz, e não de mal.",
+    "lacuna": "paz",
+    "distratores": [
+      "guerra",
+      "juízo",
+      "prova"
+    ],
+    "tema": "esperança"
+  },
+  {
+    "id": "salmos-119-105",
+    "referencia": "Salmos 119:105",
+    "texto": "Lâmpada para os meus pés é tua palavra, e luz para o meu caminho.",
+    "lacuna": "Lâmpada",
+    "distratores": [
+      "Pedra",
+      "Ponte",
+      "Fonte"
+    ],
+    "tema": "palavra"
+  },
+  {
+    "id": "mateus-6-33",
+    "referencia": "Mateus 6:33",
+    "texto": "Buscai primeiro o Reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas.",
+    "lacuna": "primeiro",
+    "distratores": [
+      "depois",
+      "sempre",
+      "juntos"
+    ],
+    "tema": "prioridade"
+  },
+  {
+    "id": "1-tessalonicenses-5-17",
+    "referencia": "1 Tessalonicenses 5:17",
+    "texto": "Orai sem cessar.",
+    "lacuna": "cessar",
+    "distratores": [
+      "medo",
+      "pressa",
+      "barulho"
+    ],
+    "tema": "oração"
+  },
+  {
+    "id": "1-tessalonicenses-5-18",
+    "referencia": "1 Tessalonicenses 5:18",
+    "texto": "Em tudo dai graças, porque esta é a vontade de Deus em Cristo Jesus para convosco.",
+    "lacuna": "graças",
+    "distratores": [
+      "ofertas",
+      "ordens",
+      "flores"
+    ],
+    "tema": "gratidão"
+  },
+  {
+    "id": "filipenses-4-6",
+    "referencia": "Filipenses 4:6",
+    "texto": "Não estejais inquietos por coisa alguma; antes as vossas petições sejam em tudo conhecidas diante de Deus pela oração e súplica, com ação de graças.",
+    "lacuna": "inquietos",
+    "distratores": [
+      "parados",
+      "calados",
+      "sozinhos"
+    ],
+    "tema": "ansiedade"
+  },
+  {
+    "id": "salmos-37-5",
+    "referencia": "Salmos 37:5",
+    "texto": "Entrega o teu caminho ao Senhor; confia nele, e ele o fará.",
+    "lacuna": "caminho",
+    "distratores": [
+      "dinheiro",
+      "nome",
+      "cargo"
+    ],
+    "tema": "confiança"
+  },
+  {
+    "id": "hebreus-11-1",
+    "referencia": "Hebreus 11:1",
+    "texto": "Ora, a fé é o firme fundamento das coisas que se esperam, e a prova das coisas que se não veem.",
+    "lacuna": "fé",
+    "distratores": [
+      "esperança",
+      "paz",
+      "lei"
+    ],
+    "tema": "fé"
+  },
+  {
+    "id": "romanos-12-2",
+    "referencia": "Romanos 12:2",
+    "texto": "E não sede conformados com este mundo, mas sede transformados pela renovação do vosso entendimento.",
+    "lacuna": "transformados",
+    "distratores": [
+      "batizados",
+      "julgados",
+      "escolhidos"
+    ],
+    "tema": "mudança"
+  },
+  {
+    "id": "galatas-6-9",
+    "referencia": "Gálatas 6:9",
+    "texto": "E não nos cansemos de fazer o bem, porque a seu tempo ceifaremos, se não houvermos desfalecido.",
+    "lacuna": "ceifaremos",
+    "distratores": [
+      "choraremos",
+      "venceremos",
+      "cantaremos"
+    ],
+    "tema": "perseverança"
+  },
+  {
+    "id": "salmos-51-10",
+    "referencia": "Salmos 51:10",
+    "texto": "Cria em mim, ó Deus, um coração puro, e renova em mim um espírito reto.",
+    "lacuna": "puro",
+    "distratores": [
+      "forte",
+      "grande",
+      "novo"
+    ],
+    "tema": "arrependimento"
+  },
+  {
+    "id": "levitico-6-13",
+    "referencia": "Levítico 6:13",
+    "texto": "O fogo arderá continuamente sobre o altar; não se apagará.",
+    "lacuna": "altar",
+    "distratores": [
+      "monte",
+      "templo",
+      "campo"
+    ],
+    "tema": "constância"
+  },
+  {
+    "id": "lamentacoes-3-22-23",
+    "referencia": "Lamentações 3:22-23",
+    "texto": "As misericórdias do Senhor são a causa de não sermos consumidos; porque as suas misericórdias não têm fim. Novas são cada manhã.",
+    "lacuna": "manhã",
+    "distratores": [
+      "semana",
+      "noite",
+      "hora"
+    ],
+    "tema": "fidelidade"
+  },
+  {
+    "id": "salmos-46-10",
+    "referencia": "Salmos 46:10",
+    "texto": "Aquietai-vos, e sabei que eu sou Deus.",
+    "lacuna": "Aquietai-vos",
+    "distratores": [
+      "Levantai-vos",
+      "Alegrai-vos",
+      "Lembrai-vos"
+    ],
+    "tema": "silêncio"
+  },
+  {
+    "id": "josue-24-15",
+    "referencia": "Josué 24:15",
+    "texto": "Eu e a minha casa serviremos ao Senhor.",
+    "lacuna": "casa",
+    "distratores": [
+      "igreja",
+      "cidade",
+      "família"
+    ],
+    "tema": "família"
+  },
+  {
+    "id": "proverbios-18-21",
+    "referencia": "Provérbios 18:21",
+    "texto": "A morte e a vida estão no poder da língua.",
+    "lacuna": "língua",
+    "distratores": [
+      "mão",
+      "mente",
+      "espada"
+    ],
+    "tema": "palavras"
+  },
+  {
+    "id": "2-corintios-9-7",
+    "referencia": "2 Coríntios 9:7",
+    "texto": "Deus ama ao que dá com alegria.",
+    "lacuna": "alegria",
+    "distratores": [
+      "pressa",
+      "medo",
+      "fartura"
+    ],
+    "tema": "generosidade"
+  },
+  {
+    "id": "marcos-10-45",
+    "referencia": "Marcos 10:45",
+    "texto": "Porque o Filho do homem também não veio para ser servido, mas para servir.",
+    "lacuna": "servir",
+    "distratores": [
+      "reinar",
+      "julgar",
+      "ensinar"
+    ],
+    "tema": "serviço"
+  },
+  {
+    "id": "mateus-26-41",
+    "referencia": "Mateus 26:41",
+    "texto": "Vigiai e orai, para que não entreis em tentação.",
+    "lacuna": "Vigiai",
+    "distratores": [
+      "Cantai",
+      "Jejuai",
+      "Andai"
+    ],
+    "tema": "vigilância"
+  },
+  {
+    "id": "efesios-4-32",
+    "referencia": "Efésios 4:32",
+    "texto": "Antes sede uns para com os outros benignos, misericordiosos, perdoando-vos uns aos outros.",
+    "lacuna": "perdoando-vos",
+    "distratores": [
+      "julgando-vos",
+      "ajudando-vos",
+      "ensinando-vos"
+    ],
+    "tema": "perdão"
+  },
+  {
+    "id": "hebreus-10-25",
+    "referencia": "Hebreus 10:25",
+    "texto": "Não deixando a nossa congregação, como é costume de alguns.",
+    "lacuna": "congregação",
+    "distratores": [
+      "oração",
+      "família",
+      "cidade"
+    ],
+    "tema": "comunhão"
+  },
+  {
+    "id": "marcos-5-19",
+    "referencia": "Marcos 5:19",
+    "texto": "Vai para tua casa, para os teus, e anuncia-lhes quão grandes coisas o Senhor te fez.",
+    "lacuna": "anuncia-lhes",
+    "distratores": [
+      "esconde-lhes",
+      "pergunta-lhes",
+      "mostra-lhes"
+    ],
+    "tema": "testemunho"
+  },
+  {
+    "id": "mateus-6-6",
+    "referencia": "Mateus 6:6",
+    "texto": "Mas tu, quando orares, entra no teu aposento e, fechando a tua porta, ora a teu Pai, que está em secreto.",
+    "lacuna": "secreto",
+    "distratores": [
+      "templo",
+      "monte",
+      "céu"
+    ],
+    "tema": "oração"
+  },
+  {
+    "id": "joao-14-6",
+    "referencia": "João 14:6",
+    "texto": "Eu sou o caminho, e a verdade e a vida; ninguém vem ao Pai, senão por mim.",
+    "lacuna": "caminho",
+    "distratores": [
+      "pastor",
+      "pão",
+      "rei"
+    ],
+    "tema": "Jesus"
+  },
+  {
+    "id": "joao-8-32",
+    "referencia": "João 8:32",
+    "texto": "E conhecereis a verdade, e a verdade vos libertará.",
+    "lacuna": "libertará",
+    "distratores": [
+      "julgará",
+      "ensinará",
+      "guardará"
+    ],
+    "tema": "verdade"
+  },
+  {
+    "id": "joao-15-5",
+    "referencia": "João 15:5",
+    "texto": "Eu sou a videira, vós as varas; quem está em mim, e eu nele, esse dá muito fruto.",
+    "lacuna": "videira",
+    "distratores": [
+      "árvore",
+      "semente",
+      "raiz"
+    ],
+    "tema": "comunhão"
+  },
+  {
+    "id": "joao-16-33",
+    "referencia": "João 16:33",
+    "texto": "No mundo tereis aflições, mas tende bom ânimo, eu venci o mundo.",
+    "lacuna": "venci",
+    "distratores": [
+      "criei",
+      "julguei",
+      "deixei"
+    ],
+    "tema": "coragem"
+  },
+  {
+    "id": "romanos-10-17",
+    "referencia": "Romanos 10:17",
+    "texto": "De sorte que a fé é pelo ouvir, e o ouvir pela palavra de Deus.",
+    "lacuna": "ouvir",
+    "distratores": [
+      "ver",
+      "falar",
+      "pedir"
+    ],
+    "tema": "fé"
+  },
+  {
+    "id": "romanos-5-8",
+    "referencia": "Romanos 5:8",
+    "texto": "Mas Deus prova o seu amor para conosco, em que Cristo morreu por nós, sendo nós ainda pecadores.",
+    "lacuna": "amor",
+    "distratores": [
+      "poder",
+      "juízo",
+      "nome"
+    ],
+    "tema": "amor"
+  },
+  {
+    "id": "romanos-8-31",
+    "referencia": "Romanos 8:31",
+    "texto": "Se Deus é por nós, quem será contra nós?",
+    "lacuna": "por",
+    "distratores": [
+      "sobre",
+      "sem",
+      "após"
+    ],
+    "tema": "confiança"
+  },
+  {
+    "id": "1-corintios-13-4",
+    "referencia": "1 Coríntios 13:4",
+    "texto": "O amor é sofredor, é benigno; o amor não é invejoso.",
+    "lacuna": "invejoso",
+    "distratores": [
+      "paciente",
+      "bondoso",
+      "eterno"
+    ],
+    "tema": "amor"
+  },
+  {
+    "id": "1-corintios-10-31",
+    "referencia": "1 Coríntios 10:31",
+    "texto": "Portanto, quer comais quer bebais, ou façais outra qualquer coisa, fazei tudo para glória de Deus.",
+    "lacuna": "glória",
+    "distratores": [
+      "honra",
+      "prova",
+      "festa"
+    ],
+    "tema": "propósito"
+  },
+  {
+    "id": "2-corintios-5-17",
+    "referencia": "2 Coríntios 5:17",
+    "texto": "Assim que, se alguém está em Cristo, nova criatura é; as coisas velhas já passaram; eis que tudo se fez novo.",
+    "lacuna": "nova",
+    "distratores": [
+      "outra",
+      "forte",
+      "santa"
+    ],
+    "tema": "mudança"
+  },
+  {
+    "id": "galatas-5-22",
+    "referencia": "Gálatas 5:22",
+    "texto": "Mas o fruto do Espírito é: amor, gozo, paz, longanimidade, benignidade, bondade, fé, mansidão, temperança.",
+    "lacuna": "fruto",
+    "distratores": [
+      "dom",
+      "fogo",
+      "selo"
+    ],
+    "tema": "caráter"
+  },
+  {
+    "id": "efesios-2-8",
+    "referencia": "Efésios 2:8",
+    "texto": "Porque pela graça sois salvos, por meio da fé; e isto não vem de vós, é dom de Deus.",
+    "lacuna": "graça",
+    "distratores": [
+      "lei",
+      "obra",
+      "força"
+    ],
+    "tema": "graça"
+  },
+  {
+    "id": "efesios-6-10",
+    "referencia": "Efésios 6:10",
+    "texto": "No demais, irmãos meus, fortalecei-vos no Senhor e na força do seu poder.",
+    "lacuna": "fortalecei-vos",
+    "distratores": [
+      "alegrai-vos",
+      "guardai-vos",
+      "levantai-vos"
+    ],
+    "tema": "força"
+  },
+  {
+    "id": "filipenses-4-7",
+    "referencia": "Filipenses 4:7",
+    "texto": "E a paz de Deus, que excede todo o entendimento, guardará os vossos corações e os vossos sentimentos em Cristo Jesus.",
+    "lacuna": "paz",
+    "distratores": [
+      "lei",
+      "luz",
+      "voz"
+    ],
+    "tema": "ansiedade"
+  },
+  {
+    "id": "filipenses-4-19",
+    "referencia": "Filipenses 4:19",
+    "texto": "O meu Deus, segundo as suas riquezas, suprirá todas as vossas necessidades em glória, por Cristo Jesus.",
+    "lacuna": "suprirá",
+    "distratores": [
+      "julgará",
+      "ouvirá",
+      "mudará"
+    ],
+    "tema": "provisão"
+  },
+  {
+    "id": "colossenses-3-23",
+    "referencia": "Colossenses 3:23",
+    "texto": "E tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor, e não aos homens.",
+    "lacuna": "coração",
+    "distratores": [
+      "corpo",
+      "esforço",
+      "silêncio"
+    ],
+    "tema": "trabalho"
+  },
+  {
+    "id": "2-timoteo-1-7",
+    "referencia": "2 Timóteo 1:7",
+    "texto": "Porque Deus não nos deu o espírito de temor, mas de fortaleza, e de amor, e de moderação.",
+    "lacuna": "temor",
+    "distratores": [
+      "alegria",
+      "sabedoria",
+      "descanso"
+    ],
+    "tema": "coragem"
+  },
+  {
+    "id": "hebreus-13-5",
+    "referencia": "Hebreus 13:5",
+    "texto": "Não te deixarei, nem te desampararei.",
+    "lacuna": "desampararei",
+    "distratores": [
+      "esquecerei",
+      "julgarei",
+      "chamarei"
+    ],
+    "tema": "cuidado"
+  },
+  {
+    "id": "tiago-1-5",
+    "referencia": "Tiago 1:5",
+    "texto": "E, se algum de vós tem falta de sabedoria, peça-a a Deus, que a todos dá liberalmente.",
+    "lacuna": "sabedoria",
+    "distratores": [
+      "riqueza",
+      "saúde",
+      "coragem"
+    ],
+    "tema": "sabedoria"
+  },
+  {
+    "id": "tiago-4-8",
+    "referencia": "Tiago 4:8",
+    "texto": "Chegai-vos a Deus, e ele se chegará a vós.",
+    "lacuna": "Chegai-vos",
+    "distratores": [
+      "Afastai-vos",
+      "Calai-vos",
+      "Prostrai-vos"
+    ],
+    "tema": "intimidade"
+  },
+  {
+    "id": "1-pedro-5-7",
+    "referencia": "1 Pedro 5:7",
+    "texto": "Lançando sobre ele toda a vossa ansiedade, porque ele tem cuidado de vós.",
+    "lacuna": "ansiedade",
+    "distratores": [
+      "oferta",
+      "alegria",
+      "culpa"
+    ],
+    "tema": "ansiedade"
+  },
+  {
+    "id": "1-joao-1-9",
+    "referencia": "1 João 1:9",
+    "texto": "Se confessarmos os nossos pecados, ele é fiel e justo para nos perdoar os pecados.",
+    "lacuna": "confessarmos",
+    "distratores": [
+      "escondermos",
+      "esquecermos",
+      "pagarmos"
+    ],
+    "tema": "perdão"
+  },
+  {
+    "id": "1-joao-4-19",
+    "referencia": "1 João 4:19",
+    "texto": "Nós o amamos a ele porque ele nos amou primeiro.",
+    "lacuna": "primeiro",
+    "distratores": [
+      "sempre",
+      "muito",
+      "também"
+    ],
+    "tema": "amor"
+  },
+  {
+    "id": "apocalipse-3-20",
+    "referencia": "Apocalipse 3:20",
+    "texto": "Eis que estou à porta, e bato; se alguém ouvir a minha voz, e abrir a porta, entrarei em sua casa.",
+    "lacuna": "porta",
+    "distratores": [
+      "janela",
+      "mesa",
+      "estrada"
+    ],
+    "tema": "intimidade"
+  },
+  {
+    "id": "genesis-1-1",
+    "referencia": "Gênesis 1:1",
+    "texto": "No princípio criou Deus os céus e a terra.",
+    "lacuna": "princípio",
+    "distratores": [
+      "fim",
+      "meio",
+      "sábado"
+    ],
+    "tema": "criação"
+  },
+  {
+    "id": "exodo-14-14",
+    "referencia": "Êxodo 14:14",
+    "texto": "O Senhor pelejará por vós, e vós vos calareis.",
+    "lacuna": "pelejará",
+    "distratores": [
+      "chorará",
+      "cantará",
+      "esperará"
+    ],
+    "tema": "proteção"
+  },
+  {
+    "id": "numeros-6-24",
+    "referencia": "Números 6:24",
+    "texto": "O Senhor te abençoe e te guarde.",
+    "lacuna": "guarde",
+    "distratores": [
+      "chame",
+      "prove",
+      "ensine"
+    ],
+    "tema": "bênção"
+  },
+  {
+    "id": "deuteronomio-31-6",
+    "referencia": "Deuteronômio 31:6",
+    "texto": "Esforçai-vos, e animai-vos; não temais, nem vos espanteis diante deles; porque o Senhor vosso Deus é o que vai convosco.",
+    "lacuna": "animai-vos",
+    "distratores": [
+      "calai-vos",
+      "escondei-vos",
+      "assentai-vos"
+    ],
+    "tema": "coragem"
+  },
+  {
+    "id": "1-samuel-16-7",
+    "referencia": "1 Samuel 16:7",
+    "texto": "Porque o homem vê o que está diante dos olhos, porém o Senhor olha para o coração.",
+    "lacuna": "coração",
+    "distratores": [
+      "rosto",
+      "trabalho",
+      "passado"
+    ],
+    "tema": "caráter"
+  },
+  {
+    "id": "neemias-8-10",
+    "referencia": "Neemias 8:10",
+    "texto": "Porque a alegria do Senhor é a vossa força.",
+    "lacuna": "alegria",
+    "distratores": [
+      "palavra",
+      "glória",
+      "casa"
+    ],
+    "tema": "alegria"
+  },
+  {
+    "id": "salmos-27-1",
+    "referencia": "Salmos 27:1",
+    "texto": "O Senhor é a minha luz e a minha salvação; a quem temerei?",
+    "lacuna": "luz",
+    "distratores": [
+      "rocha",
+      "voz",
+      "mesa"
+    ],
+    "tema": "coragem"
+  },
+  {
+    "id": "salmos-34-8",
+    "referencia": "Salmos 34:8",
+    "texto": "Provai, e vede que o Senhor é bom.",
+    "lacuna": "bom",
+    "distratores": [
+      "forte",
+      "santo",
+      "grande"
+    ],
+    "tema": "bondade"
+  },
+  {
+    "id": "salmos-91-1",
+    "referencia": "Salmos 91:1",
+    "texto": "Aquele que habita no esconderijo do Altíssimo, à sombra do Onipotente descansará.",
+    "lacuna": "esconderijo",
+    "distratores": [
+      "templo",
+      "monte",
+      "deserto"
+    ],
+    "tema": "proteção"
+  },
+  {
+    "id": "salmos-121-1-2",
+    "referencia": "Salmos 121:1-2",
+    "texto": "Levantarei os meus olhos para os montes, de onde vem o meu socorro. O meu socorro vem do Senhor, que fez o céu e a terra.",
+    "lacuna": "socorro",
+    "distratores": [
+      "sustento",
+      "descanso",
+      "dinheiro"
+    ],
+    "tema": "proteção"
+  },
+  {
+    "id": "salmos-139-14",
+    "referencia": "Salmos 139:14",
+    "texto": "Eu te louvarei, porque de um modo assombroso, e tão maravilhoso fui feito.",
+    "lacuna": "maravilhoso",
+    "distratores": [
+      "simples",
+      "pequeno",
+      "perfeito"
+    ],
+    "tema": "identidade"
+  },
+  {
+    "id": "salmos-150-6",
+    "referencia": "Salmos 150:6",
+    "texto": "Tudo quanto tem fôlego louve ao Senhor.",
+    "lacuna": "fôlego",
+    "distratores": [
+      "dinheiro",
+      "força",
+      "casa"
+    ],
+    "tema": "louvor"
+  },
+  {
+    "id": "proverbios-16-3",
+    "referencia": "Provérbios 16:3",
+    "texto": "Confia ao Senhor as tuas obras, e teus pensamentos serão estabelecidos.",
+    "lacuna": "obras",
+    "distratores": [
+      "dívidas",
+      "palavras",
+      "dores"
+    ],
+    "tema": "trabalho"
+  },
+  {
+    "id": "proverbios-4-23",
+    "referencia": "Provérbios 4:23",
+    "texto": "Sobre tudo o que se deve guardar, guarda o teu coração, porque dele procedem as fontes da vida.",
+    "lacuna": "coração",
+    "distratores": [
+      "dinheiro",
+      "nome",
+      "tempo"
+    ],
+    "tema": "caráter"
+  },
+  {
+    "id": "proverbios-15-1",
+    "referencia": "Provérbios 15:1",
+    "texto": "A resposta branda desvia o furor, mas a palavra dura suscita a ira.",
+    "lacuna": "branda",
+    "distratores": [
+      "rápida",
+      "longa",
+      "certa"
+    ],
+    "tema": "palavras"
+  },
+  {
+    "id": "eclesiastes-3-1",
+    "referencia": "Eclesiastes 3:1",
+    "texto": "Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.",
+    "lacuna": "tempo",
+    "distratores": [
+      "preço",
+      "lugar",
+      "dono"
+    ],
+    "tema": "tempo"
+  },
+  {
+    "id": "eclesiastes-4-9",
+    "referencia": "Eclesiastes 4:9",
+    "texto": "Melhor é serem dois do que um.",
+    "lacuna": "dois",
+    "distratores": [
+      "três",
+      "muitos",
+      "todos"
+    ],
+    "tema": "amizade"
+  },
+  {
+    "id": "isaias-40-31",
+    "referencia": "Isaías 40:31",
+    "texto": "Mas os que esperam no Senhor renovarão as forças, subirão com asas como águias.",
+    "lacuna": "águias",
+    "distratores": [
+      "pombas",
+      "anjos",
+      "ventos"
+    ],
+    "tema": "esperança"
+  },
+  {
+    "id": "isaias-43-19",
+    "referencia": "Isaías 43:19",
+    "texto": "Eis que faço uma coisa nova, agora sairá à luz.",
+    "lacuna": "nova",
+    "distratores": [
+      "grande",
+      "certa",
+      "boa"
+    ],
+    "tema": "recomeço"
+  },
+  {
+    "id": "isaias-26-3",
+    "referencia": "Isaías 26:3",
+    "texto": "Tu conservarás em paz aquele cuja mente está firme em ti.",
+    "lacuna": "paz",
+    "distratores": [
+      "festa",
+      "silêncio",
+      "força"
+    ],
+    "tema": "paz"
+  },
+  {
+    "id": "daniel-1-8",
+    "referencia": "Daniel 1:8",
+    "texto": "E Daniel assentou no seu coração não se contaminar.",
+    "lacuna": "coração",
+    "distratores": [
+      "templo",
+      "quarto",
+      "livro"
+    ],
+    "tema": "consagração"
+  },
+  {
+    "id": "miqueias-6-8",
+    "referencia": "Miqueias 6:8",
+    "texto": "Que pratiques a justiça, e ames a benignidade, e andes humildemente com o teu Deus.",
+    "lacuna": "humildemente",
+    "distratores": [
+      "rapidamente",
+      "sozinho",
+      "alegremente"
+    ],
+    "tema": "caráter"
+  },
+  {
+    "id": "mateus-5-14",
+    "referencia": "Mateus 5:14",
+    "texto": "Vós sois a luz do mundo.",
+    "lacuna": "luz",
+    "distratores": [
+      "sal",
+      "voz",
+      "pão"
+    ],
+    "tema": "testemunho"
+  },
+  {
+    "id": "mateus-5-13",
+    "referencia": "Mateus 5:13",
+    "texto": "Vós sois o sal da terra.",
+    "lacuna": "sal",
+    "distratores": [
+      "luz",
+      "pão",
+      "fermento"
+    ],
+    "tema": "testemunho"
+  },
+  {
+    "id": "mateus-7-7",
+    "referencia": "Mateus 7:7",
+    "texto": "Pedi, e dar-se-vos-á; buscai, e encontrareis; batei, e abrir-se-vos-á.",
+    "lacuna": "buscai",
+    "distratores": [
+      "esperai",
+      "cantai",
+      "guardai"
+    ],
+    "tema": "oração"
+  },
+  {
+    "id": "mateus-28-20",
+    "referencia": "Mateus 28:20",
+    "texto": "E eis que eu estou convosco todos os dias, até a consumação dos séculos.",
+    "lacuna": "todos",
+    "distratores": [
+      "alguns",
+      "certos",
+      "poucos"
+    ],
+    "tema": "presença"
+  },
+  {
+    "id": "lucas-1-37",
+    "referencia": "Lucas 1:37",
+    "texto": "Porque para Deus nada é impossível.",
+    "lacuna": "impossível",
+    "distratores": [
+      "escondido",
+      "pequeno",
+      "proibido"
+    ],
+    "tema": "fé"
+  },
+  {
+    "id": "atos-1-8",
+    "referencia": "Atos 1:8",
+    "texto": "Mas recebereis a virtude do Espírito Santo, que há de vir sobre vós; e ser-me-eis testemunhas.",
+    "lacuna": "testemunhas",
+    "distratores": [
+      "juízes",
+      "profetas",
+      "reis"
+    ],
+    "tema": "testemunho"
+  },
+  {
+    "id": "atos-2-3",
+    "referencia": "Atos 2:3",
+    "texto": "E foram vistas por eles línguas repartidas, como que de fogo, as quais pousaram sobre cada um deles.",
+    "lacuna": "fogo",
+    "distratores": [
+      "luz",
+      "ouro",
+      "água"
+    ],
+    "tema": "Espírito"
+  }
+]

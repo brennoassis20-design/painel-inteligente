@@ -1,0 +1,11 @@
+{
+  "ligas": [
+    {"nome":"Brasa","cor":"#b45309","icone":"🪵"},
+    {"nome":"Faísca","cor":"#f59e0b","icone":"✨"},
+    {"nome":"Chama","cor":"#f97316","icone":"🔥"},
+    {"nome":"Fogueira","cor":"#ef4444","icone":"🏕️"},
+    {"nome":"Labareda","cor":"#a855f7","icone":"🌋"},
+    {"nome":"Sarça Ardente","cor":"#facc15","icone":"👑"}
+  ],
+  "nomes": ["Ana Paula","Marcos","Luciana","Rafael","Débora","Tiago","Priscila","Josué","Raquel","Elias","Sara","Mateus","Noemi","Lucas","Rute","Daniel","Marta","Pedro","Lídia","Samuel","Cíntia","Gabriel","Eunice","Felipe","Joana","André","Tabata","Caleb","Miriam","Davi","Betânia","Isaque","Lia","Roberto","Simone"]
+}
