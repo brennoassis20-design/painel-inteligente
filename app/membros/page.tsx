@@ -658,6 +658,11 @@ export default function MembrosPage() {
             email={home.email}
             lerUtm={readUtm}
             onAreaMembros={() => go(null)}
+            onSair={() => {
+              writeSession(null);
+              setHome(null);
+              setLogged(false);
+            }}
             onAtivarPush={async () => {
               const { vapid } = await api<{ vapid: string }>("/api/membros/avisos");
               await enablePush(vapid);

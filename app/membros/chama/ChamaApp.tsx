@@ -17,7 +17,9 @@ import { atualizarSelo, completouHoje } from "@/lib/chama-acesa/selo";
 import { tagLink } from "@/lib/membros-utm";
 import { iniciarMusica, lerSomLigado, pararMusica, prepararAudio, salvarSomLigado } from "@/lib/chama-acesa/musica-oracao";
 import { Biblia } from "./Biblia";
+import { Avatar } from "./Avatar";
 import { Chama } from "./Chama";
+import { ContaTela } from "./Conta";
 import { OfertasBloco } from "./Ofertas";
 import "./chama.css";
 
@@ -38,7 +40,8 @@ type Vista =
   | { v: "lembrete" }
   | { v: "celebracao" }
   | { v: "meta"; dia: number }
-  | { v: "estudo"; dia: number };
+  | { v: "estudo"; dia: number }
+  | { v: "conta" };
 
 export interface ChamaAppProps {
   armazem: Armazem;
@@ -49,6 +52,8 @@ export interface ChamaAppProps {
   /** Origem (UTM) salva do aluno, repassada ao checkout. */
   lerUtm?: () => Record<string, string>;
   email?: string;
+  /** Sair da conta (a área de membros faz o logout). Sem isso, o botão não aparece. */
+  onSair?: () => void;
   /** Bancada: força a visualização das instruções de instalação (iPhone, Android...). */
   instalarForcar?: ForcarInstalacao;
 }
@@ -56,7 +61,7 @@ export interface ChamaAppProps {
 const paragrafos = (t: string) => t.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 const diasTxt = (n: number) => `${n} ${n === 1 ? "dia" : "dias"}`;
 
-export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtivarPush, lerUtm, email, instalarForcar = "auto" }: ChamaAppProps) {
+export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtivarPush, lerUtm, email, onSair, instalarForcar = "auto" }: ChamaAppProps) {
   const [painel, setPainel] = useState<Painel | null>(null);
   const [erro, setErro] = useState("");
   const [aba, setAba] = useState<Aba>("hoje");
@@ -222,7 +227,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
   const linkConvite = `${painel.conviteBase}?ref=${painel.codigo}`;
   const textoConvite = `Tô fazendo um desafio de 21 dias com Deus, 5 minutos por dia, e tô com ${estado.chama} ${estado.chama === 1 ? "dia" : "dias"} de chama acesa 🔥 Começa comigo, os primeiros dias são grátis: ${linkConvite}`;
-  const sit = situacaoNaLiga(estado, hoje, painel.hora, painel.semente, painel.ligas, painel.nome);
+  const sit = situacaoNaLiga(estado, hoje, painel.hora, painel.semente, painel.ligas, painel.nome, painel.ranking);
   const res = estado.liga.resultado;
 
   // ------------------------------------------------------------ vistas de tela cheia
@@ -330,7 +335,17 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     );
   }
 
-  if (vista.v === "meta") {
+  if (vista.v === "conta" && armazem.conta) {
+    corpo = (
+      <ContaTela
+        armazem={armazem.conta}
+        onVoltar={() => irPara({ v: "abas" })}
+        onMudou={carregar}
+        onAssinar={() => irPara({ v: "pagamento" })}
+        onSair={onSair}
+      />
+    );
+  } else if (vista.v === "meta") {
     const m = metaDe(vista.dia);
     corpo = (
       <div className="ch-cheia ch-celebra">
@@ -392,6 +407,11 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
       {aba === "hoje" && (
         <section className="ch-tela">
           <div className="ch-topo">
+            {armazem.conta && (
+              <button type="button" className="ch-perfil-btn" aria-label="Minha conta" onClick={() => irPara({ v: "conta" })}>
+                <Avatar nome={painel.nome} foto={painel.perfil.foto} tamanho={40} />
+              </button>
+            )}
             <Chama dias={estado.chama} />
             <div className="ch-num">{estado.chama}</div>
             <div className="ch-num-sub">{estado.chama === 1 ? "dia de chama acesa" : "dias de chama acesa"}</div>
@@ -450,19 +470,21 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             <h1>Liga {sit.liga.nome}</h1>
             {sit.liga.descricao && <p className="ch-suave">{sit.liga.descricao}</p>}
             <p className="ch-grande">Você está em {sit.posicao}º lugar</p>
-            <p className="ch-suave">Faltam {sit.restante.dias}d {sit.restante.horas}h para a semana acabar. Os {painel.ligas.sobem} primeiros sobem{estado.liga.indice > 0 ? `; os ${painel.ligas.descem} últimos descem` : ""}.</p>
+            <p className="ch-suave">Faltam {sit.restante.dias}d {sit.restante.horas}h para a semana acabar. Os {sit.limites.sobem} primeiros sobem{estado.liga.indice > 0 ? `; os ${sit.limites.descem} últimos descem` : ""}.</p>
+            {sit.modo === "real" && <p className="ch-liga-real">Ranking com membros de verdade da sua liga: aparecem só o primeiro nome e a foto.</p>}
           </div>
           <div className="ch-liga-lista">
             {sit.linhas.map((l, i) => {
-              const zona = l.posicao <= painel.ligas.sobem && estado.liga.indice < painel.ligas.ligas.length - 1 ? "sobe" : l.posicao > painel.ligas.tamanho - painel.ligas.descem && estado.liga.indice > 0 ? "desce" : "";
+              const zona = l.posicao <= sit.limites.sobem && estado.liga.indice < painel.ligas.ligas.length - 1 ? "sobe" : l.posicao > sit.limites.tamanho - sit.limites.descem && estado.liga.indice > 0 ? "desce" : "";
               const antes = i > 0 ? sit.linhas[i - 1].posicao : 0;
               return (
                 <Fragment key={`${l.nome}-${l.posicao}`}>
                   {i === 0 && estado.liga.indice < painel.ligas.ligas.length - 1 && <div className="ch-zona sobe">▲ Zona de subida</div>}
-                  {antes === painel.ligas.sobem && <div className="ch-zona">Zona segura</div>}
-                  {l.posicao === painel.ligas.tamanho - painel.ligas.descem + 1 && estado.liga.indice > 0 && <div className="ch-zona desce">▼ Zona de descida</div>}
+                  {antes === sit.limites.sobem && <div className="ch-zona">Zona segura</div>}
+                  {l.posicao === sit.limites.tamanho - sit.limites.descem + 1 && sit.limites.descem > 0 && estado.liga.indice > 0 && <div className="ch-zona desce">▼ Zona de descida</div>}
                   <div className={`${zona}${l.voce ? " voce" : ""}`} style={{ display: "flex", gap: 10, alignItems: "center", background: "var(--ch-card)", borderRadius: 14, padding: "10px 12px", border: l.voce ? "1px solid var(--ch-ouro)" : "1px solid transparent", ...(zona === "sobe" ? { background: "#12301f" } : zona === "desce" ? { background: "#3b1a1a" } : {}) }}>
                     <span className="pos">{l.posicao}</span>
+                    <Avatar nome={l.nome} foto={l.voce ? l.foto ?? painel.perfil.foto : l.foto} anonimo={l.anonimo} tamanho={32} />
                     <span className="nome">{l.voce ? "Você" : l.nome}</span>
                     <span className="xp">{l.xp} XP</span>
                   </div>
@@ -481,6 +503,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
           <div className="ch-card">
             <h2>Seu perfil</h2>
             <p className="ch-suave">⚡ {estado.xp} XP no total · {estado.xpSemana[inicioSemana(hoje)] ?? 0} XP nesta semana · liga {sit.liga.icone} {sit.liga.nome}</p>
+            {armazem.conta && <button type="button" className="ch-btn ch-btn-claro" onClick={() => irPara({ v: "conta" })}>Minha conta (nome, foto e ranking)</button>}
           </div>
           <div className="ch-card ch-meta-prox">
             <span className="ch-etiqueta">Próxima meta</span>

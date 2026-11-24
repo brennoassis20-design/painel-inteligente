@@ -1,6 +1,7 @@
 // Monta o que a tela precisa (estado + conteúdo liberado). Usado pela rota do servidor e pelo armazém local.
 import type { Dia } from "./dias";
-import type { ConfigLigas } from "./ligas";
+import type { PlanoChama } from "./conta";
+import type { ConfigLigas, Linha } from "./ligas";
 import type { Meta } from "./marcos";
 import type { Versiculo } from "./pratica";
 import type { OfertasChama } from "./precos";
@@ -18,6 +19,10 @@ export interface Painel {
   /** Semente do grupo fictício da liga (user_id). */
   semente: string;
   nome: string;
+  /** Foto, preferência do ranking e plano da própria pessoa (e-mail e dados de conta ficam em /api/membros/chama-conta). */
+  perfil: { foto: string | null; mostrarNoRanking: boolean; plano: PlanoChama };
+  /** Ranking real da semana (só primeiro nome, foto e XP) quando há membros suficientes na liga; null = ranking fictício. */
+  ranking: Linha[] | null;
   /** Código de convite da pessoa e endereço do cadastro grátis (sem o ?ref=). */
   codigo: string;
   conviteBase: string;

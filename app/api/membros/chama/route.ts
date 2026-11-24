@@ -4,9 +4,12 @@ import { acessoDoUsuario } from "@/lib/chama-acesa/acesso";
 import { carregarDias, carregarLigas, carregarMarcos, carregarMissoes, carregarVersiculos } from "@/lib/chama-acesa/conteudo-servidor";
 import { codigoDe, carregarEstado, premiarConvidador, salvarEstado } from "@/lib/chama-acesa/persistencia";
 import { diasLiberados, type Painel } from "@/lib/chama-acesa/painel";
-import { atualizarLiga } from "@/lib/chama-acesa/ligas";
+import { atualizarLiga, type Linha } from "@/lib/chama-acesa/ligas";
+import { carregarConta, membrosAtivos, type ContaGuardada } from "@/lib/chama-acesa/persistencia-conta";
+import { ligaRealMinimo, rankingReal, type MembroRanking } from "@/lib/chama-acesa/ranking";
+import { primeiroNome } from "@/lib/chama-acesa/conta";
 import { diasDasMetas, marcosLiberados } from "@/lib/chama-acesa/marcos";
-import { aplicarAcao, atualizarParaHoje, dataSP, horaSP, registrarAcesso, type Acao, type Check, type Estado } from "@/lib/chama-acesa/regras";
+import { aplicarAcao, atualizarParaHoje, dataSP, horaSP, inicioSemana, registrarAcesso, type Acao, type Check, type Estado } from "@/lib/chama-acesa/regras";
 
 // Jornada do Chama Acesa na conta de cada pessoa. As regras (chama, brasa, um dia por dia, dia 4 só com compra, XP, liga)
 // rodam AQUI, no servidor, com o relógio de São Paulo; a tela só mostra. RLS: supabase/migrations/20261123_chama_acesa.sql.
@@ -19,28 +22,57 @@ async function exigir(user: { email: string }, area: Area) {
   return acesso;
 }
 
-function painel(estado: Estado, hoje: string, user: User, area: Area, acesso: Awaited<ReturnType<typeof exigir>>): Painel {
+// Quem está ativo na liga muda devagar: guarda a leitura por 60 s (a linha da própria pessoa sempre entra fresca).
+const cacheMembros = new Map<string, { em: number; dados: MembroRanking[] | null }>();
+async function membrosDaLiga(areaId: number, semana: string, indice: number) {
+  const k = `${areaId}|${semana}|${indice}`;
+  const c = cacheMembros.get(k);
+  if (c && Date.now() - c.em < 60_000) return c.dados;
+  const dados = await membrosAtivos(areaId, semana, indice);
+  cacheMembros.set(k, { em: Date.now(), dados });
+  if (cacheMembros.size > 200) cacheMembros.clear();
+  return dados;
+}
+
+/** Ranking real da pessoa numa semana (null = ainda não há membros suficientes: vale o fictício). */
+async function rankingDaSemana(area: Area, user: User, conta: ContaGuardada, semana: string, indice: number, xp: number): Promise<Linha[] | null> {
+  const outros = await membrosDaLiga(area.id, semana, indice);
+  if (!outros) return null;
+  const eu: MembroRanking = { id: user.id, nome: conta.nomeExibicao || conta.nomeAuth || user.name || null, foto: conta.foto, mostrar: conta.mostrarNoRanking, xp };
+  return rankingReal([...outros.filter((m) => m.id !== user.id), eu], user.id, semana, carregarLigas(), ligaRealMinimo());
+}
+
+function painel(estado: Estado, hoje: string, user: User, area: Area, acesso: Awaited<ReturnType<typeof exigir>>, conta: ContaGuardada, ranking: Linha[] | null): Painel {
   const { dias, exemplo } = carregarDias();
   return {
     estado, hoje, hora: horaSP(), pago: acesso.pago, dias: diasLiberados(dias, acesso.pago), versiculos: carregarVersiculos(), ligas: carregarLigas(),
-    semente: user.id, nome: (user.name || "").split(" ")[0] || "Você", codigo: codigoDe(user.id), conviteBase: `${areaUrl(area)}/gratis`,
+    semente: user.id, nome: primeiroNome(conta.nomeExibicao || conta.nomeAuth || user.name) === "Membro" ? "Você" : primeiroNome(conta.nomeExibicao || conta.nomeAuth || user.name),
+    perfil: { foto: conta.foto, mostrarNoRanking: conta.mostrarNoRanking, plano: acesso.plano }, ranking, codigo: codigoDe(user.id), conviteBase: `${areaUrl(area)}/gratis`,
     checkoutUrl: acesso.checkoutUrl, ofertas: acesso.ofertas, marcos: marcosLiberados(carregarMarcos(), estado.maior), missoes: carregarMissoes(), oferta365Url: acesso.oferta365Url, exemplo,
   };
 }
 
 /** Aplica o que mudou desde a última vez: acesso de hoje, brasa/apagar e a virada da semana da liga. */
-function emDia(salvo: Estado, hoje: string, user: User) {
-  return atualizarLiga(atualizarParaHoje(registrarAcesso(salvo, hoje), hoje), hoje, user.id, carregarLigas());
+async function emDia(salvo: Estado, hoje: string, user: User, area: Area, conta: ContaGuardada) {
+  // Semana que acabou: se havia ranking real, o resultado (subir/descer) sai dele; senão, do grupo fictício.
+  const fechando = salvo.liga.semana && salvo.liga.semana !== inicioSemana(hoje) ? salvo.liga : null;
+  const real = fechando ? await rankingDaSemana(area, user, conta, fechando.semana!, fechando.indice, salvo.xpSemana[fechando.semana!] ?? 0).catch(() => null) : null;
+  return atualizarLiga(atualizarParaHoje(registrarAcesso(salvo, hoje), hoje), hoje, user.id, carregarLigas(), real);
+}
+
+async function rankingAtual(estado: Estado, hoje: string, user: User, area: Area, conta: ContaGuardada) {
+  const semana = inicioSemana(hoje);
+  return rankingDaSemana(area, user, conta, semana, estado.liga.indice, estado.xpSemana[semana] ?? 0).catch(() => null);
 }
 
 export async function GET(request: Request) {
   return withUser(request, async (user, area) => {
     const acesso = await exigir(user, area);
     const hoje = dataSP();
-    const salvo = await carregarEstado(user.id);
-    const estado = emDia(salvo, hoje, user);
+    const [salvo, conta] = await Promise.all([carregarEstado(user.id), carregarConta(user.id)]);
+    const estado = await emDia(salvo, hoje, user, area, conta);
     if (estado !== salvo) await salvarEstado(user.id, area.id, estado, user.name);
-    return painel(estado, hoje, user, area, acesso);
+    return painel(estado, hoje, user, area, acesso, conta, await rankingAtual(estado, hoje, user, area, conta));
   });
 }
 
@@ -60,11 +92,12 @@ export async function POST(request: Request) {
     else if (body.acao === "limparAvisos") acao = { tipo: "limparAvisos" };
     else throw new OpError("Ação desconhecida.");
     const hoje = dataSP();
-    const r = aplicarAcao(emDia(await carregarEstado(user.id), hoje, user), acao, hoje, acesso.pago, diasDasMetas(carregarMarcos()));
+    const conta = await carregarConta(user.id);
+    const r = aplicarAcao(await emDia(await carregarEstado(user.id), hoje, user, area, conta), acao, hoje, acesso.pago, diasDasMetas(carregarMarcos()));
     if (r.erro) throw new OpError(r.erro);
     await salvarEstado(user.id, area.id, r.estado, user.name);
     // Amigo convidado completou o dia 1: quem convidou ganha XP e brasa (uma vez só).
     if (r.completouDia === 1) await premiarConvidador(area.id, user.id, hoje).catch((e) => console.error("chama-convite", e));
-    return { ...painel(r.estado, hoje, user, area, acesso), completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa, xpGanho: r.xpGanho };
+    return { ...painel(r.estado, hoje, user, area, acesso, conta, await rankingAtual(r.estado, hoje, user, area, conta)), completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa, xpGanho: r.xpGanho };
   });
 }

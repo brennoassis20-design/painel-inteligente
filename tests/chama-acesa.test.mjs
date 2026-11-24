@@ -23,6 +23,9 @@ import { DIAS_METAS_PADRAO, diasDasMetas, ehMeta, marcosLiberados, metaDoDia, me
 import { montarDiaContinuo, ORACOES_CONTINUAS } from "../lib/chama-acesa/continuo.ts";
 import { diasConcluidos, jornadaCompleta, MAX_DIA } from "../lib/chama-acesa/regras.ts";
 import { eduzz, kindDeContratoEduzz, statusDoAcesso } from "../lib/webhook-eduzz.ts";
+import { primeiroNome, validarNome, caminhoAvatar, podeMexerNoAvatar, validarAvatar, urlAvatar, BUCKET_AVATARES, MAX_FOTO_BYTES } from "../lib/chama-acesa/conta.ts";
+import { classificarReal, ligaNaSemana, ligaRealMinimo, linhaPublica, membrosDaLiga, montarGrupoReal, rankingReal } from "../lib/chama-acesa/ranking.ts";
+import { limitesReal, situacaoNaLiga } from "../lib/chama-acesa/ligas.ts";
 import { textosVitalicio, PARCELA_PADRAO } from "../lib/chama-acesa/precos.ts";
 
 const D0 = "2026-12-01";
@@ -1081,4 +1084,148 @@ test("webhook Eduzz: compra única de outros produtos continua exatamente como a
   assert.equal(eduzz({ type: "remove", fields: { edz_cli_email: "c@x.com", edz_cnt_cod: "9" } }).kind, "refunded");
   // status de acesso: aprovado ativa, reembolso estorna, fim de assinatura expira; pendente/ignorado não gravam
   assert.deepEqual(["approved", "refunded", "ended", "pending", "ignored"].map(statusDoAcesso), ["active", "refunded", "expired", null, null]);
+});
+
+
+// ============================================================ conta e ranking real
+
+const U = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const membros = (n, extra = {}) => Array.from({ length: n }, (_, i) => ({ id: U(i + 1), nome: `Pessoa${i + 1} Sobrenome${i + 1}`, foto: i % 2 ? `https://x.supabase.co/storage/v1/object/public/chama-avatares/${U(i + 1)}/avatar?v=1` : null, mostrar: true, xp: 100 + i * 10, ...extra }));
+const CFG30 = { ligas: [{ id: "a", nome: "A", cor: "#fff", icone: "x", descricao: "" }, { id: "b", nome: "B", cor: "#fff", icone: "x", descricao: "" }, { id: "c", nome: "C", cor: "#fff", icone: "x", descricao: "" }], sobem: 7, descem: 5, tamanho: 30, nomes: [] };
+
+test("nome com sobrenome vira só o primeiro nome; e-mail, link e vazio viram Membro", () => {
+  assert.equal(primeiroNome("Ana Maria da Silva"), "Ana");
+  assert.equal(primeiroNome("  joão   pedro "), "joão");
+  assert.equal(primeiroNome("ana@gmail.com"), "Membro");
+  assert.equal(primeiroNome("https://site.com"), "Membro");
+  assert.equal(primeiroNome(""), "Membro");
+  assert.equal(primeiroNome(null), "Membro");
+  assert.equal(primeiroNome("Supercalifragilisticoexpialidoso X").length, 20);
+  assert.equal(validarNome("Ana Silva").ok, true);
+  assert.equal(validarNome("A").ok, false);
+  assert.equal(validarNome("ana@gmail.com").ok, false);
+  assert.equal(validarNome("visite www.site.com").ok, false);
+  assert.equal(validarNome("x".repeat(41)).ok, false);
+});
+
+test("ranking: fictício abaixo do mínimo e real no limite (CHAMA_LIGA_REAL_MINIMO, padrão 10)", () => {
+  assert.equal(ligaRealMinimo({}), 10);
+  assert.equal(ligaRealMinimo({ CHAMA_LIGA_REAL_MINIMO: "15" }), 15);
+  assert.equal(ligaRealMinimo({ CHAMA_LIGA_REAL_MINIMO: "abc" }), 10);
+  assert.equal(ligaRealMinimo({ CHAMA_LIGA_REAL_MINIMO: "1" }), 10);
+  assert.equal(rankingReal(membros(9), U(1), "2026-12-07", CFG30, 10), null);
+  const real = rankingReal(membros(10), U(1), "2026-12-07", CFG30, 10);
+  assert.equal(real.length, 10);
+  assert.equal(real.filter((l) => l.voce).length, 1);
+  assert.deepEqual(real.map((l) => l.posicao), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.ok(real[0].xp >= real[9].xp);
+  assert.equal(rankingReal(membros(10).slice(1), U(1), "2026-12-07", CFG30, 10), null); // a própria pessoa precisa estar no grupo
+  assert.equal(rankingReal(membros(10), U(1), "2026-12-07", CFG30, 5).length, 10);
+  // na tela: com `real` vira modo real; sem, fictício
+  const e = { ...estadoVazio(), xpSemana: { "2026-12-07": 500 } };
+  const bots = { ...CFG30, nomes: Array.from({ length: 40 }, (_, i) => `Bot${i}`) };
+  assert.equal(situacaoNaLiga(e, "2026-12-09", 12, "u", bots, "Você").modo, "ficticio");
+  const sit = situacaoNaLiga(e, "2026-12-09", 12, "u", bots, "Você", real);
+  assert.equal(sit.modo, "real");
+  assert.deepEqual(sit.limites, limitesReal(10, CFG30));
+  assert.deepEqual(limitesReal(30, CFG30), { sobem: 7, descem: 5, tamanho: 30 });
+  assert.deepEqual(limitesReal(10, CFG30), { sobem: 2, descem: 2, tamanho: 10 });
+});
+
+test("ranking real: grupos de até 30, grupo pequeno no fim é juntado, cada pessoa em um grupo só", () => {
+  const todos = membros(45);
+  const grupos = new Set(todos.map((m) => montarGrupoReal(todos, m.id, "2026-12-07", 10, 30).map((x) => x.id).sort().join(",")));
+  assert.equal(grupos.size, 2);
+  assert.deepEqual([...grupos].map((g) => g.split(",").length).sort(), [15, 30]);
+  const t35 = membros(35);
+  assert.equal(montarGrupoReal(t35, U(1), "2026-12-07", 10, 30).length, 35); // 30 + 5: o resto de 5 é juntado
+  // sorteio muda por semana, mas é estável na mesma semana
+  const g1 = montarGrupoReal(todos, U(3), "2026-12-07", 10, 30).map((x) => x.id).join();
+  assert.equal(montarGrupoReal(todos, U(3), "2026-12-07", 10, 30).map((x) => x.id).join(), g1);
+});
+
+test("ranking real: quem desligou aparece como Membro sem foto; nunca sai e-mail nem sobrenome", () => {
+  const lista = membros(12);
+  lista[2] = { ...lista[2], mostrar: false, nome: "Segredo Silva", foto: "https://x/foto.webp" };
+  lista[4] = { ...lista[4], nome: "carlos@email.com Souza" };
+  const linhas = rankingReal(lista, U(1), "2026-12-07", CFG30, 10);
+  const anon = linhas.find((l) => l.xp === lista[2].xp);
+  assert.deepEqual([anon.nome, anon.foto, anon.anonimo], ["Membro", null, true]);
+  assert.equal(linhas.find((l) => l.xp === lista[4].xp).nome, "Membro"); // e-mail no nome nunca vaza
+  const texto = JSON.stringify(linhas);
+  assert.ok(!/Sobrenome|Silva|Souza|@|email/i.test(texto), "sem sobrenome nem e-mail");
+  for (const l of linhas) assert.deepEqual(Object.keys(l).sort(), ["anonimo", "foto", "nome", "posicao", "voce", "xp"]);
+  // a própria pessoa sempre se vê com nome e foto, mesmo com o ranking desligado
+  const eu = { ...lista[0], mostrar: false, foto: "https://x/eu.webp" };
+  assert.deepEqual(linhaPublica(eu, true), { nome: "Pessoa1", foto: "https://x/eu.webp", anonimo: false });
+  assert.equal(classificarReal([eu, ...lista.slice(1)], U(1)).find((l) => l.voce).nome, "Pessoa1");
+});
+
+test("ranking real: quem está em qual liga em cada semana (atual e semana que fechou)", () => {
+  const p = (id, liga, xp) => ({ user_id: id, nome: "Fulano Tal", nome_exibicao: null, foto_url: null, mostrar_no_ranking: null, xp_semana: xp, liga });
+  const perfis = [
+    p("a", { indice: 2, semana: "2026-12-07", historico: [] }, { "2026-12-07": 50 }),
+    p("b", { indice: 1, semana: "2026-12-14", historico: [{ semana: "2026-12-07", liga: 2, posicao: 3, xp: 80, resultado: "ficou" }] }, { "2026-12-07": 80, "2026-12-14": 10 }), // fechou a semana 07 na liga 2
+    p("c", { indice: 2, semana: "2026-12-07", historico: [] }, { "2026-12-07": 0 }), // sem XP: não conta
+    p("d", { indice: 0, semana: "2026-12-07", historico: [] }, { "2026-12-07": 40 }), // outra liga
+  ];
+  assert.equal(ligaNaSemana(perfis[1], "2026-12-07"), 2);
+  assert.equal(ligaNaSemana(perfis[1], "2026-12-14"), 1);
+  assert.equal(ligaNaSemana(perfis[3], "2026-11-30"), null);
+  assert.deepEqual(membrosDaLiga(perfis, "2026-12-07", 2).map((m) => [m.id, m.xp]), [["a", 50], ["b", 80]]);
+  assert.equal(membrosDaLiga(perfis, "2026-12-07", 2)[0].mostrar, true); // padrão: mostrar
+});
+
+test("virada de semana funciona nos dois modos: sobe/desce pelo ranking real ou pelo fictício", () => {
+  const cfg = { ...CFG30, nomes: Array.from({ length: 40 }, (_, i) => `Bot${i}`) };
+  const base = (indice) => ({ ...estadoVazio(), xpSemana: { "2026-12-07": 300 }, liga: { indice, semana: "2026-12-07", historico: [], resultado: null } });
+  const linhas = (pos) => classificarReal(membros(10, {}), U(pos)); // a pessoa é o membro de posição por ordem de id
+  // real: a pessoa U(10) tem o maior XP (xp = 100 + i*10) => 1º lugar => sobe
+  const topo = atualizarLiga(base(1), "2026-12-14", "u", cfg, classificarReal(membros(10), U(10)));
+  assert.equal(topo.liga.resultado.resultado, "subiu");
+  assert.equal(topo.liga.resultado.posicao, 1);
+  assert.equal(topo.liga.indice, 2);
+  // real: U(1) tem o menor XP => último => desce (liga > 0)
+  const fundo = atualizarLiga(base(1), "2026-12-14", "u", cfg, linhas(1));
+  assert.equal(fundo.liga.resultado.resultado, "desceu");
+  assert.equal(fundo.liga.indice, 0);
+  // na primeira liga ninguém desce; no meio fica
+  assert.equal(atualizarLiga(base(0), "2026-12-14", "u", cfg, linhas(1)).liga.resultado.resultado, "ficou");
+  assert.equal(atualizarLiga(base(1), "2026-12-14", "u", cfg, linhas(5)).liga.resultado.resultado, "ficou");
+  // sem ranking real (null): segue o fictício
+  const fic = atualizarLiga(base(1), "2026-12-14", "u", cfg, null);
+  assert.ok(["subiu", "ficou", "desceu"].includes(fic.liga.resultado.resultado));
+  assert.equal(fic.liga.resultado.xp, 300);
+});
+
+test("foto: upload e remoção só na própria pasta; arquivo conferido pelos bytes", () => {
+  const eu = U(7);
+  const outro = U(8);
+  assert.equal(caminhoAvatar(eu), `${eu}/avatar`);
+  assert.equal(podeMexerNoAvatar(eu, caminhoAvatar(eu)), true);
+  assert.equal(podeMexerNoAvatar(eu, caminhoAvatar(outro)), false); // pasta de outra pessoa
+  assert.equal(podeMexerNoAvatar(eu, `${eu}/../${outro}/avatar`), false);
+  assert.equal(podeMexerNoAvatar(eu, `/${eu}/avatar`), false);
+  assert.equal(podeMexerNoAvatar(eu, `${eu}x/avatar`), false);
+  assert.equal(podeMexerNoAvatar("nao-e-uuid", "nao-e-uuid/avatar"), false);
+  assert.equal(podeMexerNoAvatar("", "/avatar"), false);
+  const webp = new Uint8Array([0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 0x57, 0x45, 0x42, 0x50, 0, 0]);
+  const jpg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual(validarAvatar(webp), { ok: true, tipo: "image/webp" });
+  assert.deepEqual(validarAvatar(jpg), { ok: true, tipo: "image/jpeg" });
+  assert.equal(validarAvatar(png).ok, false);
+  assert.equal(validarAvatar(new Uint8Array(MAX_FOTO_BYTES + 1).fill(0xff, 0, 3)).ok, false);
+  assert.equal(validarAvatar(new Uint8Array(3)).ok, false);
+  assert.equal(urlAvatar("https://abc.supabase.co/", eu, 5), `https://abc.supabase.co/storage/v1/object/public/${BUCKET_AVATARES}/${eu}/avatar?v=5`);
+});
+
+test("conta: plano mostrado (grátis, mensal, vitalício, admin)", () => {
+  const env = { CHAMA_AREA_SLUG: "chama-acesa", CHAMA_PRODUCT_SLUGS: "chama-acesa-21-dias,chama-acesa-mensal", NODE_ENV: "production" };
+  const a = (produtos, admin = false) => calcularAcesso({ areaSlug: "chama-acesa", produtos, admin, env }).plano;
+  assert.equal(a([{ slug: "chama-acesa-21-dias", owned: false }, { slug: "chama-acesa-mensal", owned: false }]), "gratis");
+  assert.equal(a([{ slug: "chama-acesa-mensal", owned: true }]), "mensal");
+  assert.equal(a([{ slug: "chama-acesa-21-dias", owned: true }]), "vitalicio");
+  assert.equal(a([{ slug: "chama-acesa-21-dias", owned: true }, { slug: "chama-acesa-mensal", owned: true }]), "vitalicio"); // vitalício vence a mensal
+  assert.equal(a([], true), "admin");
 });

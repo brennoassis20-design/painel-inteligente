@@ -3,7 +3,9 @@
 //  - local: no navegador (bancada /membros/chama-dev e uso sem a migração aplicada); roda as MESMAS regras.
 import type { Dia } from "./dias.ts";
 import { criarBibliaLocal, criarBibliaRemoto, type ArmazemBiblia, type ArmazemBibliaLocal } from "./armazem-biblia.ts";
-import { aleatorio, atualizarLiga, type ConfigLigas } from "./ligas.ts";
+import { primeiroNome, validarNome, type Conta, type PlanoChama } from "./conta.ts";
+import { aleatorio, atualizarLiga, gerarBots, xpDoBot, type ConfigLigas } from "./ligas.ts";
+import { MINIMO_PADRAO, rankingReal, type MembroRanking } from "./ranking.ts";
 import { escolherTexto, montarMensagem, perfilDeEstado, preencher, type Mensagem, type Texto, type Tipo } from "./lembretes.ts";
 import { diasDasMetas, marcosLiberados, type Meta } from "./marcos.ts";
 import { diasLiberados, type Painel } from "./painel.ts";
@@ -18,8 +20,22 @@ export interface RespostaAcao extends Painel {
   xpGanho: number;
 }
 
+export type AcaoConta =
+  | { tipo: "nome"; nome: string }
+  | { tipo: "mostrar"; valor: boolean }
+  /** `dados` = a foto já recortada e reduzida, em base64 (sem o prefixo data:). */
+  | { tipo: "foto"; dados: string; mime: string }
+  | { tipo: "removerFoto" };
+
+export interface ArmazemConta {
+  carregar(): Promise<Conta>;
+  agir(acao: AcaoConta): Promise<Conta>;
+}
+
 export interface Armazem {
   tipo: "local" | "remoto";
+  /** Conta (nome, foto, preferência do ranking, plano). */
+  conta?: ArmazemConta;
   carregar(): Promise<Painel>;
   agir(acao: Acao): Promise<RespostaAcao>;
   /** Bíblia (leitura, planos, notas, explicações): grátis e separada da jornada. */
@@ -32,6 +48,10 @@ export function criarArmazemRemoto(chamar: Chamada): Armazem {
   return {
     tipo: "remoto",
     biblia: criarBibliaRemoto(chamar),
+    conta: {
+      carregar: () => chamar<Conta>("/api/membros/chama-conta"),
+      agir: (a) => chamar<Conta>("/api/membros/chama-conta", { body: a.tipo === "nome" ? { acao: "nome", nome: a.nome } : a.tipo === "mostrar" ? { acao: "mostrar", valor: a.valor } : a.tipo === "foto" ? { acao: "foto", dados: a.dados } : { acao: "removerFoto" } }),
+    },
     carregar: () => chamar<Painel>("/api/membros/chama"),
     agir: (acao) => {
       const corpo =
@@ -54,6 +74,10 @@ interface Guardado {
   /** Dias somados ao relógio (só na bancada: simula a passagem do tempo). */
   deslocamento: number;
   pago: boolean;
+  /** Bancada: quantos membros "reais" simulados entram na liga (0 = nenhum). */
+  simulados?: number;
+  /** Conta local (nome, foto como data URL, preferência do ranking). */
+  conta?: { nome: string; foto: string | null; mostrar: boolean };
 }
 
 export interface Conteudo { dias: Dia[]; versiculos: Versiculo[]; ligas: ConfigLigas; textos: Texto[]; marcos?: Meta[]; missoes?: string[] }
@@ -69,6 +93,8 @@ export interface ArmazemLocal extends Armazem {
     definirChama(dias: number): void;
     /** Pula para a próxima segunda-feira 00h (fecha a semana da liga). */
     virarSemana(): void;
+    /** Entram N membros reais simulados na liga (com fotos e alguns anônimos); 0 desliga. Passando do mínimo, o ranking vira "real". */
+    simularMembros(n: number): void;
     /** Um amigo convidado completou o dia 1: +50 XP e 1 brasa. */
     simularAmigo(): void;
     ler(): { deslocamento: number; pago: boolean; hoje: string };
@@ -82,7 +108,7 @@ export const SEMENTE_LOCAL = "dev";
 
 export function criarArmazemLocal(
   chave: string,
-  opcoes: { buscarConteudo: () => Promise<Conteudo>; storage?: Mem; checkoutUrl?: string | null; ofertas?: OfertasChama; oferta365Url?: string | null; pagoInicial?: boolean; relogio?: () => string; conviteBase?: string },
+  opcoes: { buscarConteudo: () => Promise<Conteudo>; storage?: Mem; checkoutUrl?: string | null; ofertas?: OfertasChama; oferta365Url?: string | null; pagoInicial?: boolean; relogio?: () => string; conviteBase?: string; ligaRealMinimo?: number },
 ): ArmazemLocal {
   const k = `chama-acesa:v2:${chave}`;
   const st: Mem | undefined = opcoes.storage ?? (typeof window !== "undefined" ? window.localStorage : undefined);
@@ -112,15 +138,45 @@ export function criarArmazemLocal(
     return atualizarLiga(atualizarParaHoje(registrarAcesso(g.estado, hoje), hoje), hoje, SEMENTE_LOCAL, c.ligas);
   };
   const biblia = criarBibliaLocal(chave, { storage: st, hoje: () => hojeDe(ler()) });
+  const contaDe = (g: Guardado): Conta => ({ nome: g.conta?.nome ?? "Você", email: "voce@exemplo.com", foto: g.conta?.foto ?? null, mostrarNoRanking: g.conta?.mostrar !== false, plano: (g.pago ? "vitalicio" : "gratis") as PlanoChama });
+  const FOTOS = ["#f97316", "#22c55e", "#3b82f6", "#a855f7", "#ef4444", "#eab308"].map((cor) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${cor}'/><stop offset='1' stop-color='#0a0f1f'/></linearGradient></defs><rect width='64' height='64' fill='url(#g)'/><circle cx='32' cy='25' r='11' fill='#fff' fill-opacity='.85'/><path d='M10 64c2-16 12-22 22-22s20 6 22 22z' fill='#fff' fill-opacity='.85'/></svg>`)}`);
+  // Ranking real simulado (só bancada): reaproveita os nomes do ligas.json como "membros" com foto, e alguns que desligaram o ranking.
+  const rankingLocal = (g: Guardado, c: Conteudo, hoje: string) => {
+    if (!g.simulados || g.simulados < 1) return null;
+    const sem = inicioSemana(hoje);
+    const t = Math.min(7, diffDias(sem, hoje) + horaSP() / 24);
+    const bots = gerarBots(SEMENTE_LOCAL, sem, g.estado.liga.indice, { ...c.ligas, tamanho: Math.max(g.simulados + 1, 2) }).slice(0, g.simulados);
+    const outros: MembroRanking[] = bots.map((b, i) => ({ id: `sim-${i}`, nome: `${b.nome} Sobrenome`, foto: i % 4 === 3 ? null : FOTOS[i % FOTOS.length], mostrar: i % 5 !== 4, xp: xpDoBot(b, t) || 10 + i }));
+    const eu: MembroRanking = { id: "eu", nome: g.conta?.nome ?? "Você", foto: g.conta?.foto ?? null, mostrar: g.conta?.mostrar !== false, xp: g.estado.xpSemana[sem] ?? 0 };
+    return rankingReal([...outros, eu], "eu", sem, c.ligas, opcoes.ligaRealMinimo ?? MINIMO_PADRAO);
+  };
   const painel = (g: Guardado, c: Conteudo): Painel => ({
     estado: g.estado, hoje: hojeDe(g), hora: horaSP(), pago: g.pago, dias: diasLiberados(c.dias, g.pago), versiculos: c.versiculos, ligas: c.ligas,
-    semente: SEMENTE_LOCAL, nome: "Você", codigo: "dev12345", conviteBase: opcoes.conviteBase ?? "http://localhost:3000/membros/chama-dev",
+    semente: SEMENTE_LOCAL, nome: g.conta?.nome ? primeiroNome(g.conta.nome) : "Você", perfil: { foto: g.conta?.foto ?? null, mostrarNoRanking: g.conta?.mostrar !== false, plano: contaDe(g).plano }, ranking: rankingLocal(g, c, hojeDe(g)), codigo: "dev12345", conviteBase: opcoes.conviteBase ?? "http://localhost:3000/membros/chama-dev",
     checkoutUrl: opcoes.checkoutUrl ?? null, ofertas: opcoes.ofertas ?? { vitalicioUrl: null, mensalUrl: null, parcelaVitalicio: null },
     marcos: marcosLiberados(c.marcos ?? [], g.estado.maior), missoes: c.missoes ?? [], oferta365Url: opcoes.oferta365Url ?? null, exemplo: false,
   });
   return {
     tipo: "local",
     biblia,
+    conta: {
+      async carregar() {
+        return contaDe(ler());
+      },
+      async agir(a) {
+        const g = ler();
+        const atual = g.conta ?? { nome: "Você", foto: null, mostrar: true };
+        if (a.tipo === "nome") {
+          const v = validarNome(a.nome);
+          if (!v.ok) throw new Error(v.erro);
+          g.conta = { ...atual, nome: v.nome };
+        } else if (a.tipo === "mostrar") g.conta = { ...atual, mostrar: a.valor };
+        else if (a.tipo === "foto") g.conta = { ...atual, foto: `data:${a.mime};base64,${a.dados}` };
+        else g.conta = { ...atual, foto: null };
+        gravar(g);
+        return contaDe(g);
+      },
+    },
     async carregar() {
       const c = await opcoes.buscarConteudo();
       const g = ler();
@@ -158,6 +214,11 @@ export function criarArmazemLocal(
         const g = ler();
         const hoje = hojeDe(g);
         g.estado = { ...g.estado, chama: dias, maior: Math.max(g.estado.maior, dias), ultimaData: dias > 0 ? somarDias(hoje, -1) : null, diasAtivos: Math.max(g.estado.diasAtivos ?? 0, dias) };
+        gravar(g);
+      },
+      simularMembros(n) {
+        const g = ler();
+        g.simulados = Math.max(0, Math.floor(n));
         gravar(g);
       },
       ganharXp(n) {

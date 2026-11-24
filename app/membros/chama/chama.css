@@ -311,3 +311,19 @@
 .ch-meta-barra { height: 10px; border-radius: 999px; background: var(--ch-linha); overflow: hidden; margin: 10px 0 6px; }
 .ch-meta-barra i { display: block; height: 100%; background: linear-gradient(90deg, #ff8a1f, #ffd36b); border-radius: 999px; }
 .ch-pergunta { background: var(--ch-card); border-left: 4px solid var(--ch-ouro); border-radius: 12px; padding: 12px 14px; font-weight: 600; }
+
+/* Conta e avatares */
+.ch-avatar { border-radius: 50%; object-fit: cover; flex: none; display: inline-block; background: var(--ch-card); border: 2px solid var(--ch-linha); }
+.ch-avatar-ini { display: inline-flex; align-items: center; justify-content: center; font-family: var(--ch-f-titulo), sans-serif; color: #2a1200; background: linear-gradient(135deg, #ffd36b, #ff8a1f); border-color: transparent; }
+.ch-avatar-ini.anonimo { background: var(--ch-linha); color: var(--ch-suave); }
+.ch-conta { gap: 14px; }
+.ch-conta-foto { display: flex; align-items: center; gap: 16px; }
+.ch-conta-foto > div { display: grid; gap: 6px; justify-items: start; }
+.ch-campo { display: grid; gap: 6px; width: 100%; font-weight: 600; }
+.ch-campo input { font: inherit; background: var(--ch-card); color: inherit; border: 1px solid var(--ch-linha); border-radius: 12px; padding: 12px 14px; width: 100%; box-sizing: border-box; }
+.ch-campo input[readonly] { opacity: 0.7; }
+.ch-perfil-btn { position: absolute; top: 12px; right: 12px; background: none; border: 0; padding: 0; cursor: pointer; }
+.ch-topo { position: relative; }
+.ch-liga-linha { display: flex; gap: 10px; align-items: center; background: var(--ch-card); border-radius: 14px; padding: 8px 12px; border: 1px solid transparent; }
+.ch-liga-linha .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-liga-real { font-size: 13px; color: var(--ch-suave); }
