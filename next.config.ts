@@ -48,7 +48,7 @@ const nextConfig: NextConfig = {
           destination: "/membros/:area",
         },
         {
-          source: "/:area([a-z0-9][a-z0-9-]{1,59})/:page(admin|gratis)",
+          source: "/:area([a-z0-9][a-z0-9-]{1,59})/:page(admin|gratis|comece)",
           has: [{ type: "host", value: "membros.bagencymidia.site" }],
           destination: "/membros/:area/:page",
         },

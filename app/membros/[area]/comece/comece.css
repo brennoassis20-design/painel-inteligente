@@ -1,0 +1,63 @@
+/* Página de vendas do Chama Acesa: mobile primeiro, mesma identidade do app (azul-noite + chama). */
+html:has(.cm), body:has(.cm) { background: #0a0f1f; }
+.cm { --ch-bg: #0a0f1f; --ch-card: #141b33; --ch-card2: #1b2442; --ch-linha: #2a3560; --ch-fg: #f4f1ea; --ch-suave: #aab2cf; --ch-fogo: #ff8a1f; --ch-ouro: #ffc857;
+  min-height: 100vh; background: var(--ch-bg); color: var(--ch-fg); font-family: var(--ch-f-texto), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 17px; line-height: 1.55; padding-bottom: 96px; overflow-x: clip; }
+.cm *, .cm *::before, .cm *::after { box-sizing: border-box; }
+.cm main { max-width: 560px; margin: 0 auto; padding: 0 20px; }
+.cm h1, .cm h2 { font-family: var(--ch-f-titulo), system-ui, sans-serif; font-weight: 400; margin: 0 0 12px; letter-spacing: -0.01em; text-wrap: balance; }
+.cm h1 { font-size: 30px; line-height: 1.12; }
+.cm h2 { font-size: 24px; line-height: 1.2; }
+.cm p { margin: 0 0 12px; }
+.cm a:focus-visible, .cm summary:focus-visible { outline: 3px solid var(--ch-ouro); outline-offset: 3px; border-radius: 8px; }
+
+.cm-hero { position: relative; text-align: center; padding: 28px 0 36px; }
+.cm-hero::before { content: ""; position: absolute; top: 0; left: 50%; width: 340px; height: 280px; transform: translateX(-50%); background: radial-gradient(closest-side, #ff8a1f40, transparent); pointer-events: none; }
+.cm-chama { position: relative; display: flex; justify-content: center; margin-bottom: 8px; min-height: 120px; }
+.cm-etiqueta { position: relative; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ch-fogo); }
+.cm-sub { position: relative; color: var(--ch-suave); margin: 14px 0 22px; }
+.cm-mini { font-size: 14px; color: var(--ch-suave); margin: 12px 0 0; }
+.cm .cm-cta { width: 100%; }
+
+.cm-sec { padding: 28px 0; border-top: 1px solid var(--ch-linha); }
+.cm-prints { list-style: none; margin: 16px -20px 20px; padding: 4px 20px 12px; display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; }
+.cm-prints li { flex: 0 0 62%; max-width: 240px; scroll-snap-align: center; display: grid; gap: 8px; text-align: center; font-size: 14px; color: var(--ch-suave); }
+.cm-prints img { width: 100%; height: auto; border-radius: 18px; border: 1px solid var(--ch-linha); box-shadow: 0 10px 30px #0008; }
+.cm-recursos { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 10px; }
+.cm-recursos li { background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 16px; padding: 14px 16px; display: grid; gap: 2px; }
+.cm-recursos b { color: var(--ch-ouro); }
+.cm-recursos span { color: var(--ch-suave); font-size: 15px; }
+
+.cm-passos { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 12px; counter-reset: passo; }
+.cm-passos li { counter-increment: passo; position: relative; background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 18px; padding: 16px 16px 16px 66px; display: grid; gap: 2px; }
+.cm-passos li::before { content: counter(passo); position: absolute; left: 16px; top: 16px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(180deg, #ffb13d, #ff7a14); color: #2a1200; font-weight: 800; }
+.cm-passos span { color: var(--ch-suave); font-size: 15px; }
+
+.cm-faq { display: grid; gap: 10px; margin-top: 14px; }
+.cm-faq details { background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 16px; padding: 0 16px; }
+.cm-faq summary { cursor: pointer; min-height: 52px; display: flex; align-items: center; font-weight: 700; list-style: none; padding: 12px 0; }
+.cm-faq summary::-webkit-details-marker { display: none; }
+.cm-faq summary::after { content: "+"; margin-left: auto; padding-left: 12px; color: var(--ch-ouro); font-size: 22px; }
+.cm-faq details[open] summary::after { content: "–"; }
+.cm-faq p { color: var(--ch-suave); font-size: 16px; padding-bottom: 4px; }
+
+.cm-final { text-align: center; padding: 34px 0 40px; border-top: 1px solid var(--ch-linha); }
+.cm-final p { color: var(--ch-suave); }
+.cm-final .cm-mini { margin-top: 12px; }
+
+.cm-rodape { text-align: center; font-size: 13px; color: var(--ch-suave); padding: 0 20px 24px; }
+.cm-rodape p { margin: 0 0 4px; }
+
+/* barra fixa só no celular */
+.cm-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, #0a0f1f00, #0a0f1fee 30%); }
+.cm-barra .cm-cta { min-height: 54px; font-size: 18px; max-width: 520px; margin: 0 auto; display: flex; }
+
+@media (min-width: 768px) {
+  .cm main { max-width: 760px; }
+  .cm h1 { font-size: 40px; }
+  .cm-prints { margin-inline: 0; padding-inline: 0; justify-content: center; flex-wrap: wrap; overflow: visible; }
+  .cm-prints li { flex: 0 0 30%; max-width: 220px; }
+  .cm .cm-cta { max-width: 420px; margin-inline: auto; display: flex; }
+  .cm-barra { display: none; }
+  .cm { padding-bottom: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .cm *, .cm *::before { animation: none !important; } }
