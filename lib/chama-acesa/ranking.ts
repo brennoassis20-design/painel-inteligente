@@ -92,3 +92,13 @@ export function membrosDaLiga(perfis: PerfilRanking[], semana: string, indice: n
   }
   return out;
 }
+
+/**
+ * Liga mista (abaixo do mínimo do ranking real): os OUTROS membros reais ativos da liga, para entrarem no lugar de fictícios.
+ * Mesma regra de privacidade do ranking real (primeiro nome e foto, ou "Membro"). Limite: `vagas` (tamanho do grupo - 1), os de mais XP.
+ */
+export function outrosReais(membros: MembroRanking[], userId: string, vagas: number): Linha[] {
+  const unicos = [...new Map(membros.map((m) => [m.id, m])).values()].filter((m) => m.id !== userId && m.xp > 0);
+  unicos.sort((a, b) => b.xp - a.xp || a.id.localeCompare(b.id));
+  return unicos.slice(0, Math.max(0, vagas)).map((m) => ({ ...linhaPublica(m, false), xp: Math.max(0, Math.round(m.xp)), voce: false, posicao: 0 }));
+}

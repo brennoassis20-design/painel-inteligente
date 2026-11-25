@@ -263,7 +263,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
   const linkConvite = `${painel.conviteBase}?ref=${painel.codigo}`;
   const textoConvite = `Tô fazendo um desafio de 21 dias com Deus, 5 minutos por dia, e tô com ${estado.chama} ${estado.chama === 1 ? "dia" : "dias"} de chama acesa 🔥 Começa comigo, os primeiros dias são grátis: ${linkConvite}`;
-  const sit = situacaoNaLiga(estado, hoje, painel.hora, painel.semente, painel.ligas, painel.nome, painel.ranking);
+  const sit = situacaoNaLiga(estado, hoje, painel.hora, painel.semente, painel.ligas, painel.nome, painel.ranking, painel.outrosReais);
   const res = estado.liga.resultado;
 
   // ------------------------------------------------------------ vistas de tela cheia

@@ -92,8 +92,11 @@ export function xpDoBot(b: Bot, t: number): number {
 export interface Linha { nome: string; xp: number; voce: boolean; posicao: number; foto?: string | null; anonimo?: boolean }
 
 /** Classificação do grupo no instante t. Empate: a pessoa fica na frente. */
-export function classificar(xpUsuario: number, bots: Bot[], t: number, nomeUsuario = "Você"): Linha[] {
-  const todos = [{ nome: nomeUsuario, xp: xpUsuario, voce: true }, ...bots.map((b) => ({ nome: b.nome, xp: xpDoBot(b, t), voce: false }))];
+export function classificar(xpUsuario: number, bots: Bot[], t: number, nomeUsuario = "Você", outros: Linha[] = []): Linha[] {
+  // Liga mista: membros reais (abaixo do mínimo do ranking real) ocupam o lugar dos últimos fictícios; o grupo segue do mesmo tamanho.
+  const reais = outros.filter((o) => !o.voce).slice(0, bots.length).map((o) => ({ nome: o.nome, xp: Math.max(0, Math.round(o.xp)), voce: false, foto: o.foto ?? null, anonimo: !!o.anonimo }));
+  const usados = bots.slice(0, bots.length - reais.length);
+  const todos: Omit<Linha, "posicao">[] = [{ nome: nomeUsuario, xp: xpUsuario, voce: true }, ...reais, ...usados.map((b) => ({ nome: b.nome, xp: xpDoBot(b, t), voce: false }))];
   todos.sort((a, b) => b.xp - a.xp || Number(b.voce) - Number(a.voce) || a.nome.localeCompare(b.nome));
   return todos.map((l, i) => ({ ...l, posicao: i + 1 }));
 }
@@ -125,7 +128,7 @@ export function restanteSemana(t: number): { dias: number; horas: number } {
 // ------------------------------------------------------------------ virada de semana
 
 /** Fecha a semana guardada, aplica subida/descida e deixa o resultado esperando a pessoa ver. Idempotente. */
-export function atualizarLiga(e: Estado, hoje: string, semente_: string, cfg: ConfigLigas, real?: Linha[] | null): Estado {
+export function atualizarLiga(e: Estado, hoje: string, semente_: string, cfg: ConfigLigas, real?: Linha[] | null, outros?: Linha[] | null): Estado {
   const atual = inicioSemana(hoje);
   const l = e.liga;
   if (l.semana === atual) return e;
@@ -133,7 +136,7 @@ export function atualizarLiga(e: Estado, hoje: string, semente_: string, cfg: Co
   const xp = e.xpSemana[l.semana] ?? 0;
   // Ranking real (classificação final da semana que fechou, vinda do servidor) ou o grupo fictício.
   const reais = real && real.some((x) => x.voce) ? real : null;
-  const linhas = reais ?? classificar(xp, gerarBots(semente_, l.semana, l.indice, cfg), 7);
+  const linhas = reais ?? classificar(xp, gerarBots(semente_, l.semana, l.indice, cfg), 7, "Você", outros ?? []);
   const posicao = linhas.find((x) => x.voce)!.posicao;
   const zona = zonaDe(posicao, l.indice, reais ? { ...cfg, ...limitesReal(reais.length, cfg) } : cfg);
   const para = zona === "sobe" ? l.indice + 1 : zona === "desce" ? l.indice - 1 : l.indice;
@@ -144,12 +147,13 @@ export function atualizarLiga(e: Estado, hoje: string, semente_: string, cfg: Co
 }
 
 /** Situação atual da pessoa na liga (para a tela e para os lembretes). */
-export function situacaoNaLiga(e: Estado, hoje: string, hora: number, semente_: string, cfg: ConfigLigas, nome = "Você", real?: Linha[] | null) {
+export function situacaoNaLiga(e: Estado, hoje: string, hora: number, semente_: string, cfg: ConfigLigas, nome = "Você", real?: Linha[] | null, outros?: Linha[] | null) {
   const sem = inicioSemana(hoje);
   const t = Math.min(7, Math.max(0, (new Date(`${hoje}T00:00:00Z`).getTime() - new Date(`${sem}T00:00:00Z`).getTime()) / 86_400_000 + hora / 24));
   const reais = real && real.some((x) => x.voce) ? real : null;
-  const linhas = reais ?? classificar(e.xpSemana[sem] ?? 0, gerarBots(semente_, sem, e.liga.indice, cfg), t, nome);
+  const mistos = !reais && outros?.some((o) => !o.voce) ? outros : null;
+  const linhas = reais ?? classificar(e.xpSemana[sem] ?? 0, gerarBots(semente_, sem, e.liga.indice, cfg), t, nome, mistos ?? []);
   const eu = linhas.find((l) => l.voce)!;
   const limites: LimitesGrupo = reais ? limitesReal(reais.length, cfg) : { sobem: cfg.sobem, descem: cfg.descem, tamanho: cfg.tamanho };
-  return { linhas, modo: (reais ? "real" : "ficticio") as "real" | "ficticio", limites, posicao: eu.posicao, zona: zonaDe(eu.posicao, e.liga.indice, { ...cfg, ...limites }), t, liga: cfg.ligas[Math.min(e.liga.indice, cfg.ligas.length - 1)], restante: restanteSemana(t) };
+  return { linhas, modo: (reais ? "real" : mistos ? "misto" : "ficticio") as "real" | "misto" | "ficticio", limites, posicao: eu.posicao, zona: zonaDe(eu.posicao, e.liga.indice, { ...cfg, ...limites }), t, liga: cfg.ligas[Math.min(e.liga.indice, cfg.ligas.length - 1)], restante: restanteSemana(t) };
 }

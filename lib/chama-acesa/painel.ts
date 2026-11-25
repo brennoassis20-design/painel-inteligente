@@ -23,6 +23,8 @@ export interface Painel {
   perfil: { foto: string | null; mostrarNoRanking: boolean; plano: PlanoChama };
   /** Ranking real da semana (só primeiro nome, foto e XP) quando há membros suficientes na liga; null = ranking fictício. */
   ranking: Linha[] | null;
+  /** Liga mista: outros membros reais ativos da liga (abaixo do mínimo do ranking real), no lugar de fictícios. Opcional p/ painéis antigos. */
+  outrosReais?: Linha[] | null;
   /** Código de convite da pessoa e endereço do cadastro grátis (sem o ?ref=). */
   codigo: string;
   conviteBase: string;

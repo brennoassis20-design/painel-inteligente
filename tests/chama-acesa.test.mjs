@@ -24,7 +24,7 @@ import { montarDiaContinuo, ORACOES_CONTINUAS } from "../lib/chama-acesa/continu
 import { diasConcluidos, jornadaCompleta, MAX_DIA } from "../lib/chama-acesa/regras.ts";
 import { eduzz, kindDeContratoEduzz, statusDoAcesso } from "../lib/webhook-eduzz.ts";
 import { primeiroNome, validarNome, caminhoAvatar, podeMexerNoAvatar, validarAvatar, urlAvatar, BUCKET_AVATARES, MAX_FOTO_BYTES } from "../lib/chama-acesa/conta.ts";
-import { classificarReal, ligaNaSemana, ligaRealMinimo, linhaPublica, membrosDaLiga, montarGrupoReal, rankingReal } from "../lib/chama-acesa/ranking.ts";
+import { outrosReais, classificarReal, ligaNaSemana, ligaRealMinimo, linhaPublica, membrosDaLiga, montarGrupoReal, rankingReal } from "../lib/chama-acesa/ranking.ts";
 import { limitesReal, situacaoNaLiga } from "../lib/chama-acesa/ligas.ts";
 import { textosVitalicio, PARCELA_PADRAO } from "../lib/chama-acesa/precos.ts";
 
@@ -1228,4 +1228,29 @@ test("conta: plano mostrado (grátis, mensal, vitalício, admin)", () => {
   assert.equal(a([{ slug: "chama-acesa-21-dias", owned: true }]), "vitalicio");
   assert.equal(a([{ slug: "chama-acesa-21-dias", owned: true }, { slug: "chama-acesa-mensal", owned: true }]), "vitalicio"); // vitalício vence a mensal
   assert.equal(a([], true), "admin");
+});
+
+test("liga mista: membros reais abaixo do mínimo entram no lugar de fictícios", () => {
+  const cfg = normalizarLigas({ ligas: [{ id: "a", nome: "A" }, { id: "b", nome: "B" }], sobem: 7, descem: 5, tamanho_grupo: 30, nomes: Array.from({ length: 40 }, (_, i) => `Bot${i}`) });
+  const membros = [
+    { id: "eu", nome: "Brenno Lima", foto: null, mostrar: true, xp: 50 },
+    { id: "m1", nome: "Maria Souza", foto: "https://x/f.webp", mostrar: true, xp: 75 },
+    { id: "m2", nome: "João", foto: "https://x/j.webp", mostrar: false, xp: 10 },
+    { id: "m3", nome: "Zé", foto: null, mostrar: true, xp: 0 },
+  ];
+  const outros = outrosReais(membros, "eu", cfg.tamanho - 1);
+  assert.deepEqual(outros.map((o) => o.nome), ["Maria", "Membro"]); // sem a própria pessoa, sem XP 0, privacidade respeitada
+  assert.equal(outros[1].foto, null);
+  const bots = gerarBots("eu", "2026-11-23", 0, cfg);
+  const linhas = classificar(50, bots, 3, "Você", outros);
+  assert.equal(linhas.length, cfg.tamanho); // grupo continua com 30
+  assert.ok(linhas.some((l) => l.nome === "Maria" && l.xp === 75 && l.foto === "https://x/f.webp"));
+  assert.equal(linhas.filter((l) => l.voce).length, 1);
+  const e = { ...estadoVazio(), xpSemana: { "2026-11-23": 50 }, liga: { indice: 0, semana: "2026-11-23", historico: [], resultado: null } };
+  assert.equal(situacaoNaLiga(e, "2026-11-25", 12, "eu", cfg, "Você", null, outros).modo, "misto");
+  assert.equal(situacaoNaLiga(e, "2026-11-25", 12, "eu", cfg, "Você", null, null).modo, "ficticio");
+  // virada da semana usa a mesma liga mista
+  const virada = atualizarLiga(e, "2026-11-30", "eu", cfg, null, outros);
+  assert.equal(virada.liga.resultado.semana, "2026-11-23");
+  assert.equal(virada.liga.resultado.posicao, classificar(50, bots, 7, "Você", outros).find((l) => l.voce).posicao);
 });

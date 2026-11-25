@@ -6,7 +6,7 @@ import { codigoDe, carregarEstado, premiarConvidador, salvarEstado } from "@/lib
 import { diasLiberados, type Painel } from "@/lib/chama-acesa/painel";
 import { atualizarLiga, type Linha } from "@/lib/chama-acesa/ligas";
 import { carregarConta, membrosAtivos, type ContaGuardada } from "@/lib/chama-acesa/persistencia-conta";
-import { ligaRealMinimo, rankingReal, type MembroRanking } from "@/lib/chama-acesa/ranking";
+import { ligaRealMinimo, outrosReais, rankingReal, type MembroRanking } from "@/lib/chama-acesa/ranking";
 import { primeiroNome } from "@/lib/chama-acesa/conta";
 import { diasDasMetas, marcosLiberados } from "@/lib/chama-acesa/marcos";
 import { aplicarAcao, atualizarParaHoje, dataSP, horaSP, inicioSemana, registrarAcesso, type Acao, type Check, type Estado } from "@/lib/chama-acesa/regras";
@@ -34,20 +34,27 @@ async function membrosDaLiga(areaId: number, semana: string, indice: number) {
   return dados;
 }
 
-/** Ranking real da pessoa numa semana (null = ainda não há membros suficientes: vale o fictício). */
-async function rankingDaSemana(area: Area, user: User, conta: ContaGuardada, semana: string, indice: number, xp: number): Promise<Linha[] | null> {
+type RankingSemana = { real: Linha[] | null; outros: Linha[] | null };
+const SEM_RANKING: RankingSemana = { real: null, outros: null };
+
+/** Ranking da pessoa numa semana: `real` (liga só de membros, com o mínimo) ou `outros` (abaixo do mínimo: reais misturados aos fictícios). */
+async function rankingDaSemana(area: Area, user: User, conta: ContaGuardada, semana: string, indice: number, xp: number): Promise<RankingSemana> {
   const outros = await membrosDaLiga(area.id, semana, indice);
-  if (!outros) return null;
+  if (!outros) return SEM_RANKING;
+  const cfg = carregarLigas();
   const eu: MembroRanking = { id: user.id, nome: conta.nomeExibicao || conta.nomeAuth || user.name || null, foto: conta.foto, mostrar: conta.mostrarNoRanking, xp };
-  return rankingReal([...outros.filter((m) => m.id !== user.id), eu], user.id, semana, carregarLigas(), ligaRealMinimo());
+  const real = rankingReal([...outros.filter((m) => m.id !== user.id), eu], user.id, semana, cfg, ligaRealMinimo());
+  if (real) return { real, outros: null };
+  const mistos = outrosReais(outros, user.id, cfg.tamanho - 1);
+  return { real: null, outros: mistos.length ? mistos : null };
 }
 
-function painel(estado: Estado, hoje: string, user: User, area: Area, acesso: Awaited<ReturnType<typeof exigir>>, conta: ContaGuardada, ranking: Linha[] | null): Painel {
+function painel(estado: Estado, hoje: string, user: User, area: Area, acesso: Awaited<ReturnType<typeof exigir>>, conta: ContaGuardada, ranking: RankingSemana): Painel {
   const { dias, exemplo } = carregarDias();
   return {
     estado, hoje, hora: horaSP(), pago: acesso.pago, dias: diasLiberados(dias, acesso.pago), versiculos: carregarVersiculos(), ligas: carregarLigas(),
     semente: user.id, nome: primeiroNome(conta.nomeExibicao || conta.nomeAuth || user.name) === "Membro" ? "Você" : primeiroNome(conta.nomeExibicao || conta.nomeAuth || user.name),
-    perfil: { foto: conta.foto, mostrarNoRanking: conta.mostrarNoRanking, plano: acesso.plano }, ranking, codigo: codigoDe(user.id), conviteBase: `${areaUrl(area)}/gratis`,
+    perfil: { foto: conta.foto, mostrarNoRanking: conta.mostrarNoRanking, plano: acesso.plano }, ranking: ranking.real, outrosReais: ranking.outros, codigo: codigoDe(user.id), conviteBase: `${areaUrl(area)}/gratis`,
     checkoutUrl: acesso.checkoutUrl, ofertas: acesso.ofertas, marcos: marcosLiberados(carregarMarcos(), estado.maior), missoes: carregarMissoes(), oferta365Url: acesso.oferta365Url, exemplo,
   };
 }
@@ -56,13 +63,13 @@ function painel(estado: Estado, hoje: string, user: User, area: Area, acesso: Aw
 async function emDia(salvo: Estado, hoje: string, user: User, area: Area, conta: ContaGuardada) {
   // Semana que acabou: se havia ranking real, o resultado (subir/descer) sai dele; senão, do grupo fictício.
   const fechando = salvo.liga.semana && salvo.liga.semana !== inicioSemana(hoje) ? salvo.liga : null;
-  const real = fechando ? await rankingDaSemana(area, user, conta, fechando.semana!, fechando.indice, salvo.xpSemana[fechando.semana!] ?? 0).catch(() => null) : null;
-  return atualizarLiga(atualizarParaHoje(registrarAcesso(salvo, hoje), hoje), hoje, user.id, carregarLigas(), real);
+  const r = fechando ? await rankingDaSemana(area, user, conta, fechando.semana!, fechando.indice, salvo.xpSemana[fechando.semana!] ?? 0).catch(() => SEM_RANKING) : SEM_RANKING;
+  return atualizarLiga(atualizarParaHoje(registrarAcesso(salvo, hoje), hoje), hoje, user.id, carregarLigas(), r.real, r.outros);
 }
 
 async function rankingAtual(estado: Estado, hoje: string, user: User, area: Area, conta: ContaGuardada) {
   const semana = inicioSemana(hoje);
-  return rankingDaSemana(area, user, conta, semana, estado.liga.indice, estado.xpSemana[semana] ?? 0).catch(() => null);
+  return rankingDaSemana(area, user, conta, semana, estado.liga.indice, estado.xpSemana[semana] ?? 0).catch(() => SEM_RANKING);
 }
 
 export async function GET(request: Request) {
