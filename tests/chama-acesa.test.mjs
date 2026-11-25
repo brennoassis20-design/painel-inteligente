@@ -1295,3 +1295,8 @@ test("versículo do meio-dia: o mesmo para todos no dia, gira pelo banco, só qu
   const P = (id, acesso) => ({ user_id: id, chama_atual: 1, ultima_data: null, ultimo_acesso: acesso, horario_lembrete: null });
   assert.deepEqual(quemRecebeVersiculo([P("a", "2026-12-05"), P("b", "2026-11-21"), P("c", "2026-11-20"), P("d", null)], "2026-12-05").map((p) => p.user_id), ["a", "b"]);
 });
+
+test("lembretes: chama de 1 vira '1 dia', não '1 dias'", () => {
+  assert.equal(preencher("Sua chama de {dias} dias agradece", { dias: 1 }), "Sua chama de 1 dia agradece");
+  assert.equal(preencher("Sua chama de {dias} dias agradece", { dias: 11 }), "Sua chama de 11 dias agradece");
+});

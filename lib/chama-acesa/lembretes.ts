@@ -52,7 +52,11 @@ export function escolherTexto(textos: Texto[], cat: string, hist: Record<string,
 }
 
 export function preencher(modelo: string, vars: Record<string, string | number>): string {
-  return modelo.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? "")).replace(/\s+/g, " ").trim();
+  return modelo
+    .replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""))
+    .replace(/\b1 dias\b/g, "1 dia") // "{dias} dias" com chama de 1
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export interface Contexto {
