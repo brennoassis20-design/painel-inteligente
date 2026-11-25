@@ -8,7 +8,7 @@ import { PROGRESSAO } from "../lib/chama-acesa/musica-oracao.ts";
 import { normalizarDias } from "../lib/chama-acesa/dias.ts";
 import { montarSessao, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
 import { atualizarLiga, classificar, gerarBots, normalizarLigas, xpDoBot, zonaDe } from "../lib/chama-acesa/ligas.ts";
-import { ligaDoLembrete, montarMensagem, categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio } from "../lib/chama-acesa/lembretes.ts";
+import { ligaDoLembrete, montarMensagem, categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio, versiculoDoDia, quemRecebeVersiculo, mensagemVersiculo } from "../lib/chama-acesa/lembretes.ts";
 import { LIVROS_BIBLIA } from "../lib/chama-acesa/biblia-planos-dados.ts";
 import {
   aplicarBiblia, agruparNotasPorLivro, capitulosDosTrechos, diaDoPlano, estadoBibliaVazio, filtrarNotas, montarMensagemBiblia, nomeDosTrechos, PLANOS,
@@ -185,12 +185,17 @@ test("conteúdo: normaliza o dias.json e descarta lixo", () => {
 const TEXTOS = normalizarTextos(JSON.parse(readFileSync(new URL("../lib/chama-acesa/lembretes-textos.json", import.meta.url), "utf8")));
 const CFG_L = normalizarLigas({ ligas: Array.from({ length: 4 }, (_, i) => ({ id: `l${i}`, nome: `L${i}` })), nomes: Array.from({ length: 60 }, (_, i) => `Nome ${i}`) });
 
-test("lembretes: manhã na hora escolhida, noite às 21h, só quem ligou e não completou hoje", () => {
+test("lembretes: manhã só na hora escolhida e sem o dia feito; noite às 21h para todos (feito = dia seguinte)", () => {
   const hoje = "2026-12-05";
   const P = (id, h, ult, n = 3, acesso = "2026-12-04") => ({ user_id: id, nome: "Ana Silva", chama_atual: n, ultima_data: ult, ultimo_acesso: acesso, horario_lembrete: h, dias_feitos: 3, xp_semana: {}, lembretes_hist: {} });
   const perfis = [P("a", "07:00", "2026-12-04"), P("b", "07:30", hoje, 3, hoje), P("c", null, "2026-12-04"), P("d", "21:00", "2026-12-04"), P("e", "09:00", "2026-12-04")];
   assert.deepEqual(quemRecebe(perfis, "07", hoje, TEXTOS, CFG_L).map((x) => [x.perfil.user_id, x.mensagem.tipo]), [["a", "manha"]]);
-  assert.deepEqual(quemRecebe(perfis, "21", hoje, TEXTOS, CFG_L).map((x) => [x.perfil.user_id, x.mensagem.tipo]), [["a", "noite"], ["d", "noite"], ["e", "noite"]]);
+  assert.deepEqual(quemRecebe(perfis, "21", hoje, TEXTOS, CFG_L).map((x) => [x.perfil.user_id, x.mensagem.categoria === "noite_feito"]), [["a", false], ["b", true], ["c", false], ["d", false], ["e", false]]);
+  const feito = quemRecebe(perfis, "21", hoje, TEXTOS, CFG_L).find((x) => x.perfil.user_id === "b").mensagem;
+  assert.match(feito.titulo + feito.corpo, /4|Boa noite|Brasinha|dias de chama/);
+  assert.ok(!/[{}]/.test(feito.titulo + feito.corpo));
+  // Nunca fez nenhum dia e não ligou lembrete: nada à noite.
+  assert.deepEqual(quemRecebe([{ ...P("z", null, null, 0), dias_feitos: 0 }], "21", hoje, TEXTOS, CFG_L), []);
   assert.deepEqual(quemRecebe(perfis, "15", hoje, TEXTOS, CFG_L), []);
   const m = quemRecebe(perfis, "21", hoje, TEXTOS, CFG_L)[0].mensagem;
   assert.ok(!/[{}]/.test(m.titulo + m.corpo), "variáveis preenchidas");
@@ -1278,4 +1283,15 @@ test("lembrete de risco de descer usa a mesma liga do app (real com o mínimo, m
   const m = montarMensagem(eu, "manha", hoje, 7, textos, cfg, () => 0, undefined, muitos);
   assert.equal(m.categoria, "liga_risco_descer");
   assert.equal(m.corpo, "Você está em 10º");
+});
+
+test("versículo do meio-dia: o mesmo para todos no dia, gira pelo banco, só quem abriu em 14 dias", () => {
+  const vs = [{ referencia: "A 1:1", texto: "um" }, { referencia: "B 2:2", texto: "dois" }, { referencia: "C 3:3", texto: "três" }];
+  const a = versiculoDoDia(vs, "2026-12-05"), b = versiculoDoDia(vs, "2026-12-06");
+  assert.ok(a && b && a !== b);
+  assert.equal(versiculoDoDia(vs, "2026-12-05"), a);
+  assert.equal(versiculoDoDia([], "2026-12-05"), null);
+  assert.equal(mensagemVersiculo(a).corpo.includes(a.referencia), true);
+  const P = (id, acesso) => ({ user_id: id, chama_atual: 1, ultima_data: null, ultimo_acesso: acesso, horario_lembrete: null });
+  assert.deepEqual(quemRecebeVersiculo([P("a", "2026-12-05"), P("b", "2026-11-21"), P("c", "2026-11-20"), P("d", null)], "2026-12-05").map((p) => p.user_id), ["a", "b"]);
 });

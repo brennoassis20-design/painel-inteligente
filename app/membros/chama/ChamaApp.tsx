@@ -14,6 +14,7 @@ import { situacaoDoPlano } from "@/lib/chama-acesa/biblia-estudo";
 import { situacaoNaLiga } from "@/lib/chama-acesa/ligas";
 import { montarSessao, type Pergunta } from "@/lib/chama-acesa/pratica";
 import { InstalarApp, useVisaoInstalar, type ForcarInstalacao } from "./Instalar";
+import { pushPermission } from "../app";
 import { compartilharCartao, gerarCartao, gerarPapelDeParede } from "@/lib/chama-acesa/cartao";
 import { atualizarSelo, completouHoje } from "@/lib/chama-acesa/selo";
 import { tagLink } from "@/lib/membros-utm";
@@ -88,6 +89,8 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
   const [convidar, setConvidar] = useState(false);
   const [cartaoInstalarFechado, setCartaoInstalarFechado] = useState(false);
   const visaoInstalar = useVisaoInstalar(instalarForcar);
+  // Popup dos avisos: aparece uma vez por dia (no aparelho) até a pessoa ativar as notificações.
+  const [popupAvisos, setPopupAvisos] = useState(false);
   // Tema: claro é o padrão para todo mundo; a escolha fica salva no aparelho (localStorage).
   const [tema, setTema] = useState<Tema>(() => lerTema());
   useEffect(() => aplicarTemaNaPagina(tema), [tema]);
@@ -123,6 +126,19 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
       .catch((e) => setErro(e instanceof Error ? e.message : "Não deu para carregar a sua chama."));
   }, [armazem]);
   useEffect(() => carregar(), [carregar]);
+  useEffect(() => {
+    if (!painel || !onAtivarPush || diasConcluidos(painel.estado) < 1) return;
+    if (pushPermission() === "granted") return;
+    const chave = "chama-popup-avisos";
+    try {
+      if (localStorage.getItem(chave) === painel.hoje) return;
+      localStorage.setItem(chave, painel.hoje);
+    } catch {
+      /* sem armazenamento: mostra mesmo assim */
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- decide uma vez por dia, depois de carregar
+    setPopupAvisos(true);
+  }, [painel, onAtivarPush]);
 
   // Depois do dia 21 a Palavra do dia é o capítulo do plano de leitura ativo (se houver): vem do armazém da Bíblia.
   const [leitura, setLeitura] = useState<LeituraPlano | null>(null);
@@ -347,7 +363,15 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         }}
         instalarForcar={instalarForcar}
         semPush={!onAtivarPush}
-        onDepois={() => irPara({ v: "abas" })}
+        onDepois={() => {
+          // Já perguntou hoje: o popup dos avisos só volta amanhã.
+          try {
+            localStorage.setItem("chama-popup-avisos", painel.hoje);
+          } catch {
+            /* segue */
+          }
+          irPara({ v: "abas" });
+        }}
       />
     );
   } else if (vista.v === "celebracao") {
@@ -734,6 +758,25 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         </div>
       </nav>
       {convidar && <ConviteSheet texto={textoConvite} link={linkConvite} onFechar={() => setConvidar(false)} chama={estado.chama} />}
+      {popupAvisos && !convidar && onAtivarPush && (
+        <PopupAvisos
+          chama={estado.chama}
+          horario={estado.lembrete}
+          instalarForcar={instalarForcar}
+          onFechar={() => setPopupAvisos(false)}
+          onAtivar={async (horario) => {
+            try {
+              await onAtivarPush();
+            } catch (e) {
+              if (horario !== estado.lembrete) await agir({ tipo: "lembrete", horario });
+              throw e;
+            }
+            if (horario !== estado.lembrete) await agir({ tipo: "lembrete", horario });
+            setPopupAvisos(false);
+            toast("Avisos ligados. A chama vai te chamar.");
+          }}
+        />
+      )}
       {xpPop && <div className="ch-xp-pop" key={xpPop.k} aria-live="polite">+{xpPop.n} XP</div>}
       {aviso && <p className="ch-toast" role="status">{aviso}</p>}
     </Raiz>
@@ -1018,6 +1061,49 @@ function Lembrete({ chama, onSalvar, onDepois, semPush, instalarForcar }: { cham
         Ativar o lembrete
       </button>
       <button type="button" className="ch-link" onClick={onDepois}>Agora não</button>
+    </div>
+  );
+}
+
+function PopupAvisos({ chama, horario, instalarForcar, onAtivar, onFechar }: { chama: number; horario: string | null; instalarForcar: ForcarInstalacao; onAtivar: (h: string) => Promise<void>; onFechar: () => void }) {
+  const [hora, setHora] = useState(horario ?? "07:00");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const negado = pushPermission() === "denied";
+  return (
+    <div className="ch-sheet" role="dialog" aria-modal="true" aria-label="Ativar os avisos">
+      <div>
+        <div className="ch-mascote"><Chama dias={Math.max(chama, 1)} tamanho={64} /><small>A Brasinha</small></div>
+        <h2>Deixa a chama te chamar</h2>
+        <p className="ch-suave">Com os avisos ligados você recebe um versículo ao meio-dia, o lembrete na hora que escolher e, à noite, o que vem no dia seguinte.</p>
+        {negado ? (
+          <p className="ch-nota">
+            Os avisos estão bloqueados neste celular. <b>iPhone:</b> Ajustes › Notificações › Chama Acesa › Permitir. <b>Android:</b> segure o ícone do app › Informações › Notificações › Permitir. Depois toque em Ativar.
+          </p>
+        ) : (
+          <InstalarApp forcar={instalarForcar} motivo="No iPhone os avisos só chegam com o app na tela de início. Instale, abra por lá e ative." />
+        )}
+        <label className="ch-hora">
+          <span>Lembrete diário</span>
+          <input type="time" value={hora} onChange={(e) => setHora(e.target.value || "07:00")} />
+        </label>
+        <button
+          type="button"
+          className="ch-btn ch-btn-grande"
+          disabled={enviando}
+          onClick={() => {
+            setEnviando(true);
+            setErro("");
+            void onAtivar(hora)
+              .catch((e) => setErro(e instanceof Error ? e.message : "Não deu para ligar os avisos."))
+              .finally(() => setEnviando(false));
+          }}
+        >
+          Ativar os avisos
+        </button>
+        {erro && <p className="ch-nota" role="status">{erro}</p>}
+        <button type="button" className="ch-link" onClick={onFechar}>Agora não</button>
+      </div>
     </div>
   );
 }

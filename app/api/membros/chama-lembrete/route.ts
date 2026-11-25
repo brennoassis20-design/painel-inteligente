@@ -3,9 +3,9 @@ import { areaUrl, getArea } from "@/lib/membros";
 import { pushParaUsuarios } from "@/lib/membros-avisos";
 import { areaDoChama } from "@/lib/chama-acesa/acesso-regra";
 import { rodarCobranca } from "@/lib/chama-acesa/cobranca";
-import { carregarLigas, carregarMarcos, carregarTextos } from "@/lib/chama-acesa/conteudo-servidor";
+import { carregarLigas, carregarMarcos, carregarTextos, carregarVersiculos } from "@/lib/chama-acesa/conteudo-servidor";
 import { diasDasMetas } from "@/lib/chama-acesa/marcos";
-import { quemRecebe, registrarEnvio, type PerfilLembrete } from "@/lib/chama-acesa/lembretes";
+import { HORA_VERSICULO, mensagemVersiculo, quemRecebe, quemRecebeVersiculo, registrarEnvio, versiculoDoDia, type PerfilLembrete } from "@/lib/chama-acesa/lembretes";
 import { ligaRealMinimo, type PerfilRanking } from "@/lib/chama-acesa/ranking";
 import { dataSP, inicioSemana } from "@/lib/chama-acesa/regras";
 import { quemRecebeBiblia } from "@/lib/chama-acesa/biblia-estudo";
@@ -15,10 +15,11 @@ export const maxDuration = 60;
 
 // Lembretes do Chama Acesa. PRECISA SER CHAMADO DE HORA EM HORA (cron externo ou Vercel Pro: "0 * * * *").
 // Ainda NÃO está em vercel.json de propósito. Mesmo segredo dos outros crons (CRON_SECRET).
-// A cada hora: (1) lembrete da hora escolhida pela pessoa e o das 21h (São Paulo), só para quem ainda não completou o dia,
-// com categoria e texto sorteados pela situação (lembretes-textos.json); (2) na hora CHAMA_COBRANCA_HORA (padrão 10), a
+// A cada hora: (1) lembrete da hora escolhida pela pessoa (só quem não completou o dia) e o das 21h (São Paulo): quem não fez
+// recebe o de risco, quem já fez recebe o do dia seguinte (noite_feito); categoria e texto sorteados pela situação (lembretes-textos.json); (2) na hora CHAMA_COBRANCA_HORA (padrão 10), a
 // cobrança do dia 4 (push + e-mail) para quem completou o dia 3 ontem e não comprou. (3) Lembrete da LEITURA DA BÍBLIA, no horário que
 // a pessoa escolheu na aba Bíblia (separado do lembrete da jornada; não manda se já leu hoje; erro aqui nunca derruba os outros). ?dry=1 só conta e mostra a prévia; ?hora=07 força a hora.
+// (4) Às 12h (CHAMA_VERSICULO_HORA) o versículo do dia para quem abriu o app nos últimos 14 dias; ?versiculo=1 força.
 // Aceita o CRON_SECRET (crons da Vercel) ou o CHAMA_CRON_SECRET, próprio do timer da VPS: o CRON_SECRET é variável
 // sensível na Vercel e não sai em `vercel env pull`, então a VPS usa uma senha só dela.
 function authorized(request: Request) {
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     const area = await getArea(areaDoChama());
     const textos = carregarTextos();
     const perfis = await supabaseRest<PerfilLembrete[]>(
-      `/chama_perfil?area_id=eq.${area.id}&horario_lembrete=not.is.null&select=user_id,nome,chama_atual,maior_chama,ultima_data,ultimo_acesso,horario_lembrete,dias_feitos,xp_semana,liga,lembretes_hist`,
+      `/chama_perfil?area_id=eq.${area.id}&select=user_id,nome,chama_atual,maior_chama,ultima_data,ultimo_acesso,horario_lembrete,dias_feitos,xp_semana,liga,lembretes_hist`,
     );
     // Liga igual à do app (real ou mista). Se a leitura falhar, o lembrete segue com a liga fictícia.
     const liga = await supabaseRest<PerfilRanking[]>(
@@ -73,9 +74,22 @@ export async function GET(request: Request) {
       console.error("chama-lembrete-biblia", e);
       biblia = { alvos: 0, enviados: 0, erro: e instanceof Error ? e.message.slice(0, 200) : "erro" };
     }
+    // Versículo do meio-dia (CHAMA_VERSICULO_HORA, padrão 12): o mesmo para todos, a quem abriu o app nos últimos 14 dias.
+    let versiculo: { alvos: number; enviados: number; previa?: { titulo: string; corpo: string } } = { alvos: 0, enviados: 0 };
+    const horaVersiculo = String(process.env.CHAMA_VERSICULO_HORA || HORA_VERSICULO).padStart(2, "0");
+    if (hora === horaVersiculo || params.get("versiculo") === "1") {
+      const v = versiculoDoDia(carregarVersiculos(), hoje);
+      const alvos = v ? quemRecebeVersiculo(perfis, hoje) : [];
+      versiculo = { alvos: alvos.length, enviados: 0 };
+      if (v && dry) versiculo.previa = mensagemVersiculo(v);
+      else if (v && alvos.length) {
+        const m = mensagemVersiculo(v);
+        versiculo.enviados = await pushParaUsuarios(area.id, alvos.map((p) => p.user_id), { title: m.titulo, body: m.corpo, url: `${areaUrl(area)}/?app=1`, tag: "chama-versiculo" });
+      }
+    }
     const horaCobranca = String(process.env.CHAMA_COBRANCA_HORA || "10").padStart(2, "0");
     const cobranca = hora === horaCobranca || params.get("cobranca") === "1" ? await rodarCobranca(area, hoje, textos, dry) : null;
-    return Response.json({ dry, hora, alvos: entregas.length, enviados, biblia, cobranca, ...(dry ? { previa: entregas.slice(0, 20).map((e) => ({ categoria: e.mensagem.categoria, titulo: e.mensagem.titulo, corpo: e.mensagem.corpo })) } : {}) });
+    return Response.json({ dry, hora, alvos: entregas.length, enviados, versiculo, biblia, cobranca, ...(dry ? { previa: entregas.slice(0, 20).map((e) => ({ categoria: e.mensagem.categoria, titulo: e.mensagem.titulo, corpo: e.mensagem.corpo })) } : {}) });
   } catch (error) {
     console.error("chama-lembrete", error);
     return jsonError(error instanceof Error ? error.message : "Erro no lembrete.", 500);

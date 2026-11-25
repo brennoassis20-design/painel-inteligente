@@ -68,6 +68,8 @@ export interface Contexto {
   sobem: number;
   /** Dias das metas (marcos.json). Sem isso vale a lista padrão. */
   diasMetas?: readonly number[];
+  /** Já completou o dia de hoje (à noite recebe o lembrete do dia seguinte). */
+  feitoHoje?: boolean;
 }
 
 /** Quantos dias sem abrir o app. */
@@ -80,6 +82,7 @@ export function diasSemAbrir(c: Pick<Contexto, "hoje" | "ultimoAcesso" | "ultima
 export function categoriaDoLembrete(c: Contexto): string | null {
   const sumido = diasSemAbrir(c);
   if (c.tipo === "noite") {
+    if (c.feitoHoje) return "noite_feito";
     if (sumido >= 2) return null;
     if (c.chama >= 7) return "chama_alta_risco";
     if (c.zona === "desce") return "liga_risco_descer";
@@ -122,7 +125,7 @@ export function montarMensagem(p: PerfilLembrete, tipo: Tipo, hoje: string, hora
   const sit = situacaoNaLiga(e, hoje, hora, p.user_id, cfg, p.nome ?? "Você", real, outros);
   const ctx: Contexto = {
     tipo, hoje, chama: p.chama_atual, maior: p.maior_chama ?? p.chama_atual, ultimaData: p.ultima_data, ultimoAcesso: p.ultimo_acesso ?? null,
-    diasFeitos: p.dias_feitos ?? 0, posicao: sit.posicao, zona: sit.zona, sobem: cfg.sobem, diasMetas,
+    diasFeitos: p.dias_feitos ?? 0, posicao: sit.posicao, zona: sit.zona, sobem: cfg.sobem, diasMetas, feitoHoje: p.ultima_data === hoje,
   };
   const cat = categoriaDoLembrete(ctx);
   if (!cat) return null;
@@ -138,19 +141,47 @@ export function montarMensagem(p: PerfilLembrete, tipo: Tipo, hoje: string, hora
 }
 
 /**
- * Quem recebe agora (hora = "HH" em São Paulo, hoje = AAAA-MM-DD). Só quem ligou o lembrete (tem horário) e ainda não completou hoje.
- * Manhã: a hora escolhida. Noite: 21h (quem escolheu 21h recebe só o da noite). A categoria e o texto vêm da situação da pessoa.
+ * Quem recebe agora (hora = "HH" em São Paulo, hoje = AAAA-MM-DD).
+ * Manhã: só quem escolheu um horário e ainda não completou hoje. Noite (21h): todo mundo; quem já fez o dia recebe
+ * o lembrete do dia seguinte (noite_feito), quem não fez recebe o de risco. Quem escolheu 21h recebe só o da noite.
+ * O push só chega a quem tem o aparelho inscrito; sem inscrição a entrega vira 0.
  */
 export function quemRecebe(perfis: PerfilLembrete[], hora: string, hoje: string, textos: Texto[], cfg: ConfigLigas, diasMetas: readonly number[] = DIAS_METAS_PADRAO, liga?: LigaReal): Entrega[] {
   const out: Entrega[] = [];
   for (const p of perfis) {
-    if (!p.horario_lembrete || p.ultima_data === hoje) continue;
-    const tipo: Tipo | null = hora === String(HORA_NOITE) ? "noite" : p.horario_lembrete.slice(0, 2) === hora ? "manha" : null;
-    if (!tipo) continue;
+    const noite = hora === String(HORA_NOITE);
+    if (!noite && (!p.horario_lembrete || p.ultima_data === hoje || p.horario_lembrete.slice(0, 2) !== hora)) continue;
+    // Quem nunca fez nenhum dia não recebe o "boa noite, amanhã é o dia 2".
+    if (noite && p.ultima_data !== hoje && !p.horario_lembrete && !(p.dias_feitos ?? 0)) continue;
+    const tipo: Tipo = noite ? "noite" : "manha";
     const mensagem = montarMensagem(p, tipo, hoje, Number(hora), textos, cfg, undefined, diasMetas, liga);
     if (mensagem) out.push({ perfil: p, mensagem });
   }
   return out;
+}
+
+// ------------------------------------------------------------------ versículo do meio-dia
+
+export const HORA_VERSICULO = 12;
+export interface VersiculoAviso { referencia: string; texto: string }
+
+/** O mesmo versículo para todo mundo no dia, girando pelo banco sem repetir até dar a volta. */
+export function versiculoDoDia<T extends VersiculoAviso>(versiculos: T[], hoje: string): T | null {
+  if (!versiculos.length) return null;
+  const dia = Math.floor(Date.parse(`${hoje}T00:00:00Z`) / 86_400_000);
+  return versiculos[((dia % versiculos.length) + versiculos.length) % versiculos.length];
+}
+
+/** Quem recebe o versículo: todo mundo da área que abriu o app nos últimos 14 dias. */
+export function quemRecebeVersiculo(perfis: PerfilLembrete[], hoje: string): PerfilLembrete[] {
+  return perfis.filter((p) => {
+    const ref = p.ultimo_acesso ?? p.ultima_data;
+    return ref ? diffDias(ref, hoje) <= MAX_DIAS_SUMIDO : false;
+  });
+}
+
+export function mensagemVersiculo(v: VersiculoAviso): { titulo: string; corpo: string } {
+  return { titulo: "📖 Palavra do meio-dia", corpo: `“${v.texto}” ${v.referencia}` };
 }
 
 /** Marca a mensagem como enviada no histórico (e poda o que passou de 14 dias). */
