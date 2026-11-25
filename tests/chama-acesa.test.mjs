@@ -8,7 +8,7 @@ import { PROGRESSAO } from "../lib/chama-acesa/musica-oracao.ts";
 import { normalizarDias } from "../lib/chama-acesa/dias.ts";
 import { montarSessao, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
 import { atualizarLiga, classificar, gerarBots, normalizarLigas, xpDoBot, zonaDe } from "../lib/chama-acesa/ligas.ts";
-import { categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio } from "../lib/chama-acesa/lembretes.ts";
+import { ligaDoLembrete, montarMensagem, categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio } from "../lib/chama-acesa/lembretes.ts";
 import { LIVROS_BIBLIA } from "../lib/chama-acesa/biblia-planos-dados.ts";
 import {
   aplicarBiblia, agruparNotasPorLivro, capitulosDosTrechos, diaDoPlano, estadoBibliaVazio, filtrarNotas, montarMensagemBiblia, nomeDosTrechos, PLANOS,
@@ -1253,4 +1253,29 @@ test("liga mista: membros reais abaixo do mínimo entram no lugar de fictícios"
   const virada = atualizarLiga(e, "2026-11-30", "eu", cfg, null, outros);
   assert.equal(virada.liga.resultado.semana, "2026-11-23");
   assert.equal(virada.liga.resultado.posicao, classificar(50, bots, 7, "Você", outros).find((l) => l.voce).posicao);
+});
+
+test("lembrete de risco de descer usa a mesma liga do app (real com o mínimo, mista abaixo dele)", () => {
+  const cfg = normalizarLigas({ ligas: [{ id: "a", nome: "A" }, { id: "b", nome: "B" }, { id: "c", nome: "C" }], sobem: 7, descem: 5, tamanho_grupo: 30, nomes: Array.from({ length: 40 }, (_, i) => `Bot${i}`) });
+  const sem = "2026-11-23", hoje = "2026-11-28";
+  const liga = { indice: 1, semana: sem, historico: [], resultado: null };
+  const perfil = (id, xp) => ({ user_id: id, nome: id, nome_exibicao: null, foto_url: null, mostrar_no_ranking: true, xp_semana: { [sem]: xp }, liga });
+  const eu = { user_id: "eu", nome: "Eu", chama_atual: 3, ultima_data: "2026-11-27", ultimo_acesso: "2026-11-27", horario_lembrete: "07:00", xp_semana: { [sem]: 5 }, liga };
+  const e = { ...estadoVazio(), xpSemana: eu.xp_semana, liga };
+  // Sem dados reais: fictício (nada muda).
+  assert.deepEqual(ligaDoLembrete(eu, e, hoje, cfg), { real: null, outros: null });
+  // Abaixo do mínimo: mista, sem a própria pessoa.
+  const poucos = { perfis: [perfil("eu", 5), perfil("a", 90), perfil("b", 80)], minimo: 10 };
+  const mista = ligaDoLembrete(eu, e, hoje, cfg, poucos);
+  assert.equal(mista.real, null);
+  assert.equal(mista.outros.length, 2);
+  // Com o mínimo: ranking real de 10; com 5 XP a pessoa é a última → zona de descer → texto de risco.
+  const muitos = { perfis: [perfil("eu", 5), ...Array.from({ length: 9 }, (_, i) => perfil(`m${i}`, 100 + i))], minimo: 10 };
+  const real = ligaDoLembrete(eu, e, hoje, cfg, muitos);
+  assert.equal(real.real.length, 10);
+  assert.equal(real.real.find((l) => l.voce).posicao, 10);
+  const textos = [{ cat: "liga_risco_descer", tom: "t", titulo: "Risco", corpo: "Você está em {posicao}º" }, { cat: "manha_normal", tom: "t", titulo: "Bom dia", corpo: "x" }];
+  const m = montarMensagem(eu, "manha", hoje, 7, textos, cfg, () => 0, undefined, muitos);
+  assert.equal(m.categoria, "liga_risco_descer");
+  assert.equal(m.corpo, "Você está em 10º");
 });

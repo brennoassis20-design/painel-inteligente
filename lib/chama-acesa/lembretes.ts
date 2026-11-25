@@ -2,7 +2,8 @@
 // a rota /api/membros/chama-lembrete só executa o que sai daqui.
 import { aleatorio, situacaoNaLiga, type ConfigLigas } from "./ligas.ts";
 import { DIAS_METAS_PADRAO, ehMeta, proximaMeta } from "./marcos.ts";
-import { diffDias, estadoVazio, type Estado, type LigaEstado } from "./regras.ts";
+import { diffDias, estadoVazio, inicioSemana, type Estado, type LigaEstado } from "./regras.ts";
+import { MINIMO_PADRAO, membrosDaLiga, outrosReais, rankingReal, type PerfilRanking } from "./ranking.ts";
 
 export interface Texto { cat: string; tom: string; titulo: string; corpo: string }
 export type Tipo = "manha" | "noite";
@@ -99,10 +100,26 @@ export function categoriaDoLembrete(c: Contexto): string | null {
 export interface Mensagem { tipo: Tipo | "checkout"; categoria: string; chave: string; titulo: string; corpo: string }
 export interface Entrega { perfil: PerfilLembrete; mensagem: Mensagem }
 
+/** Membros reais da área (ativos na semana) para o lembrete usar a MESMA liga que a pessoa vê no app (real, mista ou fictícia). */
+export interface LigaReal { perfis: PerfilRanking[]; minimo?: number }
+
+/** Mesma regra da rota do app: ranking real com o mínimo; abaixo dele, os outros reais no lugar de fictícios. */
+export function ligaDoLembrete(p: PerfilLembrete, e: Estado, hoje: string, cfg: ConfigLigas, liga?: LigaReal) {
+  if (!liga) return { real: null, outros: null };
+  const semana = inicioSemana(hoje);
+  const membros = membrosDaLiga(liga.perfis, semana, e.liga.indice).filter((m) => m.id !== p.user_id);
+  const eu = { id: p.user_id, nome: p.nome ?? null, foto: null, mostrar: true, xp: e.xpSemana[semana] ?? 0 };
+  const real = rankingReal([...membros, eu], p.user_id, semana, cfg, liga.minimo ?? MINIMO_PADRAO);
+  if (real) return { real, outros: null };
+  const outros = outrosReais(membros, p.user_id, cfg.tamanho - 1);
+  return { real: null, outros: outros.length ? outros : null };
+}
+
 /** Monta a mensagem de um perfil num horário (ou null se não deve receber). */
-export function montarMensagem(p: PerfilLembrete, tipo: Tipo, hoje: string, hora: number, textos: Texto[], cfg: ConfigLigas, rnd?: () => number, diasMetas: readonly number[] = DIAS_METAS_PADRAO): Mensagem | null {
+export function montarMensagem(p: PerfilLembrete, tipo: Tipo, hoje: string, hora: number, textos: Texto[], cfg: ConfigLigas, rnd?: () => number, diasMetas: readonly number[] = DIAS_METAS_PADRAO, liga?: LigaReal): Mensagem | null {
   const e: Estado = { ...estadoVazio(), chama: p.chama_atual, xpSemana: p.xp_semana ?? {}, liga: p.liga ?? estadoVazio().liga };
-  const sit = situacaoNaLiga(e, hoje, hora, p.user_id, cfg, p.nome ?? "Você");
+  const { real, outros } = ligaDoLembrete(p, e, hoje, cfg, liga);
+  const sit = situacaoNaLiga(e, hoje, hora, p.user_id, cfg, p.nome ?? "Você", real, outros);
   const ctx: Contexto = {
     tipo, hoje, chama: p.chama_atual, maior: p.maior_chama ?? p.chama_atual, ultimaData: p.ultima_data, ultimoAcesso: p.ultimo_acesso ?? null,
     diasFeitos: p.dias_feitos ?? 0, posicao: sit.posicao, zona: sit.zona, sobem: cfg.sobem, diasMetas,
@@ -124,13 +141,13 @@ export function montarMensagem(p: PerfilLembrete, tipo: Tipo, hoje: string, hora
  * Quem recebe agora (hora = "HH" em São Paulo, hoje = AAAA-MM-DD). Só quem ligou o lembrete (tem horário) e ainda não completou hoje.
  * Manhã: a hora escolhida. Noite: 21h (quem escolheu 21h recebe só o da noite). A categoria e o texto vêm da situação da pessoa.
  */
-export function quemRecebe(perfis: PerfilLembrete[], hora: string, hoje: string, textos: Texto[], cfg: ConfigLigas, diasMetas: readonly number[] = DIAS_METAS_PADRAO): Entrega[] {
+export function quemRecebe(perfis: PerfilLembrete[], hora: string, hoje: string, textos: Texto[], cfg: ConfigLigas, diasMetas: readonly number[] = DIAS_METAS_PADRAO, liga?: LigaReal): Entrega[] {
   const out: Entrega[] = [];
   for (const p of perfis) {
     if (!p.horario_lembrete || p.ultima_data === hoje) continue;
     const tipo: Tipo | null = hora === String(HORA_NOITE) ? "noite" : p.horario_lembrete.slice(0, 2) === hora ? "manha" : null;
     if (!tipo) continue;
-    const mensagem = montarMensagem(p, tipo, hoje, Number(hora), textos, cfg, undefined, diasMetas);
+    const mensagem = montarMensagem(p, tipo, hoje, Number(hora), textos, cfg, undefined, diasMetas, liga);
     if (mensagem) out.push({ perfil: p, mensagem });
   }
   return out;

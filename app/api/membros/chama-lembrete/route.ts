@@ -6,7 +6,8 @@ import { rodarCobranca } from "@/lib/chama-acesa/cobranca";
 import { carregarLigas, carregarMarcos, carregarTextos } from "@/lib/chama-acesa/conteudo-servidor";
 import { diasDasMetas } from "@/lib/chama-acesa/marcos";
 import { quemRecebe, registrarEnvio, type PerfilLembrete } from "@/lib/chama-acesa/lembretes";
-import { dataSP } from "@/lib/chama-acesa/regras";
+import { ligaRealMinimo, type PerfilRanking } from "@/lib/chama-acesa/ranking";
+import { dataSP, inicioSemana } from "@/lib/chama-acesa/regras";
 import { quemRecebeBiblia } from "@/lib/chama-acesa/biblia-estudo";
 import { perfisComLembreteBiblia } from "@/lib/chama-acesa/persistencia-biblia";
 
@@ -41,7 +42,11 @@ export async function GET(request: Request) {
     const perfis = await supabaseRest<PerfilLembrete[]>(
       `/chama_perfil?area_id=eq.${area.id}&horario_lembrete=not.is.null&select=user_id,nome,chama_atual,maior_chama,ultima_data,ultimo_acesso,horario_lembrete,dias_feitos,xp_semana,liga,lembretes_hist`,
     );
-    const entregas = quemRecebe(perfis, hora, hoje, textos, carregarLigas(), diasDasMetas(carregarMarcos()));
+    // Liga igual à do app (real ou mista). Se a leitura falhar, o lembrete segue com a liga fictícia.
+    const liga = await supabaseRest<PerfilRanking[]>(
+      `/chama_perfil?area_id=eq.${area.id}&ultimo_acesso=gte.${inicioSemana(hoje)}&select=user_id,nome,nome_exibicao,foto_url,mostrar_no_ranking,xp_semana,liga&limit=5000`,
+    ).then((p) => ({ perfis: p, minimo: ligaRealMinimo() })).catch((e) => { console.error("chama-lembrete liga", e instanceof Error ? e.message.slice(0, 200) : e); return undefined; });
+    const entregas = quemRecebe(perfis, hora, hoje, textos, carregarLigas(), diasDasMetas(carregarMarcos()), liga);
     let enviados = 0;
     if (!dry) {
       for (const { perfil, mensagem } of entregas) {
