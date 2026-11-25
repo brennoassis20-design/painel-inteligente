@@ -260,7 +260,7 @@ export function avisoExtra(p: PerfilLembrete, hoje: string, hora: number, agora:
   if (meuXp > 0 && hora >= 1 && enviadosHoje(hist, hoje, ["liga_passou"]) < MAX_PASSOU_DIA) {
     const antes = situacaoNaLiga(e, hoje, hora - 1, p.user_id, cfg, nome, real, outros);
     if (sit.posicao > antes.posicao && acima) {
-      return { categoria: "liga_passou", vars: { ...base, quem: acima.anonimo || !acima.nome ? "Alguém" : acima.nome.split(" ")[0] } };
+      return { categoria: "liga_passou", vars: { ...base, quem: acima.anonimo || !acima.nome ? "Alguém" : nomeCurto(acima.nome) } };
     }
   }
   // 3) Tá tranquilo: 4 a 5 horas depois de completar o dia, das 9h às 19h, uma vez.
@@ -287,4 +287,12 @@ export function quemRecebeExtras(perfis: PerfilLembrete[], hora: string, hoje: s
     out.push({ perfil: p, mensagem: { tipo: "manha", categoria: x.categoria, chave: chaveDoTexto(t), titulo: preencher(t.titulo, x.vars), corpo: preencher(t.corpo, x.vars) } });
   }
   return out;
+}
+
+const TITULOS = /^(pr|pra|pastor|pastora|seu|dona|irm[aã]|irm[aã]o|dr|dra|ev|mis|miss|di[aá]c|pb|ap)\.?$/i;
+/** Primeiro nome para o aviso; "Pr. Marcos" e "Seu Zé" ficam com o título (só o título soa estranho). */
+export function nomeCurto(nome: string): string {
+  const p = nome.trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return "Alguém";
+  return p.length > 1 && TITULOS.test(p[0]) ? `${p[0]} ${p[1]}` : p[0];
 }

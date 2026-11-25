@@ -8,7 +8,7 @@ import { PROGRESSAO } from "../lib/chama-acesa/musica-oracao.ts";
 import { normalizarDias } from "../lib/chama-acesa/dias.ts";
 import { montarSessao, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
 import { atualizarLiga, classificar, gerarBots, normalizarLigas, xpDoBot, zonaDe } from "../lib/chama-acesa/ligas.ts";
-import { ligaDoLembrete, montarMensagem, categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio, versiculoDoDia, quemRecebeVersiculo, mensagemVersiculo, avisoExtra, quemRecebeExtras, enviadosHoje, MAX_EXTRAS_DIA } from "../lib/chama-acesa/lembretes.ts";
+import { ligaDoLembrete, montarMensagem, categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio, versiculoDoDia, quemRecebeVersiculo, mensagemVersiculo, avisoExtra, quemRecebeExtras, enviadosHoje, MAX_EXTRAS_DIA, nomeCurto } from "../lib/chama-acesa/lembretes.ts";
 import { LIVROS_BIBLIA } from "../lib/chama-acesa/biblia-planos-dados.ts";
 import {
   aplicarBiblia, agruparNotasPorLivro, capitulosDosTrechos, diaDoPlano, estadoBibliaVazio, filtrarNotas, montarMensagemBiblia, nomeDosTrechos, PLANOS,
@@ -1342,4 +1342,12 @@ test("avisos extras: tá tranquilo 4–5 h depois, último dia da liga, alguém 
     const vars = { nome: "", liga: "Brasa", posicao: 9, faltam_xp: 12, horas: 14, dias: 3, acao: "Uma prática.", quem: "Ana", faltam_xp_subir: 20 };
     for (const t of ts) assert.ok(!/[{}]/.test(preencher(t.titulo + " " + t.corpo, vars)), t.titulo);
   }
+});
+
+test("avisos da liga: nome curto mantém o título (Pr. Marcos, Seu Zé)", () => {
+  assert.equal(nomeCurto("Pr. Marcos Lima"), "Pr. Marcos");
+  assert.equal(nomeCurto("Seu Zé"), "Seu Zé");
+  assert.equal(nomeCurto("Pra. Ana"), "Pra. Ana");
+  assert.equal(nomeCurto("Felipe Souza"), "Felipe");
+  assert.equal(nomeCurto("Seu"), "Seu");
 });

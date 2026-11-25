@@ -345,7 +345,7 @@
     "cat": "liga_passou",
     "tom": "engracado",
     "titulo": "{quem} tá se achando 👀",
-    "corpo": "Passou você na liga. Mostra quem manda: {acao}"
+    "corpo": "Passou você na liga. Mostra quem manda! {acao}"
   },
   {
     "cat": "liga_ultimo_sobe",
