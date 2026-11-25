@@ -656,3 +656,10 @@
 
 .sr-so { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .ch[data-tema="escuro"] .ch-hero-sel, html[data-chama-tema="escuro"] .ch:not([data-tema]) .ch-hero-sel { display: none; }
+
+/* Sininho de avisos no topo da aba Hoje: bolinha "1" enquanto as notificações não estão ativas. */
+.ch-cab > .ch-cab-acoes { display: flex; align-items: center; gap: 10px; flex: none; }
+.ch .ch-sino { position: relative; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--ch-card2); color: var(--ch-fg); border: 0; padding: 0; cursor: pointer; }
+.ch-sino-n { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #D92D20; color: #fff; font-size: 12px; font-weight: 700; line-height: 20px; text-align: center; box-shadow: 0 0 0 2px var(--ch-bg); animation: ch-sino-pulso 1.6s ease-in-out infinite; }
+@keyframes ch-sino-pulso { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .ch-sino-n { animation: none; } }

@@ -8,7 +8,7 @@ import { PROGRESSAO } from "../lib/chama-acesa/musica-oracao.ts";
 import { normalizarDias } from "../lib/chama-acesa/dias.ts";
 import { montarSessao, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
 import { atualizarLiga, classificar, gerarBots, normalizarLigas, xpDoBot, zonaDe } from "../lib/chama-acesa/ligas.ts";
-import { ligaDoLembrete, montarMensagem, categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio, versiculoDoDia, quemRecebeVersiculo, mensagemVersiculo } from "../lib/chama-acesa/lembretes.ts";
+import { ligaDoLembrete, montarMensagem, categoriaDoLembrete, escolherTexto, normalizarTextos, preencher, quemRecebe, quemRecebeCobranca, registrarEnvio, versiculoDoDia, quemRecebeVersiculo, mensagemVersiculo, avisoExtra, quemRecebeExtras, enviadosHoje, MAX_EXTRAS_DIA } from "../lib/chama-acesa/lembretes.ts";
 import { LIVROS_BIBLIA } from "../lib/chama-acesa/biblia-planos-dados.ts";
 import {
   aplicarBiblia, agruparNotasPorLivro, capitulosDosTrechos, diaDoPlano, estadoBibliaVazio, filtrarNotas, montarMensagemBiblia, nomeDosTrechos, PLANOS,
@@ -1299,4 +1299,47 @@ test("versículo do meio-dia: o mesmo para todos no dia, gira pelo banco, só qu
 test("lembretes: chama de 1 vira '1 dia', não '1 dias'", () => {
   assert.equal(preencher("Sua chama de {dias} dias agradece", { dias: 1 }), "Sua chama de 1 dia agradece");
   assert.equal(preencher("Sua chama de {dias} dias agradece", { dias: 11 }), "Sua chama de 11 dias agradece");
+});
+
+test("avisos extras: tá tranquilo 4–5 h depois, último dia da liga, alguém passou, teto por dia", () => {
+  const hoje = "2026-11-25"; // quarta
+  const sem = inicioSemana(hoje);
+  const P = (o = {}) => ({ user_id: "u1", nome: null, chama_atual: 3, ultima_data: hoje, ultimo_acesso: hoje, horario_lembrete: null, dias_feitos: 3, xp_semana: { [sem]: 120 }, lembretes_hist: {}, ...o });
+  const agora = Date.parse("2026-11-25T17:30:00Z"); // 14h30 em SP
+  const feito = new Date(agora - 4.5 * 3_600_000).toISOString();
+  // tranquilo (sem ultrapassagem: usa a liga real com só a pessoa, que não muda com a hora)
+  const ligaSo = { perfis: [], minimo: 1 };
+  const x = avisoExtra(P(), hoje, 14, agora, feito, CFG_L, ligaSo);
+  assert.equal(x?.categoria, "tranquilo");
+  assert.equal(avisoExtra(P(), hoje, 14, agora, new Date(agora - 3 * 3_600_000).toISOString(), CFG_L, ligaSo), null);
+  assert.equal(avisoExtra(P({ lembretes_hist: { "tranquilo|Tá tranquilo 😌": hoje } }), hoje, 14, agora, feito, CFG_L, ligaSo), null);
+  assert.equal(avisoExtra(P(), hoje, 23, agora, feito, CFG_L, ligaSo), null, "nada de madrugada");
+  // teto do dia
+  const cheio = Object.fromEntries(Array.from({ length: MAX_EXTRAS_DIA }, (_, i) => [`liga_passou|t${i}`, hoje]));
+  assert.equal(enviadosHoje(cheio, hoje), MAX_EXTRAS_DIA);
+  assert.equal(avisoExtra(P({ lembretes_hist: cheio }), hoje, 14, agora, feito, CFG_L, ligaSo), null);
+  // último dia da liga (domingo), 15h
+  const dom = "2026-11-29";
+  const y = avisoExtra(P({ ultima_data: dom, ultimo_acesso: dom, xp_semana: { [inicioSemana(dom)]: 120 } }), dom, 15, agora, null, CFG_L, ligaSo);
+  assert.match(y?.categoria ?? "", /^liga_ultimo/);
+  assert.equal(avisoExtra(P({ ultima_data: dom, ultimo_acesso: dom, xp_semana: { [inicioSemana(dom)]: 120 } }), dom, 16, agora, null, CFG_L, ligaSo), null);
+  // alguém passou: procura uma hora em que um fictício ultrapassa a pessoa
+  let achou = null;
+  for (let h = 9; h <= 22 && !achou; h++) for (const xp of [30, 60, 90, 120, 150, 200]) {
+    const p = P({ ultima_data: "2026-11-24", xp_semana: { [sem]: xp } });
+    const r = avisoExtra(p, hoje, h, agora, null, CFG_L);
+    if (r?.categoria === "liga_passou") { achou = { r, p, h }; break; }
+  }
+  assert.ok(achou, "algum bot passa a pessoa em alguma hora");
+  assert.ok(typeof achou.r.vars.quem === "string" && achou.r.vars.quem.length > 0);
+  const [m] = quemRecebeExtras([achou.p], String(achou.h).padStart(2, "0"), hoje, agora, {}, TEXTOS, CFG_L);
+  assert.equal(m.mensagem.categoria, "liga_passou");
+  assert.ok(!/[{}]/.test(m.mensagem.titulo + m.mensagem.corpo), "variáveis preenchidas: " + m.mensagem.titulo + " " + m.mensagem.corpo);
+  // todas as categorias extras têm texto e não deixam {variável} sobrando
+  for (const cat of ["tranquilo", "liga_passou", "liga_ultimo_sobe", "liga_ultimo_perto", "liga_ultimo_desce", "liga_ultimo"]) {
+    const ts = TEXTOS.filter((t) => t.cat === cat);
+    assert.ok(ts.length >= 1, cat);
+    const vars = { nome: "", liga: "Brasa", posicao: 9, faltam_xp: 12, horas: 14, dias: 3, acao: "Uma prática.", quem: "Ana", faltam_xp_subir: 20 };
+    for (const t of ts) assert.ok(!/[{}]/.test(preencher(t.titulo + " " + t.corpo, vars)), t.titulo);
+  }
 });

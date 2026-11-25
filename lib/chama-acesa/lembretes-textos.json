@@ -304,5 +304,89 @@
     "tom": "versiculo",
     "titulo": "Deita em paz",
     "corpo": "“Em paz me deito e logo pego no sono, porque só tu, Senhor, me fazes repousar seguro.” Salmos 4:8. Amanhã: dia {proximo_dia}."
+  },
+  {
+    "cat": "tranquilo",
+    "tom": "leve",
+    "titulo": "Tá tranquilo 😌",
+    "corpo": "Seu dia já está feito e a chama está garantida. Quer subir na liga {liga}? Uma prática de versículos vale até 35 XP."
+  },
+  {
+    "cat": "tranquilo",
+    "tom": "leve",
+    "titulo": "Dia garantido ✅",
+    "corpo": "Agora é só bônus: uma prática rápida de versículos e você ganha XP para subir no ranking."
+  },
+  {
+    "cat": "tranquilo",
+    "tom": "engracado",
+    "titulo": "A Brasinha tá de boa 🔥",
+    "corpo": "Você já cuidou dela hoje. Mas se quiser passar alguém na liga, a prática está esperando."
+  },
+  {
+    "cat": "tranquilo",
+    "tom": "desafio",
+    "titulo": "Você está em {posicao}º na liga",
+    "corpo": "Dia feito. Se quiser subir mais, faz a prática de versículos: 2 minutos e até 35 XP."
+  },
+  {
+    "cat": "liga_passou",
+    "tom": "confronto",
+    "titulo": "{quem} passou você 😱",
+    "corpo": "Você caiu para {posicao}º na liga {liga}. {acao}"
+  },
+  {
+    "cat": "liga_passou",
+    "tom": "desafio",
+    "titulo": "Perdeu posição na liga",
+    "corpo": "{quem} acabou de passar você na liga {liga}. {acao}"
+  },
+  {
+    "cat": "liga_passou",
+    "tom": "engracado",
+    "titulo": "{quem} tá se achando 👀",
+    "corpo": "Passou você na liga. Mostra quem manda: {acao}"
+  },
+  {
+    "cat": "liga_ultimo_sobe",
+    "tom": "alerta",
+    "titulo": "Último dia da liga 🏆",
+    "corpo": "Você está em {posicao}º, na zona de subir. Faltam {horas}h: segura a posição com uma prática de versículos."
+  },
+  {
+    "cat": "liga_ultimo_sobe",
+    "tom": "desafio",
+    "titulo": "Não deixa tirarem seu lugar",
+    "corpo": "{posicao}º na liga {liga}, zona de subir. A liga fecha em {horas}h e o pessoal está correndo."
+  },
+  {
+    "cat": "liga_ultimo_perto",
+    "tom": "desafio",
+    "titulo": "Dá para subir hoje 🔥",
+    "corpo": "Faltam {faltam_xp_subir} XP para a zona de subir da liga {liga}. A liga fecha em {horas}h."
+  },
+  {
+    "cat": "liga_ultimo_perto",
+    "tom": "alerta",
+    "titulo": "Último dia: você está quase lá",
+    "corpo": "{posicao}º lugar. Mais {faltam_xp_subir} XP e você sobe de liga. Fecha em {horas}h."
+  },
+  {
+    "cat": "liga_ultimo_desce",
+    "tom": "alerta",
+    "titulo": "Você vai descer de liga ⚠️",
+    "corpo": "{posicao}º na liga {liga}, na zona de descer. Faltam {horas}h. Uma prática de versículos pode te salvar."
+  },
+  {
+    "cat": "liga_ultimo_desce",
+    "tom": "confronto",
+    "titulo": "Salva sua liga hoje",
+    "corpo": "A liga {liga} fecha em {horas}h e você está na zona de descer. Bora subir umas posições?"
+  },
+  {
+    "cat": "liga_ultimo",
+    "tom": "leve",
+    "titulo": "Último dia da liga",
+    "corpo": "Você está em {posicao}º na liga {liga}. Fecha em {horas}h: cada prática conta."
   }
 ]

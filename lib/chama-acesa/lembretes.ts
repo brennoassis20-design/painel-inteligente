@@ -212,3 +212,79 @@ export function quemRecebeCobranca(cands: CandidatoCobranca[], hoje: string, tex
   return out;
 }
 
+
+// ------------------------------------------------------------------ avisos extras do dia (estilo Duolingo)
+// Além da manhã e das 21h: "tá tranquilo" 4–5 h depois de fazer o dia, alguém passou você na liga e o último dia da liga (domingo).
+// No máximo MAX_EXTRAS_DIA por pessoa/dia e um por hora. Só entra quem abriu o app nos últimos 2 dias.
+
+export const MAX_EXTRAS_DIA = 4;
+export const MAX_PASSOU_DIA = 2;
+export const XP_PRATICA_MAX = 5 * 5 + 10; // 5 acertos de 5 XP + prática perfeita
+export const HORAS_ULTIMO_DIA = [10, 15, 19] as const;
+const CATS_EXTRAS = ["tranquilo", "liga_passou", "liga_ultimo_sobe", "liga_ultimo_perto", "liga_ultimo_desce", "liga_ultimo"];
+
+/** Quantos avisos destas categorias já foram enviados hoje (pelo histórico "cat|titulo" -> data). */
+export function enviadosHoje(hist: Record<string, string>, hoje: string, cats: readonly string[] = CATS_EXTRAS): number {
+  return Object.entries(hist).filter(([k, d]) => d === hoje && cats.includes(k.split("|")[0])).length;
+}
+
+export interface Extra { categoria: string; vars: Record<string, string | number> }
+
+/**
+ * Decide o aviso extra de uma pessoa nesta hora (ou null). Prioridade: último dia da liga > alguém passou > tá tranquilo.
+ * concluidoEm = instante (ISO) em que a pessoa completou o dia de hoje; agora = instante atual em ms.
+ */
+export function avisoExtra(p: PerfilLembrete, hoje: string, hora: number, agora: number, concluidoEm: string | null, cfg: ConfigLigas, liga?: LigaReal): Extra | null {
+  if (hora < 8 || hora > 22) return null;
+  const hist = p.lembretes_hist ?? {};
+  if (enviadosHoje(hist, hoje) >= MAX_EXTRAS_DIA) return null;
+  if (diasSemAbrir({ hoje, ultimoAcesso: p.ultimo_acesso ?? null, ultimaData: p.ultima_data }) >= 2) return null;
+  const e: Estado = { ...estadoVazio(), chama: p.chama_atual, xpSemana: p.xp_semana ?? {}, liga: p.liga ?? estadoVazio().liga };
+  const { real, outros } = ligaDoLembrete(p, e, hoje, cfg, liga);
+  const nome = p.nome ?? "Você";
+  const sit = situacaoNaLiga(e, hoje, hora, p.user_id, cfg, nome, real, outros);
+  const meuXp = e.xpSemana[inicioSemana(hoje)] ?? 0;
+  const eu = sit.linhas.find((l) => l.voce);
+  const acima = sit.linhas.find((l) => l.posicao === sit.posicao - 1);
+  const faltamXp = acima && eu ? Math.max(1, acima.xp - eu.xp + 1) : 0;
+  const acao = faltamXp && faltamXp <= XP_PRATICA_MAX ? "Uma prática de versículos e você passa de novo." : `Faltam ${faltamXp} XP: faz a prática de versículos e vai somando.`;
+  const base = { nome: (p.nome || "").split(" ")[0], liga: sit.liga.nome, posicao: sit.posicao, faltam_xp: faltamXp, horas: sit.restante.dias * 24 + sit.restante.horas, dias: p.chama_atual, acao };
+
+  // 1) Último dia da liga (domingo; a semana começa na segunda): 10h, 15h e 19h, pela zona.
+  const domingo = new Date(`${hoje}T00:00:00Z`).getUTCDay() === 0;
+  if (domingo && (HORAS_ULTIMO_DIA as readonly number[]).includes(hora) && meuXp > 0) {
+    const cat = sit.zona === "sobe" ? "liga_ultimo_sobe" : sit.zona === "desce" ? "liga_ultimo_desce" : sit.posicao <= sit.limites.sobem + 5 ? "liga_ultimo_perto" : "liga_ultimo";
+    return { categoria: cat, vars: { ...base, faltam_xp_subir: faltaParaSubir(sit.linhas, sit.limites.sobem, eu?.xp ?? 0) } };
+  }
+  // 2) Alguém passou você na última hora (só quem está jogando a semana).
+  if (meuXp > 0 && hora >= 1 && enviadosHoje(hist, hoje, ["liga_passou"]) < MAX_PASSOU_DIA) {
+    const antes = situacaoNaLiga(e, hoje, hora - 1, p.user_id, cfg, nome, real, outros);
+    if (sit.posicao > antes.posicao && acima) {
+      return { categoria: "liga_passou", vars: { ...base, quem: acima.anonimo || !acima.nome ? "Alguém" : acima.nome.split(" ")[0] } };
+    }
+  }
+  // 3) Tá tranquilo: 4 a 5 horas depois de completar o dia, das 9h às 19h, uma vez.
+  if (p.ultima_data === hoje && concluidoEm && hora >= 9 && hora <= 19 && enviadosHoje(hist, hoje, ["tranquilo"]) === 0) {
+    const horas = (agora - Date.parse(concluidoEm)) / 3_600_000;
+    if (horas >= 4 && horas < 5) return { categoria: "tranquilo", vars: base };
+  }
+  return null;
+}
+
+function faltaParaSubir(linhas: { posicao: number; xp: number }[], sobem: number, meuXp: number): number {
+  const corte = linhas.find((l) => l.posicao === sobem);
+  return corte ? Math.max(1, corte.xp - meuXp + 1) : 1;
+}
+
+/** Monta as mensagens extras desta hora para os perfis (só quem tem aparelho inscrito deve entrar aqui). */
+export function quemRecebeExtras(perfis: PerfilLembrete[], hora: string, hoje: string, agora: number, concluidos: Record<string, string>, textos: Texto[], cfg: ConfigLigas, liga?: LigaReal): Entrega[] {
+  const out: Entrega[] = [];
+  for (const p of perfis) {
+    const x = avisoExtra(p, hoje, Number(hora), agora, concluidos[p.user_id] ?? null, cfg, liga);
+    if (!x) continue;
+    const t = escolherTexto(textos, x.categoria, p.lembretes_hist ?? {}, hoje, aleatorio(`${p.user_id}|${hoje}|${hora}|extra`));
+    if (!t) continue;
+    out.push({ perfil: p, mensagem: { tipo: "manha", categoria: x.categoria, chave: chaveDoTexto(t), titulo: preencher(t.titulo, x.vars), corpo: preencher(t.corpo, x.vars) } });
+  }
+  return out;
+}

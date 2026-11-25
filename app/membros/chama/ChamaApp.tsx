@@ -91,6 +91,12 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
   const visaoInstalar = useVisaoInstalar(instalarForcar);
   // Popup dos avisos: aparece uma vez por dia (no aparelho) até a pessoa ativar as notificações.
   const [popupAvisos, setPopupAvisos] = useState(false);
+  // Sininho: sem avisos ativos neste aparelho, fica sempre com 1 aviso pendente (ativar as notificações).
+  const [avisosAtivos, setAvisosAtivos] = useState(true);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê a permissão do navegador depois de montar
+    setAvisosAtivos(pushPermission() === "granted");
+  }, [popupAvisos]);
   // Tema: claro é o padrão para todo mundo; a escolha fica salva no aparelho (localStorage).
   const [tema, setTema] = useState<Tema>(() => lerTema());
   useEffect(() => aplicarTemaNaPagina(tema), [tema]);
@@ -497,11 +503,17 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
               <span className="ch-data">{dataPorExtenso(hoje)}</span>
               <h1>{primeiroNome && primeiroNome !== "Você" ? `${saudacao}, ${primeiroNome}` : saudacao}</h1>
             </div>
-            {armazem.conta && (
-              <button type="button" className="ch-perfil-btn" aria-label="Minha conta" onClick={() => irPara({ v: "conta" })}>
-                <Avatar nome={painel.nome} foto={painel.perfil.foto} tamanho={40} />
+            <div className="ch-cab-acoes">
+              <button type="button" className="ch-sino" aria-label={avisosAtivos ? "Avisos" : "Avisos: 1 novo"} onClick={() => setPopupAvisos(true)}>
+                <IconeSino />
+                {!avisosAtivos && <span className="ch-sino-n" aria-hidden="true">1</span>}
               </button>
-            )}
+              {armazem.conta && (
+                <button type="button" className="ch-perfil-btn" aria-label="Minha conta" onClick={() => irPara({ v: "conta" })}>
+                  <Avatar nome={painel.nome} foto={painel.perfil.foto} tamanho={40} />
+                </button>
+              )}
+            </div>
           </header>
 
           <section className="ch-hero" aria-label="Sua chama">
@@ -758,13 +770,21 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         </div>
       </nav>
       {convidar && <ConviteSheet texto={textoConvite} link={linkConvite} onFechar={() => setConvidar(false)} chama={estado.chama} />}
-      {popupAvisos && !convidar && onAtivarPush && (
+      {popupAvisos && !convidar && (
         <PopupAvisos
+          ativo={avisosAtivos}
           chama={estado.chama}
           horario={estado.lembrete}
           instalarForcar={instalarForcar}
           onFechar={() => setPopupAvisos(false)}
           onAtivar={async (horario) => {
+            if (avisosAtivos) {
+              if (horario !== estado.lembrete) await agir({ tipo: "lembrete", horario });
+              setPopupAvisos(false);
+              toast("Horário do lembrete salvo.");
+              return;
+            }
+            if (!onAtivarPush) throw new Error("Na bancada de testes os avisos não ligam; na versão instalada sim.");
             try {
               await onAtivarPush();
             } catch (e) {
@@ -1065,7 +1085,16 @@ function Lembrete({ chama, onSalvar, onDepois, semPush, instalarForcar }: { cham
   );
 }
 
-function PopupAvisos({ chama, horario, instalarForcar, onAtivar, onFechar }: { chama: number; horario: string | null; instalarForcar: ForcarInstalacao; onAtivar: (h: string) => Promise<void>; onFechar: () => void }) {
+function IconeSino() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
+  );
+}
+
+function PopupAvisos({ ativo, chama, horario, instalarForcar, onAtivar, onFechar }: { ativo: boolean; chama: number; horario: string | null; instalarForcar: ForcarInstalacao; onAtivar: (h: string) => Promise<void>; onFechar: () => void }) {
   const [hora, setHora] = useState(horario ?? "07:00");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
@@ -1074,9 +1103,13 @@ function PopupAvisos({ chama, horario, instalarForcar, onAtivar, onFechar }: { c
     <div className="ch-sheet" role="dialog" aria-modal="true" aria-label="Ativar os avisos">
       <div>
         <div className="ch-mascote"><Chama dias={Math.max(chama, 1)} tamanho={64} /><small>A Brasinha</small></div>
-        <h2>Deixa a chama te chamar</h2>
-        <p className="ch-suave">Com os avisos ligados você recebe um versículo ao meio-dia, o lembrete na hora que escolher e, à noite, o que vem no dia seguinte.</p>
-        {negado ? (
+        <h2>{ativo ? "Seus avisos estão ligados ✅" : "Deixa a chama te chamar"}</h2>
+        <p className="ch-suave">
+          {ativo
+            ? "Você recebe o lembrete na sua hora, um versículo ao meio-dia, os recados da liga e, à noite, o que vem no dia seguinte."
+            : "Com os avisos ligados você recebe um versículo ao meio-dia, o lembrete na hora que escolher, os recados da liga (quando alguém passar você) e, à noite, o que vem no dia seguinte."}
+        </p>
+        {ativo ? null : negado ? (
           <p className="ch-nota">
             Os avisos estão bloqueados neste celular. <b>iPhone:</b> Ajustes › Notificações › Chama Acesa › Permitir. <b>Android:</b> segure o ícone do app › Informações › Notificações › Permitir. Depois toque em Ativar.
           </p>
@@ -1099,10 +1132,10 @@ function PopupAvisos({ chama, horario, instalarForcar, onAtivar, onFechar }: { c
               .finally(() => setEnviando(false));
           }}
         >
-          Ativar os avisos
+          {ativo ? "Salvar horário" : "Ativar os avisos"}
         </button>
         {erro && <p className="ch-nota" role="status">{erro}</p>}
-        <button type="button" className="ch-link" onClick={onFechar}>Agora não</button>
+        <button type="button" className="ch-link" onClick={onFechar}>{ativo ? "Fechar" : "Agora não"}</button>
       </div>
     </div>
   );
