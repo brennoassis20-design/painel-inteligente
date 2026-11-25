@@ -284,20 +284,20 @@
   {
     "cat": "noite_feito",
     "tom": "orgulho",
-    "titulo": "{dias} dias de chama, {nome}",
-    "corpo": "Dia feito. Antes de dormir, entrega o dia de amanhã nas mãos de Deus. O dia {proximo_dia} já está pronto."
+    "titulo": "Dia feito ✅",
+    "corpo": "Antes de dormir, entrega o dia de amanhã nas mãos de Deus. O dia {proximo_dia} já está pronto."
   },
   {
     "cat": "noite_feito",
     "tom": "leve",
-    "titulo": "Boa noite, {nome} 🌙",
+    "titulo": "Boa noite 🌙",
     "corpo": "Você cuidou da chama hoje. Amanhã cedo o dia {proximo_dia} está liberado."
   },
   {
     "cat": "noite_feito",
     "tom": "engracado",
     "titulo": "A Brasinha vai dormir feliz",
-    "corpo": "Chama de {dias} dias garantida. Amanhã ela conta com você de novo."
+    "corpo": "Mais um dia de chama garantido. Amanhã ela conta com você de novo."
   },
   {
     "cat": "noite_feito",
