@@ -24,7 +24,7 @@ echo
 echo "Variaveis de ambiente de producao (conferir no servidor):"
 echo "  PP_APP_URL=https://pocket.kitmundi.com/app/"
 echo "  PP_APP_ORIGIN=https://pocket.kitmundi.com"
-echo "  PP_EMAIL_RESPOSTA=suport@kitmundi.com"
+echo "  PP_EMAIL_RESPOSTA=support@kitmundi.com"
 echo "No Supabase (Authentication > URL Configuration > Redirect URLs) incluir https://pocket.kitmundi.com/app/"
 echo
 echo "A API fica no mesmo dominio do Chama Acesa: https://membros.bagencymidia.site"
