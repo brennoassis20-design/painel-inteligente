@@ -20,5 +20,13 @@ git push -u origin pocket-portuguese
 echo
 echo "Ramo enviado. Falta: fazer o deploy deste ramo do mesmo jeito que o Chama Acesa foi publicado (Coolify/VPS),"
 echo "colocar as variáveis novas, e cadastrar o webhook na Cakto:"
-echo "  https://<dominio-do-painel>/api/webhooks/membros/cakto?secret=<webhook_secret da área pocket-portuguese>"
+echo
+echo "Variaveis de ambiente de producao (conferir no servidor):"
+echo "  PP_APP_URL=https://pocket.kitmundi.com/app/"
+echo "  PP_APP_ORIGIN=https://pocket.kitmundi.com"
+echo "  PP_EMAIL_RESPOSTA=suport@kitmundi.com"
+echo "No Supabase (Authentication > URL Configuration > Redirect URLs) incluir https://pocket.kitmundi.com/app/"
+echo
+echo "A API fica no mesmo dominio do Chama Acesa: https://membros.bagencymidia.site"
+echo "  https://membros.bagencymidia.site/api/webhooks/membros/cakto?secret=<webhook_secret da área pocket-portuguese>"
 echo "(o secret aparece na consulta final da migration)."

@@ -6,7 +6,7 @@ import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { generic } from "../lib/webhook-generic.ts";
 import { statusDoAcesso } from "../lib/webhook-eduzz.ts";
-import { entitlementsFrom, verifyCaktoSignature, buildCheckoutUrl, canEnterApp, slugFromParam } from "../lib/pp.ts";
+import { entitlementsFrom, verifyCaktoSignature, buildCheckoutUrl, canEnterApp, slugFromParam, verifyCodeFlow, loginEmail, validCode } from "../lib/pp.ts";
 
 const P = {
   "pp-core": ["cakto:83a59ff5-2eb6-4b2e-bd75-7a0675b5047b", "cakto:oferta:d7tpcq7"],
@@ -104,4 +104,64 @@ test("checkout: utm_source=app, e-mail e slug", () => {
   assert.equal(u.searchParams.get("utm_campaign"), "pp-rio-slang");
   assert.equal(slugFromParam("rio_slang"), "pp-rio-slang");
   assert.equal(slugFromParam("xx"), null);
+});
+
+// ---- verify-code
+const SESSION = { access_token: "a", refresh_token: "r", expires_at: 1790000000 };
+function deps({ access = true, goodCode = "123456", attempts = 0 } = {}) {
+  const calls = { recorded: 0, otp: 0 };
+  return {
+    calls,
+    d: {
+      attemptsInWindow: async () => attempts + calls.recorded,
+      recordAttempt: async () => { calls.recorded++; },
+      hasAccess: async () => access,
+      verifyOtp: async (_e, code) => { calls.otp++; return code === goodCode ? SESSION : null; },
+    },
+  };
+}
+
+test("verify-code: código certo + acesso devolve a sessão", async () => {
+  const { d } = deps();
+  const r = await verifyCodeFlow(d, "Ana@Test.com", " 123 456 ");
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body, SESSION);
+});
+
+test("verify-code: código errado = erro genérico 400", async () => {
+  const { d } = deps();
+  const r = await verifyCodeFlow(d, "ana@test.com", "000000");
+  assert.equal(r.status, 400);
+  assert.deepEqual(r.body, { error: "Invalid or expired code." });
+});
+
+test("verify-code: sem acesso = mesma resposta e nem chama o Supabase", async () => {
+  const { d, calls } = deps({ access: false });
+  const r = await verifyCodeFlow(d, "ana@test.com", "123456");
+  assert.equal(r.status, 400);
+  assert.deepEqual(r.body, { error: "Invalid or expired code." });
+  assert.equal(calls.otp, 0);
+});
+
+test("verify-code: limite de 5 tentativas por e-mail (6a = 429, mesmo com código certo)", async () => {
+  const { d } = deps();
+  for (let i = 0; i < 5; i++) assert.equal((await verifyCodeFlow(d, "ana@test.com", "000000")).status, 400);
+  const r = await verifyCodeFlow(d, "ana@test.com", "123456");
+  assert.equal(r.status, 429);
+});
+
+test("verify-code: entrada inválida e formato do código", async () => {
+  const { d, calls } = deps();
+  assert.equal((await verifyCodeFlow(d, "nao-email", "123456")).status, 400);
+  assert.equal((await verifyCodeFlow(d, "a@b.com", "12345")).status, 400);
+  assert.equal(calls.recorded, 0);
+  assert.equal(validCode("12 34 56"), "123456");
+});
+
+test("e-mail de login traz o código em destaque e o botão do link", () => {
+  const m = loginEmail("https://x/link", "482910");
+  assert.match(m.html, /482910/);
+  assert.match(m.html, /Type it in the app/);
+  assert.match(m.html, /href="https:\/\/x\/link"/);
+  assert.match(m.subject, /482910/);
 });

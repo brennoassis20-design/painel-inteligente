@@ -132,15 +132,49 @@ export function accessEmail(email: string, appUrl: string) {
   };
 }
 
-export function loginEmail(link: string) {
+export function loginEmail(link: string, code?: string) {
+  const codeBlock = code
+    ? `<div style="background:#fff;border:2px dashed #0a8f4e;border-radius:12px;padding:16px;text-align:center;margin:0 0 24px"><div style="font-size:14px;color:#5b6670">Your code</div><div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#17202a">${esc(code)}</div><div style="font-size:13px;color:#5b6670">Type it in the app</div></div>`
+    : "";
   return {
-    subject: "Your Pocket Portuguese sign-in link",
+    subject: code ? `Your Pocket Portuguese code: ${code}` : "Your Pocket Portuguese sign-in link",
     html: shell(
       "Sign in to Pocket Portuguese",
-      "Tap the button below to sign in. This link works once and expires soon.",
+      `${codeBlock}Using the installed app? Type the code above in the app. Prefer a link? Tap the button below (it opens in your browser).`,
       "Sign in",
       link,
-      "If you did not ask for this, you can ignore this email.",
+      "Your code and link work once and expire soon. If you did not ask for this, you can ignore this email.",
     ),
   };
+}
+
+// ---- Login por código (verify-code)
+export const CODE_MAX_ATTEMPTS = 5;
+export const CODE_WINDOW_MS = 15 * 60 * 1000;
+export const validCode = (value: unknown) => {
+  const code = String(value ?? "").replace(/\s/g, "");
+  return /^\d{6}$/.test(code) ? code : "";
+};
+
+export type VerifySession = { access_token: string; refresh_token: string; expires_at: number };
+export type VerifyDeps = {
+  attemptsInWindow: (email: string) => Promise<number>;
+  recordAttempt: (email: string) => Promise<void>;
+  hasAccess: (email: string) => Promise<boolean>;
+  // Tenta o código no Supabase; devolve a sessão ou null.
+  verifyOtp: (email: string, code: string) => Promise<VerifySession | null>;
+};
+export type VerifyResult = { status: 200; body: VerifySession } | { status: 400 | 429; body: { error: string } };
+
+// Ordem: limite de tentativas -> registra tentativa -> acesso -> código. Erro de código e de acesso têm a MESMA resposta.
+export async function verifyCodeFlow(deps: VerifyDeps, emailIn: unknown, codeIn: unknown): Promise<VerifyResult> {
+  const email = validEmail(emailIn);
+  const code = validCode(codeIn);
+  const generic = { status: 400 as const, body: { error: "Invalid or expired code." } };
+  if (!email || !code) return generic;
+  if ((await deps.attemptsInWindow(email)) >= CODE_MAX_ATTEMPTS) return { status: 429, body: { error: "Too many attempts. Try again in 15 minutes." } };
+  await deps.recordAttempt(email);
+  if (!(await deps.hasAccess(email))) return generic;
+  const session = await deps.verifyOtp(email, code);
+  return session ? { status: 200, body: session } : generic;
 }

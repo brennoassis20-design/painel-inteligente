@@ -1,6 +1,6 @@
 // Pocket Portuguese: partes com banco/e-mail (a regra pura fica em lib/pp.ts).
-import { supabaseAdminAuthRequest, supabaseRest } from "@/lib/panel-server";
-import { type PpEntitlements, accessEmail, entitlementsFrom, loginEmail, PP_AREA_SLUG } from "@/lib/pp";
+import { supabaseAdminAuthRequest, supabaseAuthRequest, supabaseRest } from "@/lib/panel-server";
+import { type PpEntitlements, type VerifyDeps, type VerifySession, CODE_WINDOW_MS, accessEmail, canEnterApp, entitlementsFrom, loginEmail, PP_AREA_SLUG } from "@/lib/pp";
 
 const enc = encodeURIComponent;
 
@@ -45,9 +45,11 @@ export async function sendLoginLink(email: string, appUrl: string) {
     body: JSON.stringify({ type: "magiclink", email, redirect_to: appUrl }),
   });
   if (!response.ok) throw new Error(`generate_link ${response.status}`);
-  const json = (await response.json()) as { action_link?: string };
+  // GoTrue devolve email_otp na raiz (versões antigas: dentro de properties).
+  const json = (await response.json()) as { action_link?: string; email_otp?: string; properties?: { email_otp?: string } };
   if (!json.action_link) throw new Error("generate_link sem action_link");
-  await sendPpEmail(email, loginEmail(json.action_link), "login");
+  const code = json.email_otp || json.properties?.email_otp;
+  await sendPpEmail(email, loginEmail(json.action_link, code), "login");
 }
 
 // Anti-abuso: no máximo 1 link por e-mail a cada 60 s (usa mp_events, sem tabela nova).
@@ -87,4 +89,37 @@ export async function deliverPpAccess(areaId: number, email: string, orderId: st
     await logPp(areaId, email, "convite_falhou", { order, app: "pocket-portuguese" });
     return "email_falhou";
   }
+}
+
+// ---- verify-code: dependências reais
+async function verifyOtpSupabase(email: string, code: string): Promise<VerifySession | null> {
+  // O código vem de generate_link type=magiclink: conta existente = tipo "magiclink"; conta nova = "signup". "email" é o último recurso.
+  for (const type of ["magiclink", "signup", "email"]) {
+    const response = await supabaseAuthRequest("/verify", { method: "POST", body: JSON.stringify({ type, email, token: code }) });
+    if (!response.ok) continue;
+    const data = (await response.json()) as { access_token?: string; refresh_token?: string; expires_at?: number; expires_in?: number };
+    if (!data.access_token || !data.refresh_token) continue;
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: data.expires_at || Math.floor(Date.now() / 1000) + (data.expires_in || 3600),
+    };
+  }
+  return null;
+}
+
+// Tentativas guardadas em mp_events (valem entre instâncias do servidor).
+export function verifyDeps(areaId: number): VerifyDeps {
+  return {
+    attemptsInWindow: async (email) => {
+      const since = new Date(Date.now() - CODE_WINDOW_MS).toISOString();
+      const rows = await supabaseRest<{ id: string }[]>(
+        `/mp_events?kind=eq.pp_code_attempt&email=eq.${enc(email)}&created_at=gte.${enc(since)}&select=id&limit=50`,
+      ).catch(() => []);
+      return rows.length;
+    },
+    recordAttempt: (email) => logPp(areaId, email, "pp_code_attempt"),
+    hasAccess: async (email) => canEnterApp(await entitlementsFor(email)),
+    verifyOtp: verifyOtpSupabase,
+  };
 }
