@@ -5,6 +5,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { getAuthAccount, inviteBuyer, setAuthMetadata, supabaseRest } from "@/lib/panel-server";
 import { statusDoAcesso } from "@/lib/webhook-eduzz";
 import { deliverSaleAccess } from "@/lib/membros-acesso-email";
+import { PP_AREA_SLUG, ppAppUrl } from "@/lib/pp";
+import { deliverPpAccess } from "@/lib/pp-server";
 import { areaStats } from "@/lib/membros-stats";
 import { normalizeMedium, tagLink } from "@/lib/membros-utm";
 import { calcularAcesso } from "@/lib/reforma-app-acesso-regra";
@@ -710,6 +712,12 @@ export async function applySale(event: SaleEvent, area: Area) {
     // E-mail "seu acesso chegou" (Brevo, quando a área tem e-mail ligado) ou, se não der, o convite do Supabase.
     // Um e-mail por e-mail + pedido; falha total registra convite_falhou (o lembrete de acesso tenta de novo).
     const listed = products.filter((product) => product.area_id === target.id);
+    // Pocket Portuguese: e-mail próprio em inglês, só quando a compra traz o pp-core (bump/upsell não reenviam).
+    if (target.slug === PP_AREA_SLUG) {
+      const hasCore = listed.some((product) => product.slug === "pp-core");
+      account = hasCore ? await deliverPpAccess(target.id, event.email, event.orderId, ppAppUrl()).catch(() => "email_falhou") : "sem_email_pp";
+      return { matched: products.map((product) => product.slug), account };
+    }
     account = await deliverSaleAccess(target, {
       email: event.email,
       name: event.name,
