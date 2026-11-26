@@ -417,7 +417,8 @@ async function vapid() {
 
 // Aviso no celular só para estas pessoas (Chama Acesa: lembrete diário).
 export async function pushParaUsuarios(areaId: number, userIds: string[], payload: { title: string; body: string; url: string; tag: string }) {
-  return pushAll(areaId, payload, userIds);
+  // Prioridade alta: com "normal" a Apple segura o aviso com o iPhone parado (lembrete das 7h não chegava, 26/11).
+  return pushAll(areaId, payload, userIds, "high");
 }
 
 export async function vapidPublicKey() {
@@ -442,7 +443,7 @@ export async function removePushSub(endpoint: string, area?: Pick<Area, "id">) {
   return { ok: true };
 }
 
-async function pushAll(areaId: number, payload: { title: string; body: string; url: string; tag: string }, userIds?: string[]) {
+async function pushAll(areaId: number, payload: { title: string; body: string; url: string; tag: string }, userIds?: string[], urgency: "normal" | "high" = "normal") {
   const { pub, priv } = await vapid();
   webpush.setVapidDetails(MEMBROS_URL, pub, priv);
   // userIds = só estas pessoas (ex.: lembrete diário do Chama Acesa); sem lista = a área inteira.
@@ -456,7 +457,7 @@ async function pushAll(areaId: number, payload: { title: string; body: string; u
     await Promise.all(
       batch.map(async (sub) => {
         try {
-          await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, data, { TTL: 60 * 60 * 24 * 3 });
+          await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, data, { TTL: 60 * 60 * 24 * 3, urgency });
           sent += 1;
         } catch (error) {
           const status = (error as { statusCode?: number }).statusCode;
