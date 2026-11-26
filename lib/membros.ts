@@ -2,7 +2,8 @@
 // Todas as operações de configuração passam pelo registro OPS abaixo, usado pelo
 // painel de administração e pelo conector de IA (MCP). Assim os dois fazem sempre o mesmo.
 import { createHash, randomBytes } from "node:crypto";
-import { getAuthAccount, inviteBuyer, setAuthMetadata, supabaseRest } from "@/lib/panel-server";
+import { resolveMaterials, supabaseSigner } from "@/lib/membros-arquivo-privado";
+import { getAuthAccount, getSupabaseConfig, inviteBuyer, setAuthMetadata, supabaseRest } from "@/lib/panel-server";
 import { statusDoAcesso } from "@/lib/webhook-eduzz";
 import { deliverSaleAccess } from "@/lib/membros-acesso-email";
 import { areaStats } from "@/lib/membros-stats";
@@ -491,7 +492,9 @@ export async function studentProduct(user: { id: string; email: string }, area: 
   );
   const done = new Set(progress.filter((row) => row.completed).map((row) => row.lesson_id));
 
-  const modules = tree.map((mod) => {
+  // Materiais "privado:..." viram link assinado (6 h) só para quem pode ver a aula.
+  const signer = supabaseSigner(getSupabaseConfig());
+  const modules = await Promise.all(tree.map(async (mod) => {
     const open = moduleOpen(mod, access);
     const releaseAt = access && mod.release_days ? new Date(new Date(access.since).getTime() + mod.release_days * DAY_MS).toISOString() : null;
     return {
@@ -500,9 +503,9 @@ export async function studentProduct(user: { id: string; email: string }, area: 
       cover_url: mod.cover_url,
       open,
       release_at: open ? null : releaseAt,
-      lessons: mod.lessons
+      lessons: await Promise.all(mod.lessons
         .filter((lesson) => lesson.published || admin)
-        .map((lesson) => {
+        .map(async (lesson) => {
           const canWatch = open || lesson.free_preview;
           return {
             id: lesson.id,
@@ -511,14 +514,14 @@ export async function studentProduct(user: { id: string; email: string }, area: 
             duration_min: lesson.duration_min,
             youtube_id: canWatch ? lesson.youtube_id : null,
             video_url: canWatch ? lesson.video_url : null,
-            materials: canWatch ? lesson.materials : [],
+            materials: canWatch ? await resolveMaterials(lesson.materials, signer) : [],
             free_preview: lesson.free_preview,
             locked: !canWatch,
             completed: done.has(lesson.id),
           };
-        }),
+        })),
     };
-  });
+  }));
 
   let upsell = null;
   if (product.upsell_product_id) {
