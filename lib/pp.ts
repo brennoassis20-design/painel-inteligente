@@ -127,7 +127,11 @@ export function accessEmail(email: string, appUrl: string) {
       "Thanks for your purchase! Your access is active. Open the app and sign in with the email you used at checkout:",
       "Open Pocket Portuguese",
       appUrl,
-      `Sign in with <b>${esc(email)}</b>. We will email you a one-tap sign-in link, no password needed. Questions? Just reply to this email.`,
+      `Sign in with <b>${esc(email)}</b>. We will email you a 6-digit code and a one-tap link, no password needed.<br><br>` +
+        `<b>Put it on your phone's Home Screen</b> (works offline):<br>` +
+        `&bull; <b>iPhone:</b> open the link in <b>Safari</b> &rarr; tap Share &rarr; <b>Add to Home Screen</b> &rarr; Add. Then open it from the new icon and sign in with the code.<br>` +
+        `&bull; <b>Android:</b> open the link in <b>Chrome</b> &rarr; menu &#8942; &rarr; <b>Install app</b>.<br><br>` +
+        `Questions? Just reply to this email.`,
     ),
   };
 }
