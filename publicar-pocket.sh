@@ -1,32 +1,52 @@
-#!/bin/bash
-# Publica o backend do Pocket Portuguese. RODAR NO TERMINAL pelo Brenno, e só depois de:
-#   1) aplicar supabase/migrations/20261126_pocket_portuguese.sql no SQL Editor do Supabase;
-#   2) cadastrar as variáveis de ambiente novas no servidor (ver "Backend - como publicar.md").
-# O que faz: testa, empurra o ramo pocket-portuguese e imprime os próximos passos. NÃO mexe no ramo maquina-de-videos.
-set -euo pipefail
-cd "$(dirname "$0")"
+#!/bin/zsh
+# Publica o backend do Pocket Portuguese no painel-inteligente (Vercel publica sozinha quando o main recebe push).
+# ANTES: SQL supabase/migrations/20261126_pocket_portuguese.sql aplicado no Supabase (o Claude aplica).
+# Não mexe na pasta ~/Documents/painel-inteligente (ramo maquina-de-videos): tudo roda neste worktree.
+set -e
+cd ~/Documents/painel-pocket
+BASE=https://membros.bagencymidia.site
 
-echo "== Testes =="
-node --test --experimental-strip-types tests/pocket-portuguese.test.mjs tests/membros-valor.test.mjs tests/chama-acesa.test.mjs tests/isolamento.test.mjs
-npx tsc --noEmit
+[[ "$(git branch --show-current)" == "pocket-portuguese" ]] || { echo "⚠️ Este worktree não está no ramo pocket-portuguese. Avise o Claude."; exit 1; }
+git checkout -q -- next-env.d.ts 2>/dev/null || true
+[[ -z "$(git status --porcelain --untracked-files=no)" ]] || { echo "⚠️ Há alterações não salvas. Mande para o Claude:"; git status --short --untracked-files=no; exit 1; }
 
-echo
-echo "== Ramo =="
-git status --short
-read -r -p "Enviar o ramo pocket-portuguese para o GitHub? (digite SIM) " ok
-[ "$ok" = "SIM" ] || { echo "Cancelado."; exit 1; }
-git push -u origin pocket-portuguese
+echo "1/4 Juntando com o main atual..."
+git fetch -q origin main
+git merge -q --no-edit origin/main
 
-echo
-echo "Ramo enviado. Falta: fazer o deploy deste ramo do mesmo jeito que o Chama Acesa foi publicado (Coolify/VPS),"
-echo "colocar as variáveis novas, e cadastrar o webhook na Cakto:"
-echo
-echo "Variaveis de ambiente de producao (conferir no servidor):"
-echo "  PP_APP_URL=https://pocket.kitmundi.com/app/"
-echo "  PP_APP_ORIGIN=https://pocket.kitmundi.com"
-echo "  PP_EMAIL_RESPOSTA=support@kitmundi.com"
-echo "No Supabase (Authentication > URL Configuration > Redirect URLs) incluir https://pocket.kitmundi.com/app/"
-echo
-echo "A API fica no mesmo dominio do Chama Acesa: https://membros.bagencymidia.site"
-echo "  https://membros.bagencymidia.site/api/webhooks/membros/cakto?secret=<webhook_secret da área pocket-portuguese>"
-echo "(o secret aparece na consulta final da migration)."
+echo "2/4 Testes..."
+node --test --experimental-strip-types tests/pocket-portuguese.test.mjs || { echo "⚠️ Testes falharam. Nada foi publicado. Mande a saída para o Claude."; exit 1; }
+npx tsc --noEmit || { echo "⚠️ Erro de tipos. Nada foi publicado. Mande a saída para o Claude."; exit 1; }
+
+echo "3/4 Variáveis na Vercel..."
+setenv() {
+  vercel env rm "$1" production -y >/dev/null 2>&1 || true
+  printf "%s" "$2" | vercel env add "$1" production >/dev/null && echo "   $1 = $2"
+}
+setenv PP_APP_URL "https://pocket.kitmundi.com/app/"
+setenv PP_APP_ORIGIN "https://pocket.kitmundi.com"
+setenv PP_EMAIL_RESPOSTA "support@kitmundi.com"
+
+echo "4/4 Publicando (push no main)..."
+antes_dep=$(vercel ls painel-inteligente --prod 2>/dev/null | grep -o 'https://painel-inteligente-[a-z0-9]*-b-agency.vercel.app' | head -1)
+git push -q origin pocket-portuguese:main
+git push -q -u origin pocket-portuguese 2>/dev/null || true
+echo "Enviado para a Vercel. Esperando publicar..."
+sleep 15
+for i in {1..40}; do
+  dep=$(vercel ls painel-inteligente --prod 2>/dev/null | grep -o 'https://painel-inteligente-[a-z0-9]*-b-agency.vercel.app' | head -1)
+  [[ -z "$dep" || "$dep" == "$antes_dep" ]] && { sleep 10; continue; }
+  st=$(vercel inspect "$dep" 2>&1 | grep -i 'status' | head -1)
+  if echo "$st" | grep -qi 'ready'; then
+    echo "   Vercel: Ready ($dep)"
+    echo "   /api/pp/entitlements sem login (esperado 401): HTTP $(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/pp/entitlements")"
+    echo "✅ Backend do Pocket no ar."
+    exit 0
+  fi
+  if echo "$st" | grep -qi 'error\|canceled'; then
+    echo "⚠️ A Vercel deu erro ($dep). Copie tudo e mande para o Claude."; exit 1
+  fi
+  sleep 10
+done
+echo "⚠️ A Vercel não ficou pronta em ~7 min. Copie tudo e mande para o Claude."
+exit 1
