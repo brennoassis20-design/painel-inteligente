@@ -21,7 +21,10 @@ vercel env pull "$ENVF" --environment=production --yes >/dev/null 2>&1 || true
 SUPA_URL=$(grep -E '^SUPABASE_URL=' "$ENVF" | head -1 | cut -d= -f2- | tr -d '"')
 SUPA_KEY=$(grep -E '^SUPABASE_SERVICE_ROLE_KEY=' "$ENVF" | head -1 | cut -d= -f2- | tr -d '"')
 rm -f "$ENVF"
-if [[ -z "$SUPA_URL" || -z "$SUPA_KEY" ]]; then
+[[ "$SUPA_KEY" == *SENSITIVE* || "$SUPA_URL" == *SENSITIVE* ]] && { SUPA_URL=""; SUPA_KEY=""; }   # chave marcada como sensível na Vercel não sai no pull
+if [[ -n "$SKIP_UPLOAD" ]]; then
+  echo "   (pulado: arquivos já enviados pelo painel do Supabase)"
+elif [[ -z "$SUPA_URL" || -z "$SUPA_KEY" ]]; then
   echo "⚠️ Não consegui ler a chave do Supabase da Vercel. Faça o envio à mão: Supabase > Storage > membros-privado > pasta maquina-de-videos >"
   echo "   enviar '$ZIP' e '$PDF' (mesmos nomes). Depois rode este script de novo pulando esta etapa (SKIP_UPLOAD=1)."
   [[ -n "$SKIP_UPLOAD" ]] || exit 1
