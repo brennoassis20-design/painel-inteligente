@@ -1284,7 +1284,7 @@ function ProductScreen({
                     Abrir o vídeo desta aula
                   </a>
                 ) : (
-                  <div className="gp-video-link">Esta aula não tem vídeo. Veja o material abaixo.</div>
+                  <div className="gp-video-link">{current.materials.length > 0 ? "Esta aula não tem vídeo. Veja o material abaixo." : "O vídeo desta aula chega em breve. Enquanto isso, siga o passo a passo abaixo."}</div>
                 )}
               </div>
               <div className="gp-lesson-info">
