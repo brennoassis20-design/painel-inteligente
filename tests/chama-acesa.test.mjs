@@ -284,13 +284,15 @@ test("XP: 10 + 10 + 15 + 15 de bônus = 50 por dia; jejum 10 só na primeira vez
 test("prática: +5 por acerto, +10 se perfeita, não completa o dia nem mexe na chama", () => {
   const base = completar(estadoVazio(), 1, D0).estado;
   const ids = ["a", "b", "c", "d", "e"];
-  const r = aplicarAcao(base, { tipo: "pratica", acertos: 5, ids }, D0, false);
+  // Fora da janela da Hora da vigília (que dobra o XP por 15 min depois de completar o dia): relógio 1 h adiante.
+  const fora = { agora: Date.now() + 3_600_000 };
+  const r = aplicarAcao(base, { tipo: "pratica", acertos: 5, ids }, D0, false, undefined, fora);
   assert.equal(r.xpGanho, 35);
   assert.equal(r.estado.chama, base.chama);
   assert.deepEqual(r.estado.concluidos, base.concluidos);
   assert.equal(r.estado.praticas.a, 1);
-  assert.equal(aplicarAcao(base, { tipo: "pratica", acertos: 3, ids }, D0, false).xpGanho, 15);
-  assert.ok(aplicarAcao(base, { tipo: "pratica", acertos: 6, ids }, D0, false).erro);
+  assert.equal(aplicarAcao(base, { tipo: "pratica", acertos: 3, ids }, D0, false, undefined, fora).xpGanho, 15);
+  assert.ok(aplicarAcao(base, { tipo: "pratica", acertos: 6, ids }, D0, false, undefined, fora).erro);
 });
 
 test("prática: 5 perguntas sem repetir versículo, menos vistos primeiro, duas modalidades", () => {

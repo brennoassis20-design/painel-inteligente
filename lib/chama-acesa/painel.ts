@@ -1,5 +1,6 @@
 // Monta o que a tela precisa (estado + conteúdo liberado). Usado pela rota do servidor e pelo armazém local.
 import type { Dia } from "./dias";
+import type { AmigoChama } from "./extras";
 import type { PlanoChama } from "./conta";
 import type { ConfigLigas, Linha } from "./ligas";
 import type { Meta } from "./marcos";
@@ -38,6 +39,8 @@ export interface Painel {
   oferta365Url: string | null;
   /** true = ainda é o conteúdo de exemplo (dias.json não existe). */
   exemplo: boolean;
+  /** Amigos convidados pela pessoa (Brasa de irmão). Só o servidor preenche; opcional p/ painéis antigos e a bancada. */
+  amigosLista?: AmigoChama[];
 }
 
 /** Conteúdo pago nunca sai do servidor para quem não comprou. */
