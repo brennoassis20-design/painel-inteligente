@@ -1,6 +1,7 @@
 // Lado do servidor: lê e grava o estado da jornada nas tabelas chama_perfil e chama_dias (sempre filtrando por user_id).
 import { supabaseRest } from "@/lib/panel-server";
-import { premiarConvite, checksVazios, diasConcluidos, estadoVazio, TOTAL_DIAS, type Aviso, type Checks, type Estado, type LigaEstado, type Medalha } from "./regras";
+import { premiarConvite, checksVazios, diasConcluidos, estadoVazio, TOTAL_DIAS, type Aviso, type Checks, type Estado, type LigaEstado, type Medalha, type Restauravel } from "./regras";
+import type { Extras } from "./extras";
 
 const enc = encodeURIComponent;
 
@@ -21,13 +22,15 @@ type LinhaPerfil = {
   lembretes_hist: Record<string, string> | null;
   liga: LigaEstado | null;
   dias_feitos: number | null;
+  /** Talentos, chama a restaurar e extras (itens 4 a 7). Migração 20261127_chama_talentos.sql. */
+  extras: ({ talentos?: number; restauravel?: Restauravel | null } & Extras) | null;
 };
 type LinhaDia = { dia: number; concluido_em: string | null; checks: Partial<Checks> | null; jejum: boolean };
 
 /** Código curto de convite (primeiros 8 caracteres do id). */
 export const codigoDe = (userId: string) => userId.replace(/-/g, "").slice(0, 8).toLowerCase();
 
-const COLUNAS = "inicio,horario_lembrete,brasas,chama_atual,maior_chama,ultima_data,medalhas,avisos,xp,xp_semana,praticas,amigos,ultimo_acesso,lembretes_hist,liga,dias_feitos";
+const COLUNAS = "inicio,horario_lembrete,brasas,chama_atual,maior_chama,ultima_data,medalhas,avisos,xp,xp_semana,praticas,amigos,ultimo_acesso,lembretes_hist,liga,dias_feitos,extras";
 
 /** Quantos dias recentes (depois do 21) vêm do banco: a chama não tem limite e a lista de dias cresce por anos. */
 const DIAS_RECENTES = 30;
@@ -59,6 +62,10 @@ export async function carregarEstado(userId: string): Promise<Estado> {
     e.lembretesHist = p.lembretes_hist ?? {};
     e.liga = p.liga ? { ...e.liga, ...p.liga } : e.liga;
     e.diasAtivos = p.dias_feitos ?? 0;
+    const { talentos, restauravel, ...extras } = p.extras ?? {};
+    e.talentos = Number(talentos) || 0;
+    e.restauravel = restauravel ?? null;
+    e.extras = extras;
   }
   for (const d of dias) {
     if (d.concluido_em) e.concluidos[d.dia] = d.concluido_em;
@@ -95,6 +102,7 @@ export async function salvarEstado(userId: string, areaId: number, e: Estado, no
       lembretes_hist: e.lembretesHist,
       liga: e.liga,
       dias_feitos: diasConcluidos(e),
+      extras: { ...(e.extras ?? {}), talentos: e.talentos ?? 0, restauravel: e.restauravel ?? null },
       atualizado: agora,
     }),
   });

@@ -1,6 +1,7 @@
 // Ligas semanais (ranking fictício, como a carreira do Duolingo). Lógica pura e determinística:
 // a semana vai de segunda 00h a domingo 23h59 (fuso de São Paulo); o grupo de 30 tem 29 participantes fictícios
 // gerados a partir de user_id + semana, com XP que cresce ao longo da semana e calibrado pelo nível da liga.
+import { TALENTOS_GANHO } from "./talentos.ts";
 import { inicioSemana, type Estado, type ResultadoLiga } from "./regras.ts";
 
 export interface Liga { id: string; nome: string; cor: string; icone: string; descricao: string }
@@ -143,7 +144,8 @@ export function atualizarLiga(e: Estado, hoje: string, semente_: string, cfg: Co
   const resultado: ResultadoLiga = { semana: l.semana, liga: l.indice, para, posicao, xp, resultado: zona === "sobe" ? "subiu" : zona === "desce" ? "desceu" : "ficou" };
   const { para: _p, ...hist } = resultado;
   void _p;
-  return { ...e, liga: { indice: para, semana: atual, historico: [...l.historico, hist].slice(-20), resultado } };
+  const talentos = (e.talentos ?? 0) + (resultado.resultado === "subiu" ? TALENTOS_GANHO.ligaSubiu : resultado.resultado === "ficou" ? TALENTOS_GANHO.ligaFicou : 0);
+  return { ...e, talentos, liga: { indice: para, semana: atual, historico: [...l.historico, hist].slice(-20), resultado } };
 }
 
 /** Situação atual da pessoa na liga (para a tela e para os lembretes). */

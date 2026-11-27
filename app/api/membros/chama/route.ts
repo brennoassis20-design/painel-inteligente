@@ -9,6 +9,7 @@ import { carregarConta, membrosAtivos, type ContaGuardada } from "@/lib/chama-ac
 import { ligaRealMinimo, outrosReais, rankingReal, type MembroRanking } from "@/lib/chama-acesa/ranking";
 import { primeiroNome } from "@/lib/chama-acesa/conta";
 import { diasDasMetas, marcosLiberados } from "@/lib/chama-acesa/marcos";
+import { maxBrasasDoPlano } from "@/lib/chama-acesa/talentos";
 import { aplicarAcao, atualizarParaHoje, dataSP, horaSP, inicioSemana, registrarAcesso, type Acao, type Check, type Estado } from "@/lib/chama-acesa/regras";
 
 // Jornada do Chama Acesa na conta de cada pessoa. As regras (chama, brasa, um dia por dia, dia 4 só com compra, XP, liga)
@@ -97,10 +98,14 @@ export async function POST(request: Request) {
     else if (body.acao === "pratica") acao = { tipo: "pratica", acertos: Number(body.acertos), ids: Array.isArray(body.ids) ? body.ids.map((x) => String(x).slice(0, 60)).slice(0, 5) : [] };
     else if (body.acao === "limparResultadoLiga") acao = { tipo: "limparResultadoLiga" };
     else if (body.acao === "limparAvisos") acao = { tipo: "limparAvisos" };
+    else if (body.acao === "comprarBrasa") acao = { tipo: "comprarBrasa" };
+    else if (body.acao === "restaurar") acao = { tipo: "restaurar", modo: "talentos" };
+    else if (body.acao === "leituraVolta") acao = { tipo: "leituraVolta" };
+    // GANCHO-EXTRAS: ações dos itens 4 a 7.
     else throw new OpError("Ação desconhecida.");
     const hoje = dataSP();
     const conta = await carregarConta(user.id);
-    const r = aplicarAcao(await emDia(await carregarEstado(user.id), hoje, user, area, conta), acao, hoje, acesso.pago, diasDasMetas(carregarMarcos()));
+    const r = aplicarAcao(await emDia(await carregarEstado(user.id), hoje, user, area, conta), acao, hoje, acesso.pago, diasDasMetas(carregarMarcos()), { agora: Date.now(), maxBrasas: maxBrasasDoPlano(acesso.plano) });
     if (r.erro) throw new OpError(r.erro);
     await salvarEstado(user.id, area.id, r.estado, user.name);
     // Amigo convidado completou o dia 1: quem convidou ganha XP e brasa (uma vez só).

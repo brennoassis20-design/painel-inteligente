@@ -11,6 +11,7 @@ import { diasDasMetas, marcosLiberados, type Meta } from "./marcos.ts";
 import { diasLiberados, type Painel } from "./painel.ts";
 import type { OfertasChama } from "./precos.ts";
 import type { Versiculo } from "./pratica.ts";
+import { maxBrasasDoPlano } from "./talentos.ts";
 import { aplicarAcao, atualizarParaHoje, diffDias, dataSP, estadoVazio, horaSP, inicioSemana, premiarConvite, registrarAcesso, somarDias, somarXp, XP, type Acao, type Estado, type Medalha } from "./regras.ts";
 
 export interface RespostaAcao extends Painel {
@@ -60,8 +61,7 @@ export function criarArmazemRemoto(chamar: Chamada): Armazem {
         : acao.tipo === "estudo" ? { acao: "estudo", dia: acao.dia }
         : acao.tipo === "lembrete" ? { acao: "lembrete", horario: acao.horario }
         : acao.tipo === "pratica" ? { acao: "pratica", acertos: acao.acertos, ids: acao.ids }
-        : acao.tipo === "limparResultadoLiga" ? { acao: "limparResultadoLiga" }
-        : { acao: "limparAvisos" };
+        : { ...acao, tipo: undefined, acao: acao.tipo }; // limparAvisos, limparResultadoLiga, comprarBrasa, restaurar, leituraVolta e extras
       return chamar<RespostaAcao>("/api/membros/chama", { body: corpo });
     },
   };
@@ -189,7 +189,7 @@ export function criarArmazemLocal(
     async agir(acao) {
       const c = await opcoes.buscarConteudo();
       const g = ler();
-      const r = aplicarAcao(emDia(g, c), acao, hojeDe(g), g.pago, diasDasMetas(c.marcos));
+      const r = aplicarAcao(emDia(g, c), acao, hojeDe(g), g.pago, diasDasMetas(c.marcos), { maxBrasas: maxBrasasDoPlano(contaDe(g).plano) });
       if (r.erro) throw new Error(r.erro);
       g.estado = r.estado;
       gravar(g);
