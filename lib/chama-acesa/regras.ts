@@ -2,7 +2,7 @@
 // Datas são sempre "AAAA-MM-DD" no fuso de São Paulo.
 import { DIAS_METAS_PADRAO, ehMeta, idEstudo, idMeta, metaAlcancada, temMeta } from "./marcos.ts";
 import { DIAS_PARA_RESTAURAR, PASSOS_VOLTA, PRECO, TALENTOS_GANHO, type PassoVolta } from "./talentos.ts";
-import { diasCobertosPorExtras, multiplicadorXp, type Extras } from "./extras.ts";
+import { aoCompletarDia, comprarEscudo, darBrasa, diasCobertosPorExtras, fazerVoto, multiplicadorXp, quebrarVoto, semEscudoPassado, type AmigoChama, type Extras } from "./extras.ts";
 
 export const FUSO = "America/Sao_Paulo";
 /** Dias da jornada inicial (dias.json). Depois do 21 a chama continua: o dia vira Palavra + oração + missão (continuo.ts). */
@@ -17,7 +17,7 @@ export type Check = "leu" | "orou" | "missao";
 export type Checks = Record<Check, boolean>;
 /** "metaN" = meta de N dias de chama alcançada; "estudoN" = estudo da meta N concluído; "jornada" = os 21 dias; "chamaN" = medalha antiga. */
 export type Medalha = string;
-export type Aviso = "brasa_salvou" | "chama_apagou" | "chama_restaurada";
+export type Aviso = "brasa_salvou" | "chama_apagou" | "chama_restaurada" | "voto_cumprido" | "voto_quebrado";
 
 /** Chama que apagou e ainda pode voltar (até `ate`, inclusive). `passos` = caminho por esforço já feito. */
 export interface Restauravel { chama: number; ate: string; desde: string; passos: Partial<Record<PassoVolta, boolean>> }
@@ -203,18 +203,25 @@ export function atualizarParaHoje(entrada: Estado, hoje: string): Estado {
   // Restauração que passou do prazo some.
   const e = entrada.restauravel && hoje > entrada.restauravel.ate ? { ...entrada, restauravel: null } : entrada;
   const perdidos = diasPerdidos(e, hoje);
-  if (perdidos === 0) return e;
+  if (perdidos === 0) {
+    const atuais = e.extras ?? {};
+    const limpo = semEscudoPassado(atuais, hoje);
+    return limpo === atuais ? e : { ...e, extras: limpo };
+  }
   const pulados = Array.from({ length: perdidos }, (_, i) => somarDias(e.ultimaData!, i + 1));
   // GANCHO-EXTRAS: dias cobertos por extras (Dia do Senhor) não gastam brasa.
   const cobertos = new Set(diasCobertosPorExtras(e.extras ?? {}, pulados));
   const precisa = pulados.filter((d) => !cobertos.has(d)).length;
+  const extras = semEscudoPassado(e.extras ?? {}, hoje);
   if (e.brasas >= precisa) {
-    return { ...e, brasas: e.brasas - precisa, ultimaData: somarDias(hoje, -1), avisos: [...e.avisos, "brasa_salvou"] };
+    // Brasa (ou escudo) salvando não quebra o voto.
+    return { ...e, extras, brasas: e.brasas - precisa, ultimaData: somarDias(hoje, -1), avisos: precisa > 0 ? [...e.avisos, "brasa_salvou"] : e.avisos };
   }
   // Apagou. Dá para restaurar até 48 h depois do 1º dia perdido (se a pessoa abriu a tempo).
   const ate = somarDias(pulados[0], DIAS_PARA_RESTAURAR);
   const restauravel: Restauravel | null = hoje <= ate ? { chama: e.chama, ate, desde: hoje, passos: {} } : null;
-  return { ...e, chama: 0, ultimaData: null, restauravel, avisos: [...e.avisos, "chama_apagou"] };
+  const voto = quebrarVoto(extras, [...e.avisos, "chama_apagou"]);
+  return { ...e, chama: 0, ultimaData: null, restauravel, extras: voto.extras, avisos: voto.avisos };
 }
 
 /** A chama volta: a antiga + o que a pessoa já fez depois que apagou. Hoje continua valendo (não precisa refazer). */
@@ -244,11 +251,18 @@ export type Acao =
   | { tipo: "limparAvisos" }
   | { tipo: "comprarBrasa" }
   | { tipo: "restaurar"; modo: "talentos" }
-  | { tipo: "leituraVolta" };
-  // GANCHO-EXTRAS: ações dos itens 4 a 7 entram aqui.
+  | { tipo: "leituraVolta" }
+  | { tipo: "comprarEscudo" }
+  | { tipo: "fazerVoto" }
+  | { tipo: "darBrasa"; para: string };
 
 /** Contexto do servidor: instante atual (vigília) e limite de brasas do plano (vitalício = 3). */
-export interface Contexto { agora?: number; maxBrasas?: number }
+export interface Contexto {
+  agora?: number;
+  maxBrasas?: number;
+  /** Amigo que vai receber a brasa (o servidor confere que foi convidado por esta pessoa). Sem ele, darBrasa falha. */
+  amigo?: AmigoChama | null;
+}
 
 export interface Resultado {
   estado: Estado;
@@ -267,10 +281,16 @@ const horarioValido = (h: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(h);
 export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boolean, diasMetas: readonly number[] = DIAS_METAS_PADRAO, ctx: Contexto = {}): Resultado {
   const r = aplicarAcaoBase(entrada, acao, hoje, pago, diasMetas, ctx);
   // GANCHO-EXTRAS: Hora da vigília multiplica o XP ganho nesta ação.
-  const mult = r.erro || r.xpGanho <= 0 ? 1 : multiplicadorXp(r.estado.extras ?? {}, ctx.agora ?? Date.now());
-  if (mult <= 1) return r;
-  const extra = Math.round(r.xpGanho * (mult - 1));
-  return { ...r, estado: somarXp(r.estado, extra, hoje), xpGanho: r.xpGanho + extra };
+  const agora = ctx.agora ?? Date.now();
+  const mult = r.erro || r.xpGanho <= 0 ? 1 : multiplicadorXp(r.estado.extras ?? {}, agora);
+  let out = r;
+  if (mult > 1) {
+    const extra = Math.round(r.xpGanho * (mult - 1));
+    out = { ...r, estado: somarXp(r.estado, extra, hoje), xpGanho: r.xpGanho + extra };
+  }
+  // Dia completo: liga a vigília (vale a partir daqui, não dobra o XP do próprio dia) e resolve o voto de 7 dias.
+  if (!out.erro && out.completouDia != null) out = { ...out, estado: aoCompletarDia(out.estado, hoje, agora) };
+  return out;
 }
 
 const ganharTalentos = (e: Estado, n: number): Estado => (n > 0 ? { ...e, talentos: (e.talentos ?? 0) + n } : e);
@@ -292,6 +312,9 @@ function aplicarAcaoBase(entrada: Estado, acao: Acao, hoje: string, pago: boolea
     if ((base.talentos ?? 0) < PRECO.restaurar) return nada(`Faltam talentos: restaurar custa ${PRECO.restaurar}.`);
     return { ...nada(), estado: restaurarChama({ ...base, talentos: base.talentos - PRECO.restaurar }, hoje) };
   }
+  if (acao.tipo === "comprarEscudo") { const x = comprarEscudo(base, hoje); return { ...nada(x.erro), estado: x.estado }; }
+  if (acao.tipo === "fazerVoto") { const x = fazerVoto(base, hoje); return { ...nada(x.erro), estado: x.estado }; }
+  if (acao.tipo === "darBrasa") { const x = darBrasa(base, String(acao.para ?? ""), hoje, ctx.amigo); return { ...nada(x.erro), estado: x.estado }; }
   if (acao.tipo === "leituraVolta") {
     if (!base.restauravel) return nada("Não há chama para restaurar.");
     return { ...nada(), estado: marcarPassoVolta(base, "leitura", hoje) };

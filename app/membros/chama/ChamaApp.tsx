@@ -23,6 +23,7 @@ import { Biblia } from "./Biblia";
 import { Avatar } from "./Avatar";
 import { Chama } from "./Chama";
 import { ContaTela } from "./Conta";
+import { ExtrasCard } from "./Extras";
 import { OfertasBloco } from "./Ofertas";
 import { Anel, IconeAba, IconeCheck, IconeCoracao, IconeEnvio, IconeLivro, IconeVoltar, MiniChama, type IdAba } from "./Icones";
 import "./chama.css";
@@ -750,6 +751,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             <p className="ch-suave">{estado.amigos === 0 ? "Nenhum amigo aceitou ainda." : estado.amigos === 1 ? "1 amigo aceitou o convite e começou a jornada." : `${estado.amigos} amigos aceitaram o convite e começaram a jornada.`} Quando um amigo completa o dia 1, você ganha {XP.convite} XP e 1 brasa guardada.</p>
             <button type="button" className="ch-btn" onClick={() => setConvidar(true)}>Convidar um amigo</button>
           </div>
+          <ExtrasCard estado={estado} hoje={hoje} agir={agir} toast={toast} amigos={painel.amigosLista} onPraticar={() => irPara({ v: "pratica" })} />
           <div className="ch-card">
             <h2>Brasas guardadas</h2>
             <p className="ch-suave">Você ganha 1 brasa a cada 7 dias de chama (no máximo {MAX_BRASAS}). Se pular um dia, a brasa é usada sozinha e a chama não apaga.</p>

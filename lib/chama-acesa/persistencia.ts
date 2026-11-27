@@ -1,7 +1,7 @@
 // Lado do servidor: lê e grava o estado da jornada nas tabelas chama_perfil e chama_dias (sempre filtrando por user_id).
 import { supabaseRest } from "@/lib/panel-server";
 import { premiarConvite, checksVazios, diasConcluidos, estadoVazio, TOTAL_DIAS, type Aviso, type Checks, type Estado, type LigaEstado, type Medalha, type Restauravel } from "./regras";
-import type { Extras } from "./extras";
+import { MAX_BRASAS_AMIGO, type AmigoChama, type Extras } from "./extras";
 
 const enc = encodeURIComponent;
 
@@ -151,4 +151,31 @@ export async function premiarConvidador(areaId: number, userId: string, hoje: st
   const convidador = await carregarEstado(l.convidado_por);
   await salvarEstado(l.convidado_por, areaId, premiarConvite(convidador, hoje));
   return true;
+}
+
+// ---------------------------------------------------------------- brasa de irmão (Gl 6:2)
+
+/** Amigos = quem esta pessoa convidou (chama_perfil.convidado_por = userId). */
+export async function listarAmigos(userId: string): Promise<AmigoChama[]> {
+  const l = await supabaseRest<{ codigo: string | null; nome: string | null; chama_atual: number | null; brasas: number | null }[]>(
+    `/chama_perfil?convidado_por=eq.${userId}&select=codigo,nome,chama_atual,brasas&order=chama_atual.desc&limit=50`,
+  );
+  return l.filter((x) => x.codigo).map((x) => ({ codigo: x.codigo as string, nome: (x.nome || "Amigo").split(" ")[0], chama: x.chama_atual ?? 0, brasas: x.brasas ?? 0 }));
+}
+
+/** Dá 1 brasa ao amigo (máximo 2). Só grava se a brasa dele não mudou desde a leitura. Devolve false se não deu. */
+export async function darBrasaAoAmigo(userId: string, codigoAmigo: string): Promise<boolean> {
+  const l = await supabaseRest<{ user_id: string; brasas: number | null }[]>(
+    `/chama_perfil?convidado_por=eq.${userId}&codigo=eq.${enc(codigoAmigo)}&select=user_id,brasas&limit=1`,
+  );
+  const a = l[0];
+  if (!a) return false;
+  const atual = a.brasas ?? 0;
+  if (atual >= MAX_BRASAS_AMIGO) return false;
+  const r = await supabaseRest<{ user_id: string }[]>(`/chama_perfil?user_id=eq.${a.user_id}&brasas=eq.${atual}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ brasas: atual + 1 }),
+  });
+  return Array.isArray(r) && r.length > 0;
 }
