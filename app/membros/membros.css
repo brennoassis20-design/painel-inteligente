@@ -114,6 +114,7 @@
 .gp-bb-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--gp-bg) 0%, color-mix(in srgb, var(--gp-bg) 55%, transparent) 14%, transparent 34%), linear-gradient(0deg, var(--gp-bg) 0%, transparent 34%), linear-gradient(180deg, var(--gp-bg) 0%, var(--gp-bg) 7%, color-mix(in srgb, var(--gp-bg) 60%, transparent) 14%, transparent 28%); }
 .gp-bb-in { display: grid; gap: 14px; width: 100%; padding-bottom: clamp(64px, 7vw, 112px); }
 .gp-bb-in > * { max-width: 560px; }
+@media (min-width: 900px) and (max-width: 1199px) { .gp-bb-art { left: max(500px, 46%); } .gp-bb-in > * { max-width: 420px; } }
 .gp-bb h1 { font: 900 clamp(38px, 4.6vw, 68px)/0.98 var(--gp-display); letter-spacing: -0.035em; }
 .gp-bb-text { margin: 0; font-size: 18px; color: #e4e4e8; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .gp-bb-next { display: grid; gap: 8px; font-size: 15px; color: #e4e4e8; }
