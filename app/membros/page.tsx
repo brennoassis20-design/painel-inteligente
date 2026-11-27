@@ -7,6 +7,7 @@ import { captureRef, captureUtm, loadPixel, readUtm, track } from "./pixel";
 import { compactOrigin, tagPlainLink, type UtmMedium } from "@/lib/membros-utm";
 import { finalPrice, onAccent, PriceTag, PromoCard, type PromoInfo } from "./Promo";
 import Login from "./Login";
+import { MinhaConta } from "./Conta";
 import { ReformaApp, type AcessoReforma } from "./reforma/ReformaApp";
 import { ChamaApp } from "./chama/ChamaApp";
 import { InstalarApp } from "./chama/Instalar";
@@ -122,6 +123,12 @@ const ICONS: Record<string, React.ReactNode> = {
     </>
   ),
   list: <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />,
+  user: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </>
+  ),
   bag: <path d="M5 8h14l-1 12H6zM9 8a3 3 0 0 1 6 0" />,
   help: (
     <>
@@ -294,6 +301,7 @@ export default function MembrosPage() {
   const [lessonId, setLessonId] = useState<string | null>(null);
   const [reformaAberto, setReformaAberto] = useState(false);
   const [chamaAberto, setChamaAberto] = useState(false);
+  const [contaAberta, setContaAberta] = useState(false);
   const [locked, setLocked] = useState<Item | null>(null);
   const [promoOpen, setPromoOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
@@ -376,6 +384,7 @@ export default function MembrosPage() {
       setLessonId(params.get("aula"));
       setReformaAberto(params.get("reforma") === "1");
       setChamaAberto(params.get("chama") === "1");
+      setContaAberta(params.get("conta") === "1");
     };
     readRoute();
     window.addEventListener("popstate", readRoute);
@@ -525,6 +534,7 @@ export default function MembrosPage() {
     window.history.pushState(null, "", query ? `?${query}` : window.location.pathname);
     setReformaAberto(false);
     setChamaAberto(false);
+    setContaAberta(false);
     setSlug(nextSlug);
     setLessonId(nextLesson || null);
     setTab("inicio");
@@ -743,14 +753,23 @@ export default function MembrosPage() {
     setHome(null);
     setLogged(false);
   };
+  const abrirConta = () => {
+    window.history.pushState(null, "", "?conta=1");
+    setReformaAberto(false);
+    setChamaAberto(false);
+    setSlug(null);
+    setLessonId(null);
+    setContaAberta(true);
+    window.scrollTo({ top: 0 });
+  };
   // Abas do celular / menu do topo: volta ao início se preciso e rola até o trilho.
   const toSection = (id: string) => {
     setTab(id === "gp-loja" ? "loja" : "meus");
-    if (slug || reformaAberto || chamaAberto) go(null);
+    if (slug || reformaAberto || chamaAberto || contaAberta) go(null);
     window.setTimeout(() => {
       const el = document.getElementById(id);
       if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 72, behavior: "smooth" });
-    }, slug ? 120 : 0);
+    }, slug || contaAberta ? 120 : 0);
   };
   // Capa da tela inicial: a configurada em Aparência (computador 16:9, celular 4:5) ou o banner do produto em destaque.
   const heroDesk = home.settings.hero_image_url || hero?.banner_url || null;
@@ -765,7 +784,7 @@ export default function MembrosPage() {
 
   return (
     <div className="gp" style={theme}>
-      <div className={`gp-top-bar${solid || slug || reformaAberto || chamaAberto ? " is-solid" : ""}`}>
+      <div className={`gp-top-bar${solid || slug || reformaAberto || chamaAberto || contaAberta ? " is-solid" : ""}`}>
         <header className="gp-top gp-wrap">
           <button type="button" className="gp-logo" onClick={() => go(null)} aria-label={`${home.settings.brand_name}: início`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- logo externo configurável */}
@@ -773,7 +792,7 @@ export default function MembrosPage() {
             {home.settings.brand_name}
           </button>
           <nav className="gp-nav" aria-label="Seções">
-            <button type="button" className={!slug && !reformaAberto && !chamaAberto ? "is-on" : undefined} onClick={() => go(null)}>
+            <button type="button" className={!slug && !reformaAberto && !chamaAberto && !contaAberta ? "is-on" : undefined} onClick={() => go(null)}>
               Início
             </button>
             {(owned.length > 0 || freeItems.length > 0) && (
@@ -801,6 +820,9 @@ export default function MembrosPage() {
               onInstall={() => setInstallOpen(true)}
             />
             <AccountMenu email={home.email}>
+              <button type="button" onClick={abrirConta}>
+                <Icon name="user" /> Minha conta
+              </button>
               {owned.some((item) => item.special === "painel") && (
                 <a href={tagPlainLink(PAINEL_URL, { medium: "link", content: "painel-inteligente" })} target="_blank" rel="noreferrer">
                   <Icon name="bulb" /> Painel Inteligente
@@ -835,7 +857,15 @@ export default function MembrosPage() {
         </div>
       )}
 
-      {chamaAberto && home.chama?.app && !slug ? (
+      {contaAberta && !slug ? (
+        <MinhaConta
+          supportUrl={home.settings.support_url ? tagPlainLink(home.settings.support_url, { medium: "link", content: "suporte-conta" }) : null}
+          showInstall={showInstallLink}
+          onInstall={() => setInstallOpen(true)}
+          onOpen={(produto) => go(produto)}
+          onSignOut={signOut}
+        />
+      ) : chamaAberto && home.chama?.app && !slug ? (
         <main className="gp-wrap">
           <ChamaApp
             armazem={armazemChama}
@@ -1027,24 +1057,22 @@ export default function MembrosPage() {
 
       {!(chamaAberto && home.chama?.app) && !(reformaAberto && home.reforma?.app) && (
         <nav className="gp-tabbar" aria-label="Navegação">
-          <button type="button" className={!slug && tab === "inicio" ? "is-on" : undefined} onClick={() => go(null)}>
+          <button type="button" className={!slug && !contaAberta && tab === "inicio" ? "is-on" : undefined} onClick={() => go(null)}>
             <Icon name="home" size={22} /> Início
           </button>
           {(owned.length > 0 || freeItems.length > 0) && (
-            <button type="button" className={!slug && tab === "meus" ? "is-on" : undefined} onClick={() => toSection("gp-meus")}>
+            <button type="button" className={!slug && !contaAberta && tab === "meus" ? "is-on" : undefined} onClick={() => toSection("gp-meus")}>
               <Icon name="mine" size={22} /> Meus
             </button>
           )}
           {store.length > 0 && (
-            <button type="button" className={!slug && tab === "loja" ? "is-on" : undefined} onClick={() => toSection("gp-loja")}>
+            <button type="button" className={!slug && !contaAberta && tab === "loja" ? "is-on" : undefined} onClick={() => toSection("gp-loja")}>
               <Icon name="bag" size={22} /> Loja
             </button>
           )}
-          {home.settings.support_url && (
-            <a href={tagPlainLink(home.settings.support_url, { medium: "link", content: "suporte" })} target="_blank" rel="noreferrer">
-              <Icon name="help" size={22} /> Ajuda
-            </a>
-          )}
+          <button type="button" className={contaAberta ? "is-on" : undefined} onClick={abrirConta}>
+            <Icon name="user" size={22} /> Conta
+          </button>
         </nav>
       )}
 
