@@ -92,7 +92,7 @@ export function PromoCard<T extends PromoItem>({ promo, items, onOpen }: { promo
           }
         }}
       >
-        ×
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
       </button>
       <div className="gp-promo-head">
         <b>{promo.title}</b>
@@ -101,7 +101,7 @@ export function PromoCard<T extends PromoItem>({ promo, items, onOpen }: { promo
       <button type="button" className="gp-promo-item" onClick={() => onOpen(item)} aria-label={`${item.title}, ver oferta`}>
         <span
           className="gp-promo-art"
-          style={item.cover_url ? { backgroundImage: `url("${item.cover_url}")` } : { background: `linear-gradient(160deg, ${item.color}, #0a0c12)` }}
+          style={item.cover_url ? { backgroundImage: `url("${item.cover_url}")` } : { background: `linear-gradient(160deg, ${item.color}, #101012)` }}
         />
         <span className="gp-promo-info">
           <span className="gp-promo-name">{item.title}</span>

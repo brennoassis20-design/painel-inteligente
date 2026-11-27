@@ -119,12 +119,14 @@ export default function Login({
 
   return (
     <div className="gp-login">
-      <form className="gp-login-card" onSubmit={submit}>
-        <div className="gp-logo">
+      <div className="gp-login-brand">
+        <span className="gp-logo">
           {/* eslint-disable-next-line @next/next/no-img-element -- logo externo configurável */}
-          {logo ? <img src={logo} alt="" /> : <i />}
+          {logo ? <img src={logo} alt="" /> : null}
           {brand}
-        </div>
+        </span>
+      </div>
+      <form className="gp-login-card" onSubmit={submit}>
         <h1>{mode === "signup" ? "Crie seu acesso grátis" : mode === "set-password" ? "Crie sua senha" : mode === "recover" ? "Recuperar acesso" : "Entre na sua área"}</h1>
         <p className="gp-muted">
           {mode === "signup"

@@ -90,10 +90,66 @@ type ProductView = {
 
 const PAINEL_URL = "https://painelinteligente.bagencymidia.site";
 
+// Capa: a imagem como está (sem véu escuro em cima); sem imagem, a cor do produto com o nome escrito.
 function art(item: { color: string; cover_url?: string | null }) {
-  return item.cover_url
-    ? { backgroundImage: `linear-gradient(180deg, transparent 45%, #0a0c12ee), url("${item.cover_url}")` }
-    : { backgroundImage: `radial-gradient(120% 70% at 80% 10%, ${item.color}99, transparent 60%), linear-gradient(180deg, ${item.color}33, #0a0c12 92%)` };
+  return item.cover_url ? { backgroundImage: `url("${item.cover_url}")` } : { backgroundColor: item.color || "#2a2a30" };
+}
+
+const aulas = (n: number) => `${n} ${n === 1 ? "aula" : "aulas"}`;
+const pct = (done: number, total: number) => (total ? Math.round((done / total) * 100) : 0);
+
+// Ícones desenhados (um traço só, 24px). Nada de emoji ou caractere no lugar de ícone.
+const ICONS: Record<string, React.ReactNode> = {
+  play: <path fill="currentColor" stroke="none" d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </>
+  ),
+  back: <path d="M15 5l-7 7 7 7" />,
+  left: <path d="M15 5l-7 7 7 7" />,
+  right: <path d="M9 5l7 7-7 7" />,
+  x: <path d="M6 6l12 12M18 6L6 18" />,
+  check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
+  down: <path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14" />,
+  home: <path d="M4 10.5L12 4l8 6.5V20h-5.5v-6h-5v6H4z" />,
+  mine: (
+    <>
+      <rect x="4" y="4" width="7" height="9" rx="1" />
+      <rect x="13" y="4" width="7" height="9" rx="1" />
+      <path d="M4 17h16M4 20h10" />
+    </>
+  ),
+  list: <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />,
+  bag: <path d="M5 8h14l-1 12H6zM9 8a3 3 0 0 1 6 0" />,
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17h.01" />
+    </>
+  ),
+  phone: (
+    <>
+      <rect x="7" y="3" width="10" height="18" rx="2" />
+      <path d="M11 18h2" />
+    </>
+  ),
+  gear: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />
+    </>
+  ),
+  out: <path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10" />,
+  bulb: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />,
+};
+function Icon({ name, size = 20 }: { name: keyof typeof ICONS; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {ICONS[name]}
+    </svg>
+  );
 }
 
 function Lock() {
@@ -104,38 +160,122 @@ function Lock() {
   );
 }
 
-function Tile({ item, label, progress, onOpen }: { item: Item; label: React.ReactNode; progress?: number; onOpen: () => void }) {
+// Capa no trilho: a imagem sozinha; o que importa (progresso, preço) fica embaixo, fora da arte.
+function Tile({
+  item,
+  meta,
+  progress,
+  wide,
+  image,
+  caption,
+  onOpen,
+}: {
+  item: Item;
+  meta: React.ReactNode;
+  progress?: number;
+  wide?: boolean;
+  image?: string | null;
+  caption?: string;
+  onOpen: () => void;
+}) {
+  const img = image !== undefined ? image : item.cover_url;
   return (
-    <button type="button" className={`gp-tile${item.owned ? "" : " is-locked"}${item.cover_url ? " has-cover" : ""}`} onClick={onOpen} aria-label={item.owned ? `Abrir ${item.title}` : `${item.title}, bloqueado. Ver como liberar`}>
-      <span className="gp-tile-art" style={art(item)} />
-      {!item.owned && item.promo_off ? (
-        <span className="gp-badge gp-badge-promo">-{item.promo_off}%</span>
-      ) : (
-        !item.owned && item.badge && <span className="gp-badge">{item.badge}</span>
-      )}
-      {!item.owned && (
-        <span className="gp-lock">
-          <Lock />
-        </span>
-      )}
-      <span className="gp-tile-text">
-        {/* A capa já traz o nome do produto; sem capa, o nome vai escrito. */}
-        {item.cover_url ? null : item.title}
-        <small className={item.promo_price_cents && !item.owned ? "has-promo" : undefined}>{label}</small>
+    <button type="button" className={`gp-tile${item.owned ? "" : " is-locked"}`} onClick={onOpen} aria-label={item.owned ? `Abrir ${item.title}` : `${item.title}, bloqueado. Ver como liberar`}>
+      <span className={`gp-tile-img${img ? "" : " gp-noart"}`} style={img ? { backgroundImage: `url("${img}")` } : art(item)}>
+        {img ? null : item.title}
+        {!item.owned && item.promo_off ? (
+          <span className="gp-badge gp-badge-promo">-{item.promo_off}%</span>
+        ) : (
+          !item.owned && item.badge && <span className="gp-badge">{item.badge}</span>
+        )}
+        {!item.owned && (
+          <span className="gp-lock">
+            <Lock />
+          </span>
+        )}
+        {wide && (
+          <span className="gp-tile-play">
+            <span>
+              <Icon name="play" size={18} />
+            </span>
+          </span>
+        )}
+        {progress !== undefined && (
+          <span className="gp-tile-bar">
+            <i style={{ width: `${Math.max(progress, 3)}%` }} />
+          </span>
+        )}
       </span>
-      {progress !== undefined && <span className="gp-bar" style={{ width: `${progress}%` }} />}
+      <span className="gp-tile-meta">
+        {caption && <b>{caption}</b>}
+        <span>{meta}</span>
+      </span>
     </button>
   );
 }
 
-function Row({ id, title, hint, children }: { id?: string; title: string; hint: string; children: React.ReactNode }) {
+function Row({ id, title, wide, children }: { id?: string; title: string; wide?: boolean; children: React.ReactNode }) {
+  const rail = useRef<HTMLDivElement>(null);
+  const [canSlide, setCanSlide] = useState(false);
+  useEffect(() => {
+    const el = rail.current;
+    if (!el) return;
+    const check = () => setCanSlide(el.scrollWidth > el.clientWidth + 4);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const slide = (dir: 1 | -1) => rail.current?.scrollBy({ left: dir * rail.current.clientWidth * 0.85, behavior: "smooth" });
   return (
-    <section className="gp-row" id={id}>
-      <h2>
-        {title} <span>{hint}</span>
-      </h2>
-      <div className="gp-rail">{children}</div>
+    <section className={`gp-row${canSlide ? " can-slide" : ""}`} id={id} aria-label={title}>
+      <div className="gp-row-head">
+        <h2>{title}</h2>
+        <div className="gp-row-arrows">
+          <button type="button" onClick={() => slide(-1)} aria-label={`${title}: voltar`}>
+            <Icon name="left" size={18} />
+          </button>
+          <button type="button" onClick={() => slide(1)} aria-label={`${title}: mais`}>
+            <Icon name="right" size={18} />
+          </button>
+        </div>
+      </div>
+      <div className={`gp-rail${wide ? " is-wide" : ""}`} ref={rail}>
+        {children}
+      </div>
     </section>
+  );
+}
+
+// Menu da conta (avatar): e-mail, instalar app, suporte, configurar e sair.
+function AccountMenu({ email, children }: { email?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent ? event.key === "Escape" : !box.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  return (
+    // Qualquer toque dentro (item ou avatar) fecha o menu aberto; o avatar abre de novo quando estava fechado.
+    <div className="gp-menu-wrap" ref={box} onClickCapture={() => open && setOpen(false)}>
+      <button type="button" className="gp-icon-btn" aria-expanded={open} aria-label="Sua conta" onClick={() => !open && setOpen(true)}>
+        <span className="gp-avatar">{(email || "?").slice(0, 1)}</span>
+      </button>
+      {open && (
+        <div className="gp-menu">
+          {email && <p>{email}</p>}
+          {children}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -161,6 +301,15 @@ export default function MembrosPage() {
   const [signupStart, setSignupStart] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
   const [showInstallLink, setShowInstallLink] = useState(false);
+  // Topo transparente sobre o destaque; fica sólido quando a página rola.
+  const [solid, setSolid] = useState(false);
+  const [tab, setTab] = useState<"inicio" | "meus" | "loja">("inicio");
+  useEffect(() => {
+    const onScroll = () => setSolid(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Volta do checkout com ?transactionkey= (ver efeito abaixo).
   const [buy, setBuy] = useState<{ key: string; status: "waiting" | "email"; email?: string } | null>(null);
@@ -378,6 +527,7 @@ export default function MembrosPage() {
     setChamaAberto(false);
     setSlug(nextSlug);
     setLessonId(nextLesson || null);
+    setTab("inicio");
     window.scrollTo({ top: 0 });
   }, []);
 
@@ -586,9 +736,26 @@ export default function MembrosPage() {
     window.setTimeout(() => document.getElementById("gp-loja")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
   const hero = home.hero;
+  // Próxima aula do produto em destaque (vem do "continuar assistindo").
+  const heroNext = hero ? home.continueWatching.find((entry) => entry.product.id === hero.id) || null : null;
+  const signOut = () => {
+    writeSession(null);
+    setHome(null);
+    setLogged(false);
+  };
+  // Abas do celular / menu do topo: volta ao início se preciso e rola até o trilho.
+  const toSection = (id: string) => {
+    setTab(id === "gp-loja" ? "loja" : "meus");
+    if (slug || reformaAberto || chamaAberto) go(null);
+    window.setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 72, behavior: "smooth" });
+    }, slug ? 120 : 0);
+  };
   // Capa da tela inicial: a configurada em Aparência (computador 16:9, celular 4:5) ou o banner do produto em destaque.
   const heroDesk = home.settings.hero_image_url || hero?.banner_url || null;
-  const heroMob = home.settings.hero_image_mobile_url || heroDesk;
+  // Celular: capa vertical (a de Aparência 4:5 ou a capa 2:3 do produto, que já traz o nome escrito).
+  const heroPoster = home.settings.hero_image_mobile_url || hero?.cover_url || heroDesk;
   const theme = {
     "--gp-accent": home.settings.accent || "#f2b441",
     "--gp-on-accent": onAccent(home.settings.accent || "#f2b441"),
@@ -598,51 +765,69 @@ export default function MembrosPage() {
 
   return (
     <div className="gp" style={theme}>
-      <header className="gp-top gp-wrap">
-        <button type="button" className="gp-logo" onClick={() => go(null)}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- logo externo configurável */}
-          {home.settings.logo_url ? <img src={home.settings.logo_url} alt="" /> : <i />}
-          {home.settings.brand_name}
-        </button>
-        <nav className="gp-nav">
-          <button type="button" onClick={() => go(null)}>
-            Início
+      <div className={`gp-top-bar${solid || slug || reformaAberto || chamaAberto ? " is-solid" : ""}`}>
+        <header className="gp-top gp-wrap">
+          <button type="button" className="gp-logo" onClick={() => go(null)} aria-label={`${home.settings.brand_name}: início`}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- logo externo configurável */}
+            {home.settings.logo_url ? <img src={home.settings.logo_url} alt="" /> : null}
+            {home.settings.brand_name}
           </button>
-          {showInstallLink && (
-            <button type="button" onClick={() => setInstallOpen(true)}>
-              Instalar app
+          <nav className="gp-nav" aria-label="Seções">
+            <button type="button" className={!slug && !reformaAberto && !chamaAberto ? "is-on" : undefined} onClick={() => go(null)}>
+              Início
             </button>
-          )}
-          {owned.some((item) => item.special === "painel") && (
-            <a href={tagPlainLink(PAINEL_URL, { medium: "link", content: "painel-inteligente" })} target="_blank" rel="noreferrer">
-              Painel Inteligente
-            </a>
-          )}
-          {home.settings.support_url && (
-            <a href={tagPlainLink(home.settings.support_url, { medium: "link", content: "suporte" })} target="_blank" rel="noreferrer">
-              Suporte
-            </a>
-          )}
-          {home.isAdmin && <a href={`${areaBase()}/admin`}>Configurar</a>}
-          <Bell
-            items={notices.items}
-            unread={notices.unread}
-            onOpenItem={openNotice}
-            onSeen={() => setHome({ ...home, notices: { ...notices, unread: 0 } })}
-            onInstall={() => setInstallOpen(true)}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              writeSession(null);
-              setHome(null);
-              setLogged(false);
-            }}
-          >
-            Sair
-          </button>
-        </nav>
-      </header>
+            {(owned.length > 0 || freeItems.length > 0) && (
+              <button type="button" onClick={() => toSection("gp-meus")}>
+                Meus produtos
+              </button>
+            )}
+            {store.length > 0 && (
+              <button type="button" onClick={() => toSection("gp-loja")}>
+                Loja
+              </button>
+            )}
+            {owned.some((item) => item.special === "painel") && (
+              <a href={tagPlainLink(PAINEL_URL, { medium: "link", content: "painel-inteligente" })} target="_blank" rel="noreferrer">
+                Painel Inteligente
+              </a>
+            )}
+          </nav>
+          <div className="gp-tools">
+            <Bell
+              items={notices.items}
+              unread={notices.unread}
+              onOpenItem={openNotice}
+              onSeen={() => setHome({ ...home, notices: { ...notices, unread: 0 } })}
+              onInstall={() => setInstallOpen(true)}
+            />
+            <AccountMenu email={home.email}>
+              {owned.some((item) => item.special === "painel") && (
+                <a href={tagPlainLink(PAINEL_URL, { medium: "link", content: "painel-inteligente" })} target="_blank" rel="noreferrer">
+                  <Icon name="bulb" /> Painel Inteligente
+                </a>
+              )}
+              {showInstallLink && (
+                <button type="button" onClick={() => setInstallOpen(true)}>
+                  <Icon name="phone" /> Instalar o app no celular
+                </button>
+              )}
+              {home.settings.support_url && (
+                <a href={tagPlainLink(home.settings.support_url, { medium: "link", content: "suporte" })} target="_blank" rel="noreferrer">
+                  <Icon name="help" /> Suporte
+                </a>
+              )}
+              {home.isAdmin && (
+                <a href={`${areaBase()}/admin`}>
+                  <Icon name="gear" /> Configurar a área
+                </a>
+              )}
+              <button type="button" onClick={signOut}>
+                <Icon name="out" /> Sair
+              </button>
+            </AccountMenu>
+          </div>
+        </header>
+      </div>
 
       {home.live && (
         <div className="gp-wrap">
@@ -658,11 +843,7 @@ export default function MembrosPage() {
             email={home.email}
             lerUtm={readUtm}
             onAreaMembros={() => go(null)}
-            onSair={() => {
-              writeSession(null);
-              setHome(null);
-              setLogged(false);
-            }}
+            onSair={signOut}
             onAtivarPush={async () => {
               const { vapid } = await api<{ vapid: string }>("/api/membros/avisos");
               await enablePush(vapid);
@@ -692,11 +873,38 @@ export default function MembrosPage() {
       ) : (
         <main>
           {hero && (
-            <section className="gp-hero gp-wrap">
-              <div className="gp-hero-text">
-                <span className="gp-eyebrow">{hero.owned ? "Continue de onde parou" : "Em destaque"}</span>
+            <section className={`gp-bb${heroPoster && !home.settings.hero_image_mobile_url ? " has-poster-art" : ""}`} aria-label="Destaque">
+              <span className="gp-bb-art" style={heroDesk ? { backgroundImage: `url("${heroDesk}")` } : art(hero)} aria-hidden="true" />
+              <span
+                className={`gp-bb-poster${home.settings.hero_image_mobile_url ? " is-wide" : ""}`}
+                style={heroPoster ? { backgroundImage: `url("${heroPoster}")` } : art(hero)}
+                aria-hidden="true"
+              />
+              <div className="gp-bb-in gp-wrap">
                 <h1>{home.settings.hero_title || hero.title}</h1>
-                <p>{home.settings.hero_text || hero.subtitle || hero.description}</p>
+                {(home.settings.hero_text || hero.subtitle || hero.description) && <p className="gp-bb-text">{home.settings.hero_text || hero.subtitle || hero.description}</p>}
+                {hero.owned && hero.lessons_total > 0 && (
+                  <div className="gp-bb-next">
+                    <span>
+                      {heroNext ? (
+                        <>
+                          <b>Continuar:</b> {heroNext.lesson_title}
+                        </>
+                      ) : hero.lessons_done ? (
+                        `${hero.lessons_done} de ${aulas(hero.lessons_total)} concluídas`
+                      ) : (
+                        <>
+                          <b>Comece pela aula 1</b> · {aulas(hero.lessons_total)}
+                        </>
+                      )}
+                    </span>
+                    {hero.lessons_done > 0 && (
+                      <span className="gp-meter" role="img" aria-label={`${pct(hero.lessons_done, hero.lessons_total)}% concluído`}>
+                        <i style={{ width: `${pct(hero.lessons_done, hero.lessons_total)}%` }} />
+                      </span>
+                    )}
+                  </div>
+                )}
                 {!hero.owned && hero.promo_price_cents ? (
                   <div className="gp-promo-line">
                     {promo && <span className="gp-promo-pill">{promo.title}</span>}
@@ -705,38 +913,29 @@ export default function MembrosPage() {
                 ) : null}
                 <div className="gp-btns">
                   {hero.owned ? (
-                    <button type="button" className="gp-btn gp-btn-light" onClick={() => go(hero.slug)}>
-                      ▶ Assistir
+                    <button type="button" className="gp-btn gp-btn-light" onClick={() => go(hero.slug, heroNext?.lesson_id)}>
+                      <Icon name="play" size={22} /> {hero.lessons_done ? "Continuar" : "Assistir"}
                     </button>
                   ) : (
                     <button type="button" className="gp-btn gp-btn-gold" onClick={() => open(hero)}>
                       Desbloquear {hero.price_cents ? `por ${brl(finalPrice(hero))}` : ""}
                     </button>
                   )}
-                  {hero.trailer_youtube && (
+                  {hero.trailer_youtube ? (
                     <button type="button" className="gp-btn gp-btn-ghost" onClick={() => setTrailer(hero.trailer_youtube)}>
-                      Ver trailer
+                      <Icon name="play" size={18} /> Trailer
                     </button>
-                  )}
+                  ) : hero.owned ? (
+                    <button type="button" className="gp-btn gp-btn-ghost" onClick={() => go(hero.slug)}>
+                      <Icon name="list" /> Aulas
+                    </button>
+                  ) : null}
                 </div>
               </div>
-              <button
-                type="button"
-                className={`gp-hero-art${heroDesk ? " has-img" : ""}${home.settings.hero_image_mobile_url ? " is-portrait" : ""}`}
-                style={
-                  heroDesk
-                    ? ({ "--gp-hero-desk": `url("${heroDesk}")`, "--gp-hero-mob": `url("${heroMob}")` } as React.CSSProperties)
-                    : art(hero)
-                }
-                onClick={() => (hero.trailer_youtube ? setTrailer(hero.trailer_youtube) : open(hero))}
-                aria-label={hero.trailer_youtube ? "Ver trailer" : `Abrir ${hero.title}`}
-              >
-                {hero.trailer_youtube && <span className="gp-play" />}
-              </button>
             </section>
           )}
 
-          <div className="gp-wrap">
+          <div className="gp-wrap gp-rows">
             {home.reforma?.app && (
               <button
                 type="button"
@@ -757,13 +956,16 @@ export default function MembrosPage() {
             )}
             <PushInvite onInstall={() => setInstallOpen(true)} />
             {home.continueWatching.length > 0 && (
-              <Row title="Continue assistindo" hint="de onde você parou">
+              <Row title="Continuar assistindo" wide>
                 {home.continueWatching.map((entry) => (
                   <Tile
                     key={entry.product.id}
                     item={entry.product}
-                    label={entry.lesson_title}
-                    progress={entry.product.lessons_total ? Math.round((entry.product.lessons_done / entry.product.lessons_total) * 100) : 0}
+                    wide
+                    image={entry.product.banner_url || entry.product.cover_url}
+                    caption={entry.lesson_title}
+                    meta={entry.product.title}
+                    progress={pct(entry.product.lessons_done, entry.product.lessons_total)}
                     onOpen={() => go(entry.product.slug, entry.lesson_id)}
                   />
                 ))}
@@ -771,13 +973,13 @@ export default function MembrosPage() {
             )}
 
             {freeItems.length > 0 && (
-              <Row title="Grátis para você" hint="comece por aqui">
+              <Row id={owned.length ? undefined : "gp-meus"} title="Grátis para você">
                 {freeItems.map((item) => (
                   <Tile
                     key={item.id}
                     item={item}
-                    label={item.lessons_done ? `${item.lessons_done} de ${item.lessons_total} aulas` : "Grátis · assistir"}
-                    progress={item.lessons_total && item.lessons_done ? Math.round((item.lessons_done / item.lessons_total) * 100) : undefined}
+                    meta={<span className="gp-own">{item.lessons_done ? `${item.lessons_done} de ${aulas(item.lessons_total)}` : "Grátis"}</span>}
+                    progress={item.lessons_total && item.lessons_done ? pct(item.lessons_done, item.lessons_total) : undefined}
                     onOpen={() => open(item)}
                   />
                 ))}
@@ -785,13 +987,13 @@ export default function MembrosPage() {
             )}
 
             {owned.length > 0 && (
-              <Row title="Seus produtos" hint="liberados para você">
+              <Row id="gp-meus" title="Meus produtos">
                 {owned.map((item) => (
                   <Tile
                     key={item.id}
                     item={item}
-                    label={item.lessons_total ? `${item.lessons_done} de ${item.lessons_total} aulas` : "Liberado"}
-                    progress={item.lessons_total ? Math.round((item.lessons_done / item.lessons_total) * 100) : undefined}
+                    meta={!item.lessons_total ? "Liberado" : item.lessons_done >= item.lessons_total ? "Concluído" : item.lessons_done ? `${item.lessons_done} de ${aulas(item.lessons_total)}` : aulas(item.lessons_total)}
+                    progress={item.lessons_total && item.lessons_done ? pct(item.lessons_done, item.lessons_total) : undefined}
                     onOpen={() => open(item)}
                   />
                 ))}
@@ -799,9 +1001,9 @@ export default function MembrosPage() {
             )}
 
             {store.length > 0 && (
-              <Row id="gp-loja" title="Desbloqueie agora" hint="toque para ver como liberar">
+              <Row id="gp-loja" title={owned.length ? "Para liberar" : "Produtos"}>
                 {store.map((item) => (
-                  <Tile key={item.id} item={item} label={item.price_cents ? <PriceTag item={item} size="sm" /> : "Ver detalhes"} onOpen={() => open(item)} />
+                  <Tile key={item.id} item={item} meta={item.price_cents ? <PriceTag item={item} size="sm" /> : "Ver detalhes"} onOpen={() => open(item)} />
                 ))}
               </Row>
             )}
@@ -821,6 +1023,29 @@ export default function MembrosPage() {
             )}
           </div>
         </main>
+      )}
+
+      {!(chamaAberto && home.chama?.app) && !(reformaAberto && home.reforma?.app) && (
+        <nav className="gp-tabbar" aria-label="Navegação">
+          <button type="button" className={!slug && tab === "inicio" ? "is-on" : undefined} onClick={() => go(null)}>
+            <Icon name="home" size={22} /> Início
+          </button>
+          {(owned.length > 0 || freeItems.length > 0) && (
+            <button type="button" className={!slug && tab === "meus" ? "is-on" : undefined} onClick={() => toSection("gp-meus")}>
+              <Icon name="mine" size={22} /> Meus
+            </button>
+          )}
+          {store.length > 0 && (
+            <button type="button" className={!slug && tab === "loja" ? "is-on" : undefined} onClick={() => toSection("gp-loja")}>
+              <Icon name="bag" size={22} /> Loja
+            </button>
+          )}
+          {home.settings.support_url && (
+            <a href={tagPlainLink(home.settings.support_url, { medium: "link", content: "suporte" })} target="_blank" rel="noreferrer">
+              <Icon name="help" size={22} /> Ajuda
+            </a>
+          )}
+        </nav>
       )}
 
       {locked && (
@@ -961,9 +1186,8 @@ function PromoSheet({
       <div className="gp-sheet gp-promo-sheet">
         <div className="gp-promo-sheet-head">
           <button type="button" className="gp-x" onClick={onClose} aria-label="Fechar">
-            ×
+            <Icon name="x" />
           </button>
-          <span className="gp-eyebrow">Oferta por tempo limitado</span>
           <h2 id="gp-promo-title">{promo.title}</h2>
           {promo.text && <p className="gp-muted">{promo.text}</p>}
           <PromoCountdown ends={promo.ends_at} />
@@ -998,10 +1222,9 @@ function OfferSheet({ items, onClose, onRefresh, onWatch }: { items: Item[]; onC
       <div className="gp-sheet gp-promo-sheet">
         <div className="gp-promo-sheet-head">
           <button type="button" className="gp-x" onClick={onClose} aria-label="Fechar">
-            ×
+            <Icon name="x" />
           </button>
-          <span className="gp-eyebrow">Para você</span>
-          <h2 id="gp-offer-title">Continue de onde parou</h2>
+          <h2 id="gp-offer-title">Para você</h2>
           <p className="gp-muted">Conteúdos desta área que você ainda não tem.</p>
         </div>
         <ul className="gp-promo-list">
@@ -1027,7 +1250,7 @@ function OfferRow({ item, onRefresh, onWatch }: { item: Item; onRefresh: () => P
         <span className="gp-price gp-price-md">{brl(item.price_cents || 0)}</span>
         {state === "released" ? (
           <button type="button" className="gp-btn gp-btn-gold" onClick={() => onWatch({ ...item, owned: true })}>
-            ▶ Liberado: assistir agora
+            <Icon name="play" size={18} /> Liberado: assistir agora
           </button>
         ) : state === "waiting" ? (
           <span className="gp-muted gp-small">Pagamento aberto em outra aba. Libera aqui sozinho quando confirmar.</span>
@@ -1073,7 +1296,7 @@ function PromoRow({ item, onRefresh, onWatch }: { item: Item; onRefresh: () => P
         <PriceTag item={item} size="md" />
         {state === "released" ? (
           <button type="button" className="gp-btn gp-btn-gold" onClick={() => onWatch({ ...item, owned: true })}>
-            ▶ Liberado: assistir agora
+            <Icon name="play" size={18} /> Liberado: assistir agora
           </button>
         ) : state === "waiting" ? (
           <span className="gp-muted gp-small">Pagamento aberto em outra aba. Libera aqui sozinho quando confirmar.</span>
@@ -1115,11 +1338,10 @@ function LockedSheet({
       <div className="gp-sheet">
         <div className="gp-sheet-cover" style={item.banner_url ? { backgroundImage: `url("${item.banner_url}")` } : art(item)}>
           <button type="button" className="gp-x" onClick={onClose} aria-label="Fechar">
-            ×
+            <Icon name="x" />
           </button>
         </div>
         <div className="gp-sheet-in">
-          <span className="gp-eyebrow">{state === "released" ? "Liberado" : "Desbloquear"}</span>
           <h2 id="gp-lock-title">{item.title}</h2>
           {item.subtitle && <p className="gp-sub">{item.subtitle}</p>}
           {item.description && <p className="gp-muted gp-desc">{item.description}</p>}
@@ -1127,8 +1349,8 @@ function LockedSheet({
           {state === "released" ? (
             <>
               <p className="gp-ok">Pagamento confirmado. Já está na sua área.</p>
-              <button type="button" className="gp-btn gp-btn-gold" onClick={() => onWatch({ ...item, owned: true })}>
-                ▶ Assistir agora
+              <button type="button" className="gp-btn gp-btn-light" onClick={() => onWatch({ ...item, owned: true })}>
+                <Icon name="play" /> Assistir agora
               </button>
             </>
           ) : state === "waiting" ? (
@@ -1238,7 +1460,7 @@ function ProductScreen({
   return (
     <main className="gp-wrap gp-product">
       <button type="button" className="gp-back" onClick={onBack}>
-        ← Voltar
+        <Icon name="back" /> Início
       </button>
       <div className="gp-product-head">
         <div>
@@ -1248,7 +1470,7 @@ function ProductScreen({
         {all.length > 0 && (
           <div className="gp-progress" aria-label={`${done} de ${all.length} aulas concluídas`}>
             <span>
-              {done}/{all.length} aulas
+              {done} de {aulas(all.length)} concluídas
             </span>
             <div>
               <i style={{ width: `${Math.round((done / all.length) * 100)}%` }} />
@@ -1270,32 +1492,37 @@ function ProductScreen({
         <section className="gp-player">
           {current ? (
             <>
-              <div className="gp-video">
-                {current.youtube_id ? (
-                  <iframe
-                    key={current.id}
-                    src={`https://www.youtube-nocookie.com/embed/${current.youtube_id}?rel=0&modestbranding=1`}
-                    title={current.title}
-                    allow="encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                  />
-                ) : current.video_url ? (
-                  <a className="gp-video-link" href={current.video_url} target="_blank" rel="noreferrer">
-                    Abrir o vídeo desta aula
-                  </a>
-                ) : (
-                  <div className="gp-video-link">{current.materials.length > 0 ? "Esta aula não tem vídeo. Veja o material abaixo." : "O vídeo desta aula chega em breve. Enquanto isso, siga o passo a passo abaixo."}</div>
-                )}
-              </div>
+              {current.youtube_id || current.video_url ? (
+                <div className="gp-video">
+                  {current.youtube_id ? (
+                    <iframe
+                      key={current.id}
+                      src={`https://www.youtube-nocookie.com/embed/${current.youtube_id}?rel=0&modestbranding=1`}
+                      title={current.title}
+                      allow="encrypted-media; picture-in-picture; fullscreen"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <a className="gp-video-link" href={current.video_url!} target="_blank" rel="noreferrer">
+                      Abrir o vídeo desta aula
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <p className="gp-novideo">{current.materials.length > 0 ? "Esta aula não tem vídeo: o material está logo abaixo." : "O vídeo desta aula chega em breve. Enquanto isso, siga o passo a passo abaixo."}</p>
+              )}
               <div className="gp-lesson-info">
-                <h2>{current.title}</h2>
+                <div>
+                  <span className="gp-lesson-pos">Aula {index + 1} de {all.length}</span>
+                  <h2>{current.title}</h2>
+                </div>
                 {current.description && <p className="gp-muted gp-desc">{current.description}</p>}
                 {current.materials.length > 0 && (
                   <div className="gp-materials">
                     <b>Materiais</b>
                     {current.materials.map((material) => (
                       <a key={material.url} href={material.url} target="_blank" rel="noreferrer">
-                        ↓ {material.titulo}
+                        <Icon name="down" /> {material.titulo}
                       </a>
                     ))}
                   </div>
@@ -1303,7 +1530,17 @@ function ProductScreen({
                 {data.product.owned && (
                   <div className="gp-btns">
                     <button type="button" className={`gp-btn ${current.completed ? "gp-btn-ghost" : "gp-btn-light"}`} onClick={() => void mark(current, !current.completed)}>
-                      {current.completed ? "✓ Concluída (desmarcar)" : next ? "Concluir e ir para a próxima" : "Marcar como concluída"}
+                      {current.completed ? (
+                        <>
+                          <Icon name="check" /> Concluída (desmarcar)
+                        </>
+                      ) : next ? (
+                        <>
+                          Concluir e ir para a próxima <Icon name="right" />
+                        </>
+                      ) : (
+                        "Marcar como concluída"
+                      )}
                     </button>
                   </div>
                 )}
@@ -1317,9 +1554,8 @@ function ProductScreen({
             <button type="button" className="gp-upsell" onClick={() => onLocked({ ...data.upsell!, owned: false, via: "upsell-aula", via_content: "proximo-passo" })}>
               <span className="gp-upsell-art" style={art(data.upsell)} />
               <span>
-                <span className="gp-eyebrow">{data.upsell.text || "Próximo passo recomendado"}</span>
                 <b>{data.upsell.title}</b>
-                <small>{data.upsell.subtitle || "Toque para ver como liberar"}</small>
+                <small>{data.upsell.text || data.upsell.subtitle || "Próximo passo recomendado"}</small>
               </span>
               <span className="gp-btn gp-btn-gold">{data.upsell.price_cents ? <PriceTag item={data.upsell} size="sm" /> : "Ver"}</span>
             </button>
@@ -1343,7 +1579,9 @@ function ProductScreen({
                       onClick={() => (lesson.locked ? (data.product.owned ? undefined : onLocked({ ...data.product, via: "cadeado-aula", via_content: "aula-bloqueada" })) : onLesson(lesson.id))}
                       disabled={lesson.locked && data.product.owned}
                     >
-                      <span className="gp-check">{lesson.completed ? "✓" : lesson.locked ? <Lock /> : ""}</span>
+                      <span className={`gp-num${lesson.completed ? " is-done" : ""}`} aria-label={lesson.completed ? "Concluída" : lesson.locked ? "Bloqueada" : undefined}>
+                        {lesson.completed ? <Icon name="check" size={22} /> : lesson.locked ? <Lock /> : all.indexOf(lesson) + 1}
+                      </span>
                       <span>
                         {lesson.title}
                         {lesson.free_preview && !data.product.owned && <em> grátis</em>}
