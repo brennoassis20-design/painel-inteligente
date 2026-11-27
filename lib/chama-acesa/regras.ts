@@ -257,7 +257,7 @@ export type Acao =
   | { tipo: "jejum"; dia: number; valor: boolean }
   | { tipo: "estudo"; dia: number }
   | { tipo: "lembrete"; horario: string | null }
-  | { tipo: "pratica"; acertos: number; ids: string[] }
+  | { tipo: "pratica"; acertos: number; ids: string[]; certos?: string[] }
   | { tipo: "limparResultadoLiga" }
   | { tipo: "limparAvisos" }
   | { tipo: "comprarBrasa" }
@@ -336,8 +336,16 @@ function aplicarAcaoBase(entrada: Estado, acao: Acao, hoje: string, pago: boolea
     const xp = acao.acertos * XP.acertoPratica + (n === 5 && acao.acertos === 5 ? XP.praticaPerfeita : 0);
     const praticas = { ...base.praticas };
     for (const id of acao.ids) praticas[id] = (praticas[id] ?? 0) + 1;
+    // Desafio da Palavra: acertos por versículo (só ids da sessão, sem repetir, e batendo com o total de acertos).
+    const certos = [...new Set((acao.certos ?? []).filter((id) => acao.ids.includes(id)))];
+    let extrasBase = base.extras ?? {};
+    if (certos.length === acao.acertos && certos.length > 0) {
+      const versos = { ...(extrasBase.versos ?? {}) };
+      for (const id of certos) versos[id] = (versos[id] ?? 0) + 1;
+      extrasBase = { ...extrasBase, versos };
+    }
     // Prática não completa o dia nem mexe na chama: só XP, talentos (se perfeita) e o contador de versículos vistos.
-    let estado: Estado = { ...somarXp(base, xp, hoje), praticas };
+    let estado: Estado = { ...somarXp(base, xp, hoje), praticas, extras: extrasBase };
     if (n === 5 && acao.acertos === 5) estado = ganharTalentos(estado, TALENTOS_GANHO.praticaPerfeita);
     // Prática completa (5 versículos) conta como passo da volta.
     if (n === 5) estado = marcarPassoVolta(estado, "pratica", hoje);

@@ -87,7 +87,7 @@ export async function GET(request: Request) {
 const CHECKS: Check[] = ["leu", "orou", "missao"];
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => ({}))) as { acao?: string; dia?: number; check?: string; valor?: boolean; horario?: string | null; acertos?: number; ids?: unknown; para?: string };
+  const body = (await request.json().catch(() => ({}))) as { acao?: string; dia?: number; check?: string; valor?: boolean; horario?: string | null; acertos?: number; ids?: unknown; certos?: unknown; para?: string };
   return withUser(request, async (user, area) => {
     const acesso = await exigir(user, area);
     let acao: Acao;
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     else if (body.acao === "jejum") acao = { tipo: "jejum", dia: Number(body.dia), valor: Boolean(body.valor) };
     else if (body.acao === "estudo") acao = { tipo: "estudo", dia: Number(body.dia) };
     else if (body.acao === "lembrete") acao = { tipo: "lembrete", horario: body.horario ? String(body.horario) : null };
-    else if (body.acao === "pratica") acao = { tipo: "pratica", acertos: Number(body.acertos), ids: Array.isArray(body.ids) ? body.ids.map((x) => String(x).slice(0, 60)).slice(0, 5) : [] };
+    else if (body.acao === "pratica") acao = { tipo: "pratica", acertos: Number(body.acertos), ids: Array.isArray(body.ids) ? body.ids.map((x) => String(x).slice(0, 60)).slice(0, 5) : [], certos: Array.isArray(body.certos) ? body.certos.map((x) => String(x).slice(0, 60)).slice(0, 5) : undefined };
     else if (body.acao === "limparResultadoLiga") acao = { tipo: "limparResultadoLiga" };
     else if (body.acao === "limparAvisos") acao = { tipo: "limparAvisos" };
     else if (body.acao === "comprarBrasa") acao = { tipo: "comprarBrasa" };

@@ -704,3 +704,33 @@
 .ch-tesouro .ch-card, .ch-volta { text-align: left; width: 100%; }
 .ch-volta { justify-items: stretch; }
 .ch-volta h1, .ch-volta .ch-etiqueta { text-align: left; }
+
+/* ---------------------------------------------------------------- Desafio da Palavra (27/11) */
+.ch-btn-desafio { flex-direction: column; gap: 2px; }
+.ch-btn-desafio small { font-size: 13px; font-weight: 600; color: var(--ch-suave); }
+.ch-desafio { text-align: left; justify-items: stretch; }
+.ch-seguidas { display: inline-flex; align-items: center; gap: 2px; min-width: 44px; justify-content: flex-end; color: var(--ch-ouro); font-variant-numeric: tabular-nums; }
+.ch-seguidas b { font-size: 17px; }
+.ch-seguidas.acesa { animation: ch-seguidas-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes ch-seguidas-pop { from { transform: scale(0.8); } to { transform: scale(1); } }
+.ch-desafio-status { margin: -6px 0 0; font-size: 14px; color: var(--ch-suave); text-align: center; }
+.ch-desafio-pergunta { font-size: 18px; margin: 4px 0 0; color: var(--ch-texto2); }
+.ch-opcoes button { -webkit-tap-highlight-color: transparent; user-select: none; transition: transform 0.12s ease; color: var(--ch-fg); }
+.ch-opcoes button:active:not(:disabled) { transform: scale(0.97); }
+.ch-feedback blockquote { margin: 8px 0 4px; font-weight: 500; color: var(--ch-fg); line-height: 1.5; }
+.ch-feedback small { display: block; font-weight: 600; }
+.ch-desafio-fim .ch-desafio-ganho { margin: 0; font-size: 20px; }
+.ch-desafio-fim .ch-desafio-ganho b { font-family: var(--ch-f-num); font-size: 28px; color: var(--ch-ouro); }
+.ch-desafio-lista { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 8px; text-align: left; }
+.ch-desafio-lista button { display: flex; gap: 12px; align-items: flex-start; width: 100%; min-height: 56px; padding: 12px 14px; background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 16px; font: inherit; color: var(--ch-fg); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.12s ease; }
+.ch-desafio-lista button:active { transform: scale(0.98); }
+.ch-desafio-lista .marca { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+.ch-desafio-lista .marca.certa { background: var(--ch-ok-bg); color: var(--ch-ok); }
+.ch-desafio-lista .marca.errada { background: var(--ch-erro-bg); color: var(--ch-erro); }
+.ch-desafio-lista .tx { display: grid; gap: 2px; min-width: 0; }
+.ch-desafio-lista small { color: var(--ch-suave); font-size: 14px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ch-guardados { width: 100%; text-align: left; background: var(--ch-destaque); border-radius: 16px; padding: 14px 16px; }
+.ch-guardados p { margin: 0 0 4px; color: var(--ch-fg); }
+.ch-guardados small { color: var(--ch-destaque-txt); font-style: italic; }
+@media (prefers-reduced-motion: reduce) { .ch-seguidas.acesa { animation: none; } .ch-opcoes button, .ch-desafio-lista button { transition: none; } }
+.ch-desafio { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }

@@ -14,7 +14,7 @@ export interface PropsExtras {
   toast: (t: string) => void;
   /** Amigos convidados (vem do servidor; vazio na bancada). */
   amigos?: AmigoChama[];
-  /** Leva à prática de versículos (chamada da vigília). */
+  /** Leva ao Desafio da Palavra (chamada da vigília). */
   onPraticar?: () => void;
 }
 
@@ -36,8 +36,8 @@ export function FaixaVigilia({ estado, onPraticar }: { estado: Estado; onPratica
     <div className="ch-card" role="status" style={{ borderColor: "var(--ch-btn-bg)" }}>
       <h2>Hora da vigília</h2>
       <p><b>XP em dobro por {mmss(s)}</b></p>
-      <p className="ch-suave">&ldquo;Não pudestes vigiar comigo uma hora?&rdquo; (Mt 26:40). Aproveite o fogo aceso e faça a prática de versículos.</p>
-      {onPraticar && <button type="button" className="ch-btn ch-btn-claro" onClick={onPraticar}>Fazer a prática de versículos</button>}
+      <p className="ch-suave">&ldquo;Não pudestes vigiar comigo uma hora?&rdquo; (Mt 26:40). Aproveite o fogo aceso e faça o Desafio da Palavra.</p>
+      {onPraticar && <button type="button" className="ch-btn ch-btn-claro" onClick={onPraticar}>Fazer o Desafio da Palavra</button>}
     </div>
   );
 }

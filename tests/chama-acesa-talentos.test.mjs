@@ -149,3 +149,26 @@ test("cobrança: aviso do fim do teste usa texto próprio (sem 'dia 4')", () => 
   assert.match(d.titulo, /dia 4/);
   assert.equal(quemRecebeCobranca([{ ...base, motivo: "teste", pago: true }], somarDias(D0, 1), []).length, 0);
 });
+
+// ------------------------------------------------------------ Desafio da Palavra (27/11)
+import { posicaoDaReferencia, versiculosGuardados, normalizarVersiculos } from "../lib/chama-acesa/pratica.ts";
+import { readFileSync as lerArq } from "node:fs";
+
+test("desafio: toda referência do banco abre na Bíblia do app", () => {
+  const indice = JSON.parse(lerArq(new URL("../public/chama-acesa/biblia/indice.json", import.meta.url)));
+  const banco = normalizarVersiculos(JSON.parse(lerArq(new URL("../lib/chama-acesa/versiculos.json", import.meta.url))));
+  for (const v of banco) assert.ok(posicaoDaReferencia(v.referencia, indice), v.referencia);
+  assert.deepEqual(posicaoDaReferencia("1 Coríntios 10:31", indice), { sigla: indice.find((l) => l.nome === "1 Coríntios").sigla, cap: 10, versiculo: 31 });
+  assert.equal(posicaoDaReferencia("Livro Inventado 1:1", indice), null);
+});
+
+test("desafio: acertos por versículo; 3 acertos = guardado no coração", () => {
+  let e = completar(estadoVazio(), 1, D0).estado;
+  const ids = ["a", "b", "c", "d", "e"];
+  for (let k = 0; k < 3; k += 1) e = aplicarAcao(e, { tipo: "pratica", acertos: 2, ids, certos: ["a", "b"] }, D0, true).estado;
+  assert.equal(e.extras.versos.a, 3);
+  assert.equal(versiculosGuardados(e.extras.versos), 2);
+  // certos que não batem com o total de acertos (ou fora da sessão) são ignorados
+  const r = aplicarAcao(e, { tipo: "pratica", acertos: 1, ids, certos: ["a", "b"] }, D0, true).estado;
+  assert.equal(r.extras.versos.a, 3);
+});

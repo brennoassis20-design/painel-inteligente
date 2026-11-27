@@ -43,17 +43,19 @@ export interface AbaBibliaProps {
   biblia?: ArmazemBiblia;
   /** Pede a permissão de notificação (lembrete da leitura). Sem isso (bancada), só guarda o horário. */
   onAtivarPush?: () => Promise<void>;
+  /** Abrir direto num versículo (ex.: do Desafio da Palavra). `k` muda a cada pedido. */
+  abrirEm?: { sigla: string; cap: number; versiculo: number; k: number } | null;
 }
 
 /** Aba Bíblia: grátis para sempre, fora da jornada (não conta dia, não mexe na chama). Ler · Planos · Progresso · Estudo. */
-export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
+export function Biblia({ biblia, onAtivarPush, abrirEm }: AbaBibliaProps) {
   const [indice, setIndice] = useState<LivroIndice[] | null>(cacheIndice);
   const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
   const [mostrarBusca, setMostrarBusca] = useState(false);
   const [secao, setSecao] = useState<Secao>("ler");
   const [livro, setLivro] = useState<LivroIndice | null>(null);
-  const [leitura, setLeitura] = useState<(Posicao & AbrirOpcoes) | null>(null);
+  const [leitura, setLeitura] = useState<(Posicao & AbrirOpcoes) | null>(abrirEm ? { sigla: abrirEm.sigla, cap: abrirEm.cap, versiculo: abrirEm.versiculo } : null);
   const [, setCarregou] = useState(0);
   const [fonte, setFonte] = useState(lerFonte);
   const [tentativa, setTentativa] = useState(0);
@@ -147,6 +149,13 @@ export function Biblia({ biblia, onAtivarPush }: AbaBibliaProps) {
     setErro("");
     window.scrollTo({ top: 0 });
   }, []);
+  const pedidoK = abrirEm?.k;
+  useEffect(() => {
+    if (!abrirEm) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pedido externo de abrir num versículo
+    abrir({ sigla: abrirEm.sigla, cap: abrirEm.cap }, { versiculo: abrirEm.versiculo });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só quando chega um pedido novo
+  }, [pedidoK]);
   const mudarFonte = (n: number) => {
     setFonte(n);
     try {

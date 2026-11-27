@@ -60,7 +60,7 @@ export function criarArmazemRemoto(chamar: Chamada): Armazem {
         : acao.tipo === "jejum" ? { acao: "jejum", dia: acao.dia, valor: acao.valor }
         : acao.tipo === "estudo" ? { acao: "estudo", dia: acao.dia }
         : acao.tipo === "lembrete" ? { acao: "lembrete", horario: acao.horario }
-        : acao.tipo === "pratica" ? { acao: "pratica", acertos: acao.acertos, ids: acao.ids }
+        : acao.tipo === "pratica" ? { acao: "pratica", acertos: acao.acertos, ids: acao.ids, certos: acao.certos }
         : { ...acao, tipo: undefined, acao: acao.tipo }; // limparAvisos, limparResultadoLiga, comprarBrasa, restaurar, leituraVolta e extras
       return chamar<RespostaAcao>("/api/membros/chama", { body: corpo });
     },
