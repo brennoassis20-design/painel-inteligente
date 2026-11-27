@@ -90,6 +90,7 @@ export interface ArmazemLocal extends Armazem {
     alternarCompra(): boolean;
     zerar(): void;
     ganharXp(n: number): void;
+    ganharTalentos(n: number): void;
     definirChama(dias: number): void;
     /** Estado coerente de quem vem usando o app: N dias concluídos até ontem (histórico, checks, XP, semana e metas). Só bancada. */
     simularHistorico(dias: number): void;
@@ -252,6 +253,11 @@ export function criarArmazemLocal(
       ganharXp(n) {
         const g = ler();
         g.estado = somarXp(g.estado, n, hojeDe(g));
+        gravar(g);
+      },
+      ganharTalentos(n) {
+        const g = ler();
+        g.estado = { ...g.estado, talentos: (g.estado.talentos ?? 0) + n };
         gravar(g);
       },
       virarSemana() {

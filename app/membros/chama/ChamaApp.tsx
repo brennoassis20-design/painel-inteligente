@@ -1,5 +1,7 @@
 "use client";
 
+import { AvisoNoite, BarraTesouro, LeituraVoltaTela, RestaurarCard, TesouroTela } from "./Tesouro";
+import { maxBrasasDoPlano } from "@/lib/chama-acesa/talentos";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bricolage_Grotesque, Inter, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
 import type { Armazem, RespostaAcao } from "@/lib/chama-acesa/armazem";
@@ -58,7 +60,9 @@ type Vista =
   | { v: "celebracao" }
   | { v: "meta"; dia: number }
   | { v: "estudo"; dia: number }
-  | { v: "conta" };
+  | { v: "conta" }
+  | { v: "tesouro" }
+  | { v: "volta" };
 
 export interface ChamaAppProps {
   armazem: Armazem;
@@ -402,6 +406,29 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     );
   }
 
+  const maxBrasas = maxBrasasDoPlano(painel.perfil.plano);
+  if (vista.v === "tesouro") {
+    corpo = (
+      <TesouroTela
+        estado={estado}
+        max={maxBrasas}
+        vitalicio={maxBrasas > 2}
+        hoje={hoje}
+        onVoltar={() => irPara({ v: "abas" })}
+        onComprarBrasa={async () => { if (await agir({ tipo: "comprarBrasa" })) toast("Brasa guardada. Sua chama está mais protegida."); }}
+        onRestaurar={async () => { if (await agir({ tipo: "restaurar", modo: "talentos" })) { toast("A chama voltou!"); irPara({ v: "abas" }); } }}
+      />
+    );
+  } else if (vista.v === "volta") {
+    corpo = (
+      <LeituraVoltaTela
+        feito={Boolean(estado.restauravel?.passos.leitura)}
+        onVoltar={() => irPara({ v: "abas" })}
+        onConcluir={async () => { if (await agir({ tipo: "leituraVolta" })) irPara({ v: "abas" }); }}
+      />
+    );
+  }
+
   if (vista.v === "conta" && armazem.conta) {
     corpo = (
       <ContaTela
@@ -490,7 +517,12 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
           <b>Sua brasa guardada salvou a chama!</b> Você ficou um dia sem entrar e a brasa cobriu. Cuide dela hoje.
         </Faixa>
       )}
-      {estado.avisos.includes("chama_apagou") && (
+      {estado.avisos.includes("chama_restaurada") && (
+        <Faixa tom="brasa" onFechar={() => void agir({ tipo: "limparAvisos" })}>
+          <b>A chama voltou!</b> {diasTxt(estado.chama)} de chama acesa. “Tinha-se perdido, e foi achado.”
+        </Faixa>
+      )}
+      {estado.avisos.includes("chama_apagou") && !estado.restauravel && (
         <Faixa tom="apagou" onFechar={() => void agir({ tipo: "limparAvisos" })}>
           <b>A chama apagou.</b> Sem problema: a jornada continua do dia {atual}. Acenda de novo hoje.
         </Faixa>
@@ -543,8 +575,21 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
               })}
             </div>
             <div className="ch-xpl"><span><b>{estado.xp}</b> XP no total</span><span><b>{estado.xpSemana[inicioSemana(hoje)] ?? 0}</b> XP nesta semana</span></div>
-            {estado.brasas > 0 && <div className="ch-brasas" title="Brasa guardada">{Array.from({ length: estado.brasas }, (_, i) => <i key={i} />)}<span>{estado.brasas === 1 ? "1 brasa guardada" : `${estado.brasas} brasas guardadas`}</span></div>}
+            <BarraTesouro brasas={estado.brasas} max={maxBrasas} talentos={estado.talentos ?? 0} onAbrir={() => irPara({ v: "tesouro" })} />
           </section>
+
+          {estado.restauravel && hoje <= estado.restauravel.ate && (
+            <RestaurarCard
+              r={estado.restauravel}
+              hoje={hoje}
+              talentos={estado.talentos ?? 0}
+              onLeitura={() => irPara({ v: "volta" })}
+              onPratica={() => setVista({ v: "pratica" })}
+              onFazerDia={() => document.querySelector(".ch-dia")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onTalentos={async () => { if (await agir({ tipo: "restaurar", modo: "talentos" })) toast("A chama voltou!"); }}
+            />
+          )}
+          {!feitoHoje && !estado.restauravel && <AvisoNoite brasas={estado.brasas} hora={painel.hora} chama={estado.chama} />}
 
           <button type="button" className="ch-faixa-liga" onClick={() => irAba("liga")}>
             <span className="pos">{sit.posicao}º</span>

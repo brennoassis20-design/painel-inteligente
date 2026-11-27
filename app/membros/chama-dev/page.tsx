@@ -59,6 +59,7 @@ export default function ChamaDev() {
               <button type="button" onClick={() => mexer(() => armazem.dev.avancar(2))}>Pular 1 dia (esquecer um dia)</button>
               <button type="button" onClick={() => mexer(() => armazem.dev.alternarCompra())}>{info.pago ? "Desfazer compra" : "Simular compra"}</button>
               <button type="button" onClick={() => mexer(() => armazem.dev.ganharXp(50))}>Ganhar +50 XP</button>
+              <button type="button" onClick={() => mexer(() => armazem.dev.ganharTalentos(100))}>Ganhar +100 talentos</button>
               {[69, 99, 999].map((n) => <button key={n} type="button" onClick={() => mexer(() => { armazem.dev.definirChama(n); })}>Chama em {n}</button>)}
               {[3, 99].map((n) => <button key={n} type="button" onClick={() => mexer(() => armazem.dev.simularHistorico(n))}>Histórico de {n} dias (coerente)</button>)}
               <button type="button" onClick={() => mexer(() => armazem.dev.virarSemana())}>Virar a semana</button>
