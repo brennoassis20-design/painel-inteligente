@@ -121,3 +121,31 @@ test("perfil antigo sem talentos/extras continua funcionando", () => {
   const r = completar(velho, 1, D0);
   assert.equal(r.estado.talentos, TALENTOS_GANHO.dia);
 });
+
+// ------------------------------------------------------------ teste grátis por calendário (27/11)
+import { podeAbrir, registrarAcesso, testeAcabou, ultimoDiaGratis } from "../lib/chama-acesa/regras.ts";
+import { quemRecebeCobranca } from "../lib/chama-acesa/lembretes.ts";
+
+test("teste grátis: 3 dias de calendário desde o 1º acesso, mesmo sem concluir 3 dias", () => {
+  const e = registrarAcesso(estadoVazio(), D0); // instalou em D0
+  assert.equal(e.inicio, D0);
+  assert.equal(registrarAcesso(e, somarDias(D0, 5)).inicio, D0); // não muda depois
+  assert.deepEqual(podeAbrir(e, 1, somarDias(D0, 2), false), { ok: true }); // 3º dia: ainda grátis
+  assert.equal(ultimoDiaGratis(e, somarDias(D0, 2)), true);
+  assert.equal(testeAcabou(e, somarDias(D0, 3)), true);
+  assert.deepEqual(podeAbrir(e, 1, somarDias(D0, 3), false), { ok: false, motivo: "pagamento" }); // 4º dia: tranca até o dia 1
+  assert.deepEqual(podeAbrir(e, 1, somarDias(D0, 3), true), { ok: true }); // quem pagou segue
+  // concluiu 1 dia e sumiu: no 4º dia de calendário o dia 2 está trancado
+  const um = completar(e, 1, D0).estado;
+  assert.deepEqual(podeAbrir(um, 2, somarDias(D0, 4), false), { ok: false, motivo: "pagamento" });
+  assert.deepEqual(podeAbrir(um, 1, somarDias(D0, 4), false), { ok: true }); // dia já feito pode rever
+});
+
+test("cobrança: aviso do fim do teste usa texto próprio (sem 'dia 4')", () => {
+  const base = { user_id: "u", nome: "Ana", chama_atual: 1, dia3: D0, pago: false, enviada: false };
+  const [t] = quemRecebeCobranca([{ ...base, motivo: "teste" }], somarDias(D0, 1), []);
+  assert.match(t.titulo, /grátis acabaram/);
+  const [d] = quemRecebeCobranca([{ ...base, motivo: "dia3" }], somarDias(D0, 1), []);
+  assert.match(d.titulo, /dia 4/);
+  assert.equal(quemRecebeCobranca([{ ...base, motivo: "teste", pago: true }], somarDias(D0, 1), []).length, 0);
+});

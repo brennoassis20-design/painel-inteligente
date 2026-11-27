@@ -133,7 +133,18 @@ export function somarXp(e: Estado, n: number, hoje: string): Estado {
 
 /** Marca que a pessoa abriu o app hoje. */
 export function registrarAcesso(e: Estado, hoje: string): Estado {
-  return e.ultimoAcesso === hoje ? e : { ...e, ultimoAcesso: hoje };
+  // O primeiro acesso marca o início do teste grátis (dia em que instalou/abriu o app).
+  return e.ultimoAcesso === hoje && e.inicio ? e : { ...e, ultimoAcesso: hoje, inicio: e.inicio ?? hoje };
+}
+
+/** Teste grátis: 3 dias de CALENDÁRIO a partir do primeiro acesso (o dia da instalação e os 2 seguintes), não 3 dias concluídos. */
+export function testeAcabou(e: Estado, hoje: string): boolean {
+  return Boolean(e.inicio) && diffDias(e.inicio!, hoje) >= DIAS_GRATIS;
+}
+
+/** Hoje é o último dia do teste grátis? (a oferta aparece ao concluir o dia) */
+export function ultimoDiaGratis(e: Estado, hoje: string): boolean {
+  return Boolean(e.inicio) && diffDias(e.inicio!, hoje) === DIAS_GRATIS - 1;
 }
 
 /** Amigo convidado completou o dia 1: +50 XP e 1 brasa guardada (respeita o máximo). */
@@ -163,11 +174,11 @@ export function jornadaCompleta(e: Estado): boolean {
 export type Motivo = "pagamento" | "anterior" | "amanha" | "fim";
 export type Abertura = { ok: true } | { ok: false; motivo: Motivo };
 
-/** Pode abrir o dia N hoje? Dia 4 em diante (inclusive depois do 21) exige acesso pago; só um dia por dia de calendário. */
+/** Pode abrir o dia N hoje? Sem compra: só os dias 1 a 3 e só durante os 3 dias de calendário do teste; um dia por dia de calendário. */
 export function podeAbrir(e: Estado, dia: number, hoje: string, pago: boolean): Abertura {
   if (!Number.isInteger(dia) || dia < 1 || dia > MAX_DIA) return { ok: false, motivo: "fim" };
   if (e.concluidos[dia]) return { ok: true }; // dia já feito: pode rever
-  if (dia > DIAS_GRATIS && !pago) return { ok: false, motivo: "pagamento" };
+  if (!pago && (dia > DIAS_GRATIS || testeAcabou(e, hoje))) return { ok: false, motivo: "pagamento" };
   if (dia > 1) {
     const anterior = e.concluidos[dia - 1];
     if (!anterior) return { ok: false, motivo: "anterior" };

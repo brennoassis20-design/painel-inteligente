@@ -7,7 +7,7 @@ import { Bricolage_Grotesque, Inter, Newsreader, Plus_Jakarta_Sans } from "next/
 import type { Armazem, RespostaAcao } from "@/lib/chama-acesa/armazem";
 import type { Dia } from "@/lib/chama-acesa/dias";
 import type { Painel } from "@/lib/chama-acesa/painel";
-import { diaAtual, diasConcluidos, inicioSemana, NOME_JORNADA, podeAbrir, somarDias, statusDoDia, TOTAL_DIAS, XP, type Check, type StatusDia } from "@/lib/chama-acesa/regras";
+import { diaAtual, diasConcluidos, inicioSemana, NOME_JORNADA, ultimoDiaGratis, podeAbrir, somarDias, statusDoDia, TOTAL_DIAS, XP, type Check, type StatusDia } from "@/lib/chama-acesa/regras";
 import { progressoBiblia } from "@/lib/chama-acesa/biblia-estudo";
 import { aplicarTemaNaPagina, lerTema, salvarTema, type Tema } from "@/lib/chama-acesa/tema";
 import { diasDasMetas, idEstudo, metaDoDia, metasAlcancadas, proximaMeta, type Meta } from "@/lib/chama-acesa/marcos";
@@ -333,7 +333,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         <header className="ch-pag-cab">
           <span className="ch-pag-selo"><span><MiniChama tam={18} /></span>{diasTxt(estado.chama)} de chama</span>
           <h1>Sua chama está em {diasTxt(estado.chama)}.<br />Não deixe ela apagar.</h1>
-          <p>Os 3 primeiros dias foram o começo. Continue de onde parou: dia {atual} da jornada, com a mesma rotina de 5 minutos. Seu progresso fica guardado.</p>
+          <p>Os 3 dias grátis foram o começo. Continue de onde parou: dia {atual} da jornada, com a mesma rotina de 5 minutos. Seu progresso fica guardado.</p>
         </header>
         {blocoCompra()}
         <button type="button" className="ch-link" onClick={() => irPara({ v: "abas" })}>Voltar</button>
@@ -344,7 +344,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
       <Acendeu
         chama={estado.chama}
         r={vista.r}
-        cobrar={vista.r.completouDia === 3 && !pago ? blocoCompra() : null}
+        cobrar={!pago && (vista.r.completouDia === 3 || ultimoDiaGratis(estado, hoje)) ? blocoCompra() : null}
         nomeMeta={(id) => metaDe(Number(id.replace("meta", "")))?.nome ?? id}
         onCompartilhar={() => void compartilhar()}
         onContinuar={() => {
@@ -891,7 +891,7 @@ function Hoje(p: {
       <div className="ch-card ch-trava">
         <span className="ch-etiqueta">Dia {p.atual}</span>
         <h2>Sua chama tem {diasTxt(p.chama)}</h2>
-        <p className="ch-suave">Para seguir do dia 4 em diante, escolha como continuar: vitalício ou mensal. Seu progresso fica guardado.</p>
+        <p className="ch-suave">Seus 3 dias grátis acabaram. Para continuar a jornada, escolha como seguir: vitalício ou mensal. Seu progresso fica guardado.</p>
         <button type="button" className="ch-btn ch-btn-grande" onClick={p.onPagamento}>Continuar a jornada</button>
       </div>
     );
