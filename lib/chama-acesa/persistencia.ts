@@ -1,6 +1,7 @@
 // Lado do servidor: lê e grava o estado da jornada nas tabelas chama_perfil e chama_dias (sempre filtrando por user_id).
 import { supabaseRest } from "@/lib/panel-server";
-import { premiarConvite, checksVazios, diasConcluidos, estadoVazio, TOTAL_DIAS, type Aviso, type Checks, type Estado, type LigaEstado, type Medalha } from "./regras";
+import { premiarConvite, checksVazios, diasConcluidos, estadoVazio, TOTAL_DIAS, type Aviso, type Checks, type Estado, type LigaEstado, type Medalha, type Restauravel } from "./regras";
+import { MAX_BRASAS_AMIGO, type AmigoChama, type Extras } from "./extras";
 
 const enc = encodeURIComponent;
 
@@ -21,13 +22,15 @@ type LinhaPerfil = {
   lembretes_hist: Record<string, string> | null;
   liga: LigaEstado | null;
   dias_feitos: number | null;
+  /** Talentos, chama a restaurar e extras (itens 4 a 7). Migração 20261127_chama_talentos.sql. */
+  extras: ({ talentos?: number; restauravel?: Restauravel | null } & Extras) | null;
 };
 type LinhaDia = { dia: number; concluido_em: string | null; checks: Partial<Checks> | null; jejum: boolean };
 
 /** Código curto de convite (primeiros 8 caracteres do id). */
 export const codigoDe = (userId: string) => userId.replace(/-/g, "").slice(0, 8).toLowerCase();
 
-const COLUNAS = "inicio,horario_lembrete,brasas,chama_atual,maior_chama,ultima_data,medalhas,avisos,xp,xp_semana,praticas,amigos,ultimo_acesso,lembretes_hist,liga,dias_feitos";
+const COLUNAS = "inicio,horario_lembrete,brasas,chama_atual,maior_chama,ultima_data,medalhas,avisos,xp,xp_semana,praticas,amigos,ultimo_acesso,lembretes_hist,liga,dias_feitos,extras";
 
 /** Quantos dias recentes (depois do 21) vêm do banco: a chama não tem limite e a lista de dias cresce por anos. */
 const DIAS_RECENTES = 30;
@@ -59,6 +62,10 @@ export async function carregarEstado(userId: string): Promise<Estado> {
     e.lembretesHist = p.lembretes_hist ?? {};
     e.liga = p.liga ? { ...e.liga, ...p.liga } : e.liga;
     e.diasAtivos = p.dias_feitos ?? 0;
+    const { talentos, restauravel, ...extras } = p.extras ?? {};
+    e.talentos = Number(talentos) || 0;
+    e.restauravel = restauravel ?? null;
+    e.extras = extras;
   }
   for (const d of dias) {
     if (d.concluido_em) e.concluidos[d.dia] = d.concluido_em;
@@ -95,6 +102,7 @@ export async function salvarEstado(userId: string, areaId: number, e: Estado, no
       lembretes_hist: e.lembretesHist,
       liga: e.liga,
       dias_feitos: diasConcluidos(e),
+      extras: { ...(e.extras ?? {}), talentos: e.talentos ?? 0, restauravel: e.restauravel ?? null },
       atualizado: agora,
     }),
   });
@@ -143,4 +151,31 @@ export async function premiarConvidador(areaId: number, userId: string, hoje: st
   const convidador = await carregarEstado(l.convidado_por);
   await salvarEstado(l.convidado_por, areaId, premiarConvite(convidador, hoje));
   return true;
+}
+
+// ---------------------------------------------------------------- brasa de irmão (Gl 6:2)
+
+/** Amigos = quem esta pessoa convidou (chama_perfil.convidado_por = userId). */
+export async function listarAmigos(userId: string): Promise<AmigoChama[]> {
+  const l = await supabaseRest<{ codigo: string | null; nome: string | null; chama_atual: number | null; brasas: number | null }[]>(
+    `/chama_perfil?convidado_por=eq.${userId}&select=codigo,nome,chama_atual,brasas&order=chama_atual.desc&limit=50`,
+  );
+  return l.filter((x) => x.codigo).map((x) => ({ codigo: x.codigo as string, nome: (x.nome || "Amigo").split(" ")[0], chama: x.chama_atual ?? 0, brasas: x.brasas ?? 0 }));
+}
+
+/** Dá 1 brasa ao amigo (máximo 2). Só grava se a brasa dele não mudou desde a leitura. Devolve false se não deu. */
+export async function darBrasaAoAmigo(userId: string, codigoAmigo: string): Promise<boolean> {
+  const l = await supabaseRest<{ user_id: string; brasas: number | null }[]>(
+    `/chama_perfil?convidado_por=eq.${userId}&codigo=eq.${enc(codigoAmigo)}&select=user_id,brasas&limit=1`,
+  );
+  const a = l[0];
+  if (!a) return false;
+  const atual = a.brasas ?? 0;
+  if (atual >= MAX_BRASAS_AMIGO) return false;
+  const r = await supabaseRest<{ user_id: string }[]>(`/chama_perfil?user_id=eq.${a.user_id}&brasas=eq.${atual}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ brasas: atual + 1 }),
+  });
+  return Array.isArray(r) && r.length > 0;
 }

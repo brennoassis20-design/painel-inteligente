@@ -276,6 +276,24 @@
     "corpo": "Ela não tem a chave. Você tem. 🔑"
   },
   {
+    "cat": "checkout_teste",
+    "tom": "confronto",
+    "titulo": "Seus 3 dias grátis acabaram",
+    "corpo": "O que você começou com Deus está guardado. Escolha como continuar e acenda a chama hoje."
+  },
+  {
+    "cat": "checkout_teste",
+    "tom": "carinhoso",
+    "titulo": "Deus não desistiu de você ❤️",
+    "corpo": "O teste grátis acabou, mas a jornada não precisa acabar. Continue de onde parou."
+  },
+  {
+    "cat": "checkout_teste",
+    "tom": "engracado",
+    "titulo": "A Brasinha guardou seu lugar",
+    "corpo": "Os dias grátis acabaram e ela está segurando a porta. Só falta você entrar. 🔑"
+  },
+  {
     "cat": "noite_feito",
     "tom": "descanso",
     "titulo": "Amanhã é o dia {proximo_dia} 🔥",

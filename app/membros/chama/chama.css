@@ -663,3 +663,44 @@
 .ch-sino-n { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #D92D20; color: #fff; font-size: 12px; font-weight: 700; line-height: 20px; text-align: center; box-shadow: 0 0 0 2px var(--ch-bg); animation: ch-sino-pulso 1.6s ease-in-out infinite; }
 @keyframes ch-sino-pulso { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { .ch-sino-n { animation: none; } }
+
+/* ---------------------------------------------------------------- Tesouro, brasas à vista e restaurar (27/11) */
+.ch-talento-i { display: inline-block; flex: none; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3c4 0 18%, #ffc247 45%, #b8740a 100%); box-shadow: inset 0 0 0 1.5px rgba(138, 80, 8, 0.55); }
+.ch-tesouro-barra { display: flex; align-items: center; gap: 8px; margin-top: 12px; width: 100%; min-height: 44px; background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 14px; color: var(--ch-texto2); cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; transition: transform 0.12s ease; }
+.ch-tesouro-barra:active { transform: scale(0.97); }
+.ch-tesouro-barra b { color: var(--ch-fg); }
+.ch-tesouro-barra .sep { width: 1px; height: 18px; background: var(--ch-linha-forte); margin: 0 4px; }
+.ch-brasas-mini { display: inline-flex; gap: 4px; }
+.ch-brasas-mini i { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffd36b, #ff5a14 70%); box-shadow: 0 0 8px #ff6a1a; }
+.ch-brasas-mini i.vazia { background: var(--ch-trilho); box-shadow: none; }
+.ch-aviso-noite { display: flex; gap: 10px; align-items: flex-start; background: var(--ch-aviso-bg); border-radius: 16px; padding: 12px 14px; margin: 10px 0 0; font-size: 15px; color: var(--ch-texto2); }
+.ch-aviso-noite p { margin: 0; }
+.ch-aviso-noite .ch-brasa-i { margin-top: 3px; }
+.ch-restaurar { margin-top: 12px; border: 1.5px solid var(--ch-acento); }
+.ch-restaurar h2 { margin: 4px 0 6px; }
+.ch-passos-volta { list-style: none; padding: 0; margin: 12px 0 6px; display: grid; gap: 8px; }
+.ch-passos-volta li { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.ch-passos-volta .marca { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 2px solid var(--ch-linha-forte); display: grid; place-items: center; font-size: 14px; font-weight: 800; color: var(--ch-ok); }
+.ch-passos-volta li.feito .marca { border-color: var(--ch-ok); background: var(--ch-ok-bg); }
+.ch-passos-volta li.feito .nome { color: var(--ch-suave); text-decoration: line-through; }
+.ch-passos-volta .nome { flex: 1; font-size: 15px; }
+.ch-btn-mini { width: auto; min-height: 36px; padding: 6px 14px; font-size: 14px; margin: 0; }
+.ch-ou { display: flex; align-items: center; gap: 10px; margin: 12px 0; color: var(--ch-suave); font-size: 13px; }
+.ch-ou::before, .ch-ou::after { content: ""; flex: 1; height: 1px; background: var(--ch-linha); }
+.ch-tesouro .ch-saldo { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 14px 0 18px; }
+.ch-tesouro .ch-saldo b { font-family: var(--ch-f-num); font-size: 44px; line-height: 1; color: var(--ch-fg); }
+.ch-tesouro .ch-saldo span { color: var(--ch-suave); }
+.ch-tesouro .ch-card + .ch-card { margin-top: 12px; }
+.ch-lista-ganho { list-style: none; padding: 0; margin: 8px 0 0; }
+.ch-lista-ganho li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--ch-linha); font-size: 15px; }
+.ch-lista-ganho li:last-child { border-bottom: 0; }
+.ch-lista-ganho b { color: var(--ch-ouro); font-variant-numeric: tabular-nums; }
+.ch-volta blockquote.ch-versiculo-longo { margin: 12px 0 18px; padding: 0 0 0 14px; border-left: 3px solid var(--ch-acento); font-size: 17px; line-height: 1.6; color: var(--ch-fg); }
+.ch-volta h2 { font-size: 17px; margin: 18px 0 6px; }
+.ch-volta .ch-oracao-curta { font-style: italic; }
+.ch-volta .ch-ok { color: var(--ch-ok); font-weight: 700; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .ch-tesouro-barra { transition: none; } }
+.ch-voltar-txt { justify-self: start; }
+.ch-tesouro .ch-card, .ch-volta { text-align: left; width: 100%; }
+.ch-volta { justify-items: stretch; }
+.ch-volta h1, .ch-volta .ch-etiqueta { text-align: left; }

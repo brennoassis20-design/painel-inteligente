@@ -198,14 +198,17 @@ export function registrarEnvio(hist: Record<string, string>, chave: string, hoje
 
 // ------------------------------------------------------------------ cobrança do dia 3 (grátis -> compra)
 
-export interface CandidatoCobranca { user_id: string; nome?: string | null; chama_atual: number; dia3: string | null; pago: boolean; enviada: boolean; dias_feitos?: number; lembretes_hist?: Record<string, string> }
+export interface CandidatoCobranca { user_id: string; nome?: string | null; chama_atual: number; dia3: string | null; pago: boolean; /** "dia3" = concluiu o dia 3 ontem; "teste" = os 3 dias grátis de calendário acabaram ontem. */ motivo?: "dia3" | "teste"; enviada: boolean; dias_feitos?: number; lembretes_hist?: Record<string, string> }
 
 /** No dia seguinte ao dia 3 completo, quem ainda não comprou (e ainda não foi avisado) recebe push + e-mail. */
 export function quemRecebeCobranca(cands: CandidatoCobranca[], hoje: string, textos: Texto[]): { candidato: CandidatoCobranca; titulo: string; corpo: string; chave: string }[] {
   const out: { candidato: CandidatoCobranca; titulo: string; corpo: string; chave: string }[] = [];
   for (const c of cands) {
     if (c.pago || c.enviada || !c.dia3 || diffDias(c.dia3, hoje) !== 1) continue;
-    const t = escolherTexto(textos, "checkout_dia4", c.lembretes_hist ?? {}, hoje, aleatorio(`${c.user_id}|${hoje}|dia4`)) ?? { cat: "checkout_dia4", tom: "", titulo: "🔥 Sua chama de 3 dias vai apagar sem o dia 4", corpo: "Garante a sua jornada e continue de onde parou." };
+    const teste = c.motivo === "teste";
+    const t = teste
+      ? escolherTexto(textos, "checkout_teste", c.lembretes_hist ?? {}, hoje, aleatorio(`${c.user_id}|${hoje}|teste`)) ?? { cat: "checkout_teste", tom: "", titulo: "Seus 3 dias grátis acabaram", corpo: "Sua jornada com Deus está guardada. Escolha como continuar e acenda a chama hoje." }
+      : escolherTexto(textos, "checkout_dia4", c.lembretes_hist ?? {}, hoje, aleatorio(`${c.user_id}|${hoje}|dia4`)) ?? { cat: "checkout_dia4", tom: "", titulo: "🔥 Sua chama de 3 dias vai apagar sem o dia 4", corpo: "Garante a sua jornada e continue de onde parou." };
     const vars = { nome: (c.nome || "amigo").split(" ")[0], dias: c.chama_atual, proximo_dia: 4 };
     out.push({ candidato: c, titulo: preencher(t.titulo, vars), corpo: preencher(t.corpo, vars), chave: chaveDoTexto(t) });
   }

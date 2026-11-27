@@ -1,6 +1,8 @@
 // Regras do Chama Acesa (funções puras, sem banco e sem relógio: quem chama passa a data de hoje).
 // Datas são sempre "AAAA-MM-DD" no fuso de São Paulo.
 import { DIAS_METAS_PADRAO, ehMeta, idEstudo, idMeta, metaAlcancada, temMeta } from "./marcos.ts";
+import { DIAS_PARA_RESTAURAR, PASSOS_VOLTA, PRECO, TALENTOS_GANHO, type PassoVolta } from "./talentos.ts";
+import { aoCompletarDia, comprarEscudo, darBrasa, diasCobertosPorExtras, fazerVoto, multiplicadorXp, quebrarVoto, semEscudoPassado, type AmigoChama, type Extras } from "./extras.ts";
 
 export const FUSO = "America/Sao_Paulo";
 /** Dias da jornada inicial (dias.json). Depois do 21 a chama continua: o dia vira Palavra + oração + missão (continuo.ts). */
@@ -15,7 +17,10 @@ export type Check = "leu" | "orou" | "missao";
 export type Checks = Record<Check, boolean>;
 /** "metaN" = meta de N dias de chama alcançada; "estudoN" = estudo da meta N concluído; "jornada" = os 21 dias; "chamaN" = medalha antiga. */
 export type Medalha = string;
-export type Aviso = "brasa_salvou" | "chama_apagou";
+export type Aviso = "brasa_salvou" | "chama_apagou" | "chama_restaurada" | "voto_cumprido" | "voto_quebrado";
+
+/** Chama que apagou e ainda pode voltar (até `ate`, inclusive). `passos` = caminho por esforço já feito. */
+export interface Restauravel { chama: number; ate: string; desde: string; passos: Partial<Record<PassoVolta, boolean>> }
 
 export interface HistLiga { semana: string; liga: number; posicao: number; xp: number; resultado: "subiu" | "ficou" | "desceu" }
 export interface ResultadoLiga extends HistLiga { para: number }
@@ -62,10 +67,16 @@ export interface Estado {
   avisos: Aviso[];
   /** "HH:MM" do lembrete diário; null = sem lembrete. */
   lembrete: string | null;
+  /** Moeda (talentos.ts). */
+  talentos: number;
+  /** Chama apagada que ainda pode ser restaurada; null = nada a restaurar. */
+  restauravel: Restauravel | null;
+  /** Itens 4 a 7 (extras.ts). */
+  extras: Extras;
 }
 
 export function estadoVazio(): Estado {
-  return { xp: 0, xpSemana: {}, praticas: {}, amigos: 0, ultimoAcesso: null, lembretesHist: {}, liga: { indice: 0, semana: null, historico: [], resultado: null }, inicio: null, ultimaData: null, chama: 0, maior: 0, brasas: 0, concluidos: {}, diasAtivos: 0, checks: {}, jejum: {}, medalhas: [], avisos: [], lembrete: null };
+  return { xp: 0, xpSemana: {}, praticas: {}, amigos: 0, ultimoAcesso: null, lembretesHist: {}, liga: { indice: 0, semana: null, historico: [], resultado: null }, inicio: null, ultimaData: null, chama: 0, maior: 0, brasas: 0, concluidos: {}, diasAtivos: 0, checks: {}, jejum: {}, medalhas: [], avisos: [], lembrete: null, talentos: 0, restauravel: null, extras: {} };
 }
 
 export function checksVazios(): Checks {
@@ -122,13 +133,24 @@ export function somarXp(e: Estado, n: number, hoje: string): Estado {
 
 /** Marca que a pessoa abriu o app hoje. */
 export function registrarAcesso(e: Estado, hoje: string): Estado {
-  return e.ultimoAcesso === hoje ? e : { ...e, ultimoAcesso: hoje };
+  // O primeiro acesso marca o início do teste grátis (dia em que instalou/abriu o app).
+  return e.ultimoAcesso === hoje && e.inicio ? e : { ...e, ultimoAcesso: hoje, inicio: e.inicio ?? hoje };
+}
+
+/** Teste grátis: 3 dias de CALENDÁRIO a partir do primeiro acesso (o dia da instalação e os 2 seguintes), não 3 dias concluídos. */
+export function testeAcabou(e: Estado, hoje: string): boolean {
+  return Boolean(e.inicio) && diffDias(e.inicio!, hoje) >= DIAS_GRATIS;
+}
+
+/** Hoje é o último dia do teste grátis? (a oferta aparece ao concluir o dia) */
+export function ultimoDiaGratis(e: Estado, hoje: string): boolean {
+  return Boolean(e.inicio) && diffDias(e.inicio!, hoje) === DIAS_GRATIS - 1;
 }
 
 /** Amigo convidado completou o dia 1: +50 XP e 1 brasa guardada (respeita o máximo). */
-export function premiarConvite(e: Estado, hoje: string): Estado {
+export function premiarConvite(e: Estado, hoje: string, maxBrasas = MAX_BRASAS): Estado {
   const s = somarXp(e, XP.convite, hoje);
-  return { ...s, amigos: s.amigos + 1, brasas: Math.min(MAX_BRASAS, s.brasas + 1) };
+  return { ...s, amigos: s.amigos + 1, brasas: Math.min(maxBrasas, s.brasas + 1), talentos: (s.talentos ?? 0) + TALENTOS_GANHO.convite };
 }
 
 // ------------------------------------------------------------------ consultas
@@ -152,11 +174,11 @@ export function jornadaCompleta(e: Estado): boolean {
 export type Motivo = "pagamento" | "anterior" | "amanha" | "fim";
 export type Abertura = { ok: true } | { ok: false; motivo: Motivo };
 
-/** Pode abrir o dia N hoje? Dia 4 em diante (inclusive depois do 21) exige acesso pago; só um dia por dia de calendário. */
+/** Pode abrir o dia N hoje? Sem compra: só os dias 1 a 3 e só durante os 3 dias de calendário do teste; um dia por dia de calendário. */
 export function podeAbrir(e: Estado, dia: number, hoje: string, pago: boolean): Abertura {
   if (!Number.isInteger(dia) || dia < 1 || dia > MAX_DIA) return { ok: false, motivo: "fim" };
   if (e.concluidos[dia]) return { ok: true }; // dia já feito: pode rever
-  if (dia > DIAS_GRATIS && !pago) return { ok: false, motivo: "pagamento" };
+  if (!pago && (dia > DIAS_GRATIS || testeAcabou(e, hoje))) return { ok: false, motivo: "pagamento" };
   if (dia > 1) {
     const anterior = e.concluidos[dia - 1];
     if (!anterior) return { ok: false, motivo: "anterior" };
@@ -188,13 +210,46 @@ function diasPerdidos(e: Estado, hoje: string): number {
  * Resolve o que aconteceu desde a última vez: se pulou dia(s), usa brasa (uma por dia pulado) ou apaga a chama.
  * Pode ser chamada quantas vezes quiser no mesmo dia (não repete aviso).
  */
-export function atualizarParaHoje(e: Estado, hoje: string): Estado {
+export function atualizarParaHoje(entrada: Estado, hoje: string): Estado {
+  // Restauração que passou do prazo some.
+  const e = entrada.restauravel && hoje > entrada.restauravel.ate ? { ...entrada, restauravel: null } : entrada;
   const perdidos = diasPerdidos(e, hoje);
-  if (perdidos === 0) return e;
-  if (e.brasas >= perdidos) {
-    return { ...e, brasas: e.brasas - perdidos, ultimaData: somarDias(hoje, -1), avisos: [...e.avisos, "brasa_salvou"] };
+  if (perdidos === 0) {
+    const atuais = e.extras ?? {};
+    const limpo = semEscudoPassado(atuais, hoje);
+    return limpo === atuais ? e : { ...e, extras: limpo };
   }
-  return { ...e, chama: 0, ultimaData: null, avisos: [...e.avisos, "chama_apagou"] };
+  const pulados = Array.from({ length: perdidos }, (_, i) => somarDias(e.ultimaData!, i + 1));
+  // GANCHO-EXTRAS: dias cobertos por extras (Dia do Senhor) não gastam brasa.
+  const cobertos = new Set(diasCobertosPorExtras(e.extras ?? {}, pulados));
+  const precisa = pulados.filter((d) => !cobertos.has(d)).length;
+  const extras = semEscudoPassado(e.extras ?? {}, hoje);
+  if (e.brasas >= precisa) {
+    // Brasa (ou escudo) salvando não quebra o voto.
+    return { ...e, extras, brasas: e.brasas - precisa, ultimaData: somarDias(hoje, -1), avisos: precisa > 0 ? [...e.avisos, "brasa_salvou"] : e.avisos };
+  }
+  // Apagou. Dá para restaurar até 48 h depois do 1º dia perdido (se a pessoa abriu a tempo).
+  const ate = somarDias(pulados[0], DIAS_PARA_RESTAURAR);
+  const restauravel: Restauravel | null = hoje <= ate ? { chama: e.chama, ate, desde: hoje, passos: {} } : null;
+  const voto = quebrarVoto(extras, [...e.avisos, "chama_apagou"]);
+  return { ...e, chama: 0, ultimaData: null, restauravel, extras: voto.extras, avisos: voto.avisos };
+}
+
+/** A chama volta: a antiga + o que a pessoa já fez depois que apagou. Hoje continua valendo (não precisa refazer). */
+export function restaurarChama(e: Estado, hoje: string): Estado {
+  const r = e.restauravel;
+  if (!r) return e;
+  const chama = r.chama + e.chama;
+  const ultimaData = e.ultimaData ?? somarDias(hoje, -1);
+  return { ...e, chama, maior: Math.max(e.maior, chama), ultimaData, restauravel: null, avisos: [...e.avisos.filter((a) => a !== "chama_apagou"), "chama_restaurada"] };
+}
+
+/** Marca um passo do caminho por esforço; com os três feitos, restaura. */
+export function marcarPassoVolta(e: Estado, passo: PassoVolta, hoje: string): Estado {
+  if (!e.restauravel || e.restauravel.passos[passo]) return e;
+  const passos = { ...e.restauravel.passos, [passo]: true };
+  const s = { ...e, restauravel: { ...e.restauravel, passos } };
+  return PASSOS_VOLTA.every((p) => passos[p]) ? restaurarChama(s, hoje) : s;
 }
 
 export type Acao =
@@ -204,7 +259,21 @@ export type Acao =
   | { tipo: "lembrete"; horario: string | null }
   | { tipo: "pratica"; acertos: number; ids: string[] }
   | { tipo: "limparResultadoLiga" }
-  | { tipo: "limparAvisos" };
+  | { tipo: "limparAvisos" }
+  | { tipo: "comprarBrasa" }
+  | { tipo: "restaurar"; modo: "talentos" }
+  | { tipo: "leituraVolta" }
+  | { tipo: "comprarEscudo" }
+  | { tipo: "fazerVoto" }
+  | { tipo: "darBrasa"; para: string };
+
+/** Contexto do servidor: instante atual (vigília) e limite de brasas do plano (vitalício = 3). */
+export interface Contexto {
+  agora?: number;
+  maxBrasas?: number;
+  /** Amigo que vai receber a brasa (o servidor confere que foi convidado por esta pessoa). Sem ele, darBrasa falha. */
+  amigo?: AmigoChama | null;
+}
 
 export interface Resultado {
   estado: Estado;
@@ -220,27 +289,66 @@ export interface Resultado {
 const horarioValido = (h: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(h);
 
 /** Aplica uma ação do usuário. Sempre resolve brasa/apagar antes. Nunca lança: devolve `erro`. */
-export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boolean, diasMetas: readonly number[] = DIAS_METAS_PADRAO): Resultado {
+export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boolean, diasMetas: readonly number[] = DIAS_METAS_PADRAO, ctx: Contexto = {}): Resultado {
+  const r = aplicarAcaoBase(entrada, acao, hoje, pago, diasMetas, ctx);
+  // GANCHO-EXTRAS: Hora da vigília multiplica o XP ganho nesta ação.
+  const agora = ctx.agora ?? Date.now();
+  const mult = r.erro || r.xpGanho <= 0 ? 1 : multiplicadorXp(r.estado.extras ?? {}, agora);
+  let out = r;
+  if (mult > 1) {
+    const extra = Math.round(r.xpGanho * (mult - 1));
+    out = { ...r, estado: somarXp(r.estado, extra, hoje), xpGanho: r.xpGanho + extra };
+  }
+  // Dia completo: liga a vigília (vale a partir daqui, não dobra o XP do próprio dia) e resolve o voto de 7 dias.
+  if (!out.erro && out.completouDia != null) out = { ...out, estado: aoCompletarDia(out.estado, hoje, agora) };
+  return out;
+}
+
+const ganharTalentos = (e: Estado, n: number): Estado => (n > 0 ? { ...e, talentos: (e.talentos ?? 0) + n } : e);
+
+function aplicarAcaoBase(entrada: Estado, acao: Acao, hoje: string, pago: boolean, diasMetas: readonly number[], ctx: Contexto): Resultado {
+  const maxBrasas = ctx.maxBrasas ?? MAX_BRASAS;
   const base = atualizarParaHoje(entrada, hoje);
   const nada = (erro?: string): Resultado => ({ estado: base, completouDia: null, novasMedalhas: [], ganhouBrasa: false, xpGanho: 0, erro });
 
   if (acao.tipo === "limparAvisos") return { ...nada(), estado: { ...base, avisos: [] } };
   if (acao.tipo === "limparResultadoLiga") return { ...nada(), estado: { ...base, liga: { ...base.liga, resultado: null } } };
+  if (acao.tipo === "comprarBrasa") {
+    if (base.brasas >= maxBrasas) return nada(`Você já tem ${maxBrasas} brasas guardadas (o máximo).`);
+    if ((base.talentos ?? 0) < PRECO.brasa) return nada(`Faltam talentos: a brasa custa ${PRECO.brasa}.`);
+    return { ...nada(), estado: { ...base, brasas: base.brasas + 1, talentos: base.talentos - PRECO.brasa } };
+  }
+  if (acao.tipo === "restaurar") {
+    if (!base.restauravel) return nada("Não há chama para restaurar.");
+    if ((base.talentos ?? 0) < PRECO.restaurar) return nada(`Faltam talentos: restaurar custa ${PRECO.restaurar}.`);
+    return { ...nada(), estado: restaurarChama({ ...base, talentos: base.talentos - PRECO.restaurar }, hoje) };
+  }
+  if (acao.tipo === "comprarEscudo") { const x = comprarEscudo(base, hoje); return { ...nada(x.erro), estado: x.estado }; }
+  if (acao.tipo === "fazerVoto") { const x = fazerVoto(base, hoje); return { ...nada(x.erro), estado: x.estado }; }
+  if (acao.tipo === "darBrasa") { const x = darBrasa(base, String(acao.para ?? ""), hoje, ctx.amigo); return { ...nada(x.erro), estado: x.estado }; }
+  if (acao.tipo === "leituraVolta") {
+    if (!base.restauravel) return nada("Não há chama para restaurar.");
+    return { ...nada(), estado: marcarPassoVolta(base, "leitura", hoje) };
+  }
   if (acao.tipo === "pratica") {
     const n = acao.ids.length;
     if (n < 1 || n > 5 || !Number.isInteger(acao.acertos) || acao.acertos < 0 || acao.acertos > n) return nada("Prática inválida.");
     const xp = acao.acertos * XP.acertoPratica + (n === 5 && acao.acertos === 5 ? XP.praticaPerfeita : 0);
     const praticas = { ...base.praticas };
     for (const id of acao.ids) praticas[id] = (praticas[id] ?? 0) + 1;
-    // Prática não completa o dia nem mexe na chama: só XP e o contador de versículos vistos.
-    return { ...nada(), estado: { ...somarXp(base, xp, hoje), praticas }, xpGanho: xp };
+    // Prática não completa o dia nem mexe na chama: só XP, talentos (se perfeita) e o contador de versículos vistos.
+    let estado: Estado = { ...somarXp(base, xp, hoje), praticas };
+    if (n === 5 && acao.acertos === 5) estado = ganharTalentos(estado, TALENTOS_GANHO.praticaPerfeita);
+    // Prática completa (5 versículos) conta como passo da volta.
+    if (n === 5) estado = marcarPassoVolta(estado, "pratica", hoje);
+    return { ...nada(), estado, xpGanho: xp };
   }
   if (acao.tipo === "estudo") {
     // Estudo da meta: só de meta já alcançada, e o bônus de XP vale uma vez só.
     const meta = Number(acao.dia);
     if (!ehMeta(meta, diasMetas) || !metaAlcancada(base, meta)) return nada("Este estudo ainda não foi liberado.");
     if (base.medalhas.includes(idEstudo(meta))) return nada();
-    const estado = somarXp({ ...base, medalhas: [...base.medalhas, idEstudo(meta)] }, XP.estudo, hoje);
+    const estado = ganharTalentos(somarXp({ ...base, medalhas: [...base.medalhas, idEstudo(meta)] }, XP.estudo, hoje), TALENTOS_GANHO.estudo);
     return { ...nada(), estado, xpGanho: XP.estudo };
   }
   if (acao.tipo === "lembrete") {
@@ -271,7 +379,7 @@ export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boo
   // Dia completo: a chama sobe um dia (a chama já foi validada por atualizarParaHoje).
   const chama = estado.chama + 1;
   const concluidos = { ...estado.concluidos, [acao.dia]: hoje };
-  const ganhouBrasa = chama % DIAS_POR_BRASA === 0 && estado.brasas < MAX_BRASAS;
+  const ganhouBrasa = chama % DIAS_POR_BRASA === 0 && estado.brasas < maxBrasas;
   estado = {
     ...estado,
     chama,
@@ -286,6 +394,9 @@ export function aplicarAcao(entrada: Estado, acao: Acao, hoje: string, pago: boo
   if (ehMeta(chama, diasMetas) && !temMeta(estado.medalhas, chama)) novas.push(idMeta(chama));
   if (jornadaCompleta(estado) && !estado.medalhas.includes("jornada")) novas.push("jornada");
   estado = { ...estado, medalhas: [...estado.medalhas, ...novas] };
+  estado = ganharTalentos(estado, TALENTOS_GANHO.dia + novas.filter((m) => m !== "jornada").length * TALENTOS_GANHO.meta);
+  // Dia completo conta como passo da volta (se a chama apagou e ainda dá para restaurar).
+  estado = marcarPassoVolta(estado, "dia", hoje);
   return { estado, completouDia: acao.dia, novasMedalhas: novas, ganhouBrasa, xpGanho };
 }
 

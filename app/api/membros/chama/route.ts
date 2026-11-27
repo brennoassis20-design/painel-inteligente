@@ -2,13 +2,14 @@ import { OpError, areaUrl } from "@/lib/membros";
 import { withUser } from "@/lib/membros-http";
 import { acessoDoUsuario } from "@/lib/chama-acesa/acesso";
 import { carregarDias, carregarLigas, carregarMarcos, carregarMissoes, carregarVersiculos } from "@/lib/chama-acesa/conteudo-servidor";
-import { codigoDe, carregarEstado, premiarConvidador, salvarEstado } from "@/lib/chama-acesa/persistencia";
+import { codigoDe, carregarEstado, darBrasaAoAmigo, listarAmigos, premiarConvidador, salvarEstado } from "@/lib/chama-acesa/persistencia";
 import { diasLiberados, type Painel } from "@/lib/chama-acesa/painel";
 import { atualizarLiga, type Linha } from "@/lib/chama-acesa/ligas";
 import { carregarConta, membrosAtivos, type ContaGuardada } from "@/lib/chama-acesa/persistencia-conta";
 import { ligaRealMinimo, outrosReais, rankingReal, type MembroRanking } from "@/lib/chama-acesa/ranking";
 import { primeiroNome } from "@/lib/chama-acesa/conta";
 import { diasDasMetas, marcosLiberados } from "@/lib/chama-acesa/marcos";
+import { maxBrasasDoPlano } from "@/lib/chama-acesa/talentos";
 import { aplicarAcao, atualizarParaHoje, dataSP, horaSP, inicioSemana, registrarAcesso, type Acao, type Check, type Estado } from "@/lib/chama-acesa/regras";
 
 // Jornada do Chama Acesa na conta de cada pessoa. As regras (chama, brasa, um dia por dia, dia 4 só com compra, XP, liga)
@@ -79,14 +80,14 @@ export async function GET(request: Request) {
     const [salvo, conta] = await Promise.all([carregarEstado(user.id), carregarConta(user.id)]);
     const estado = await emDia(salvo, hoje, user, area, conta);
     if (estado !== salvo) await salvarEstado(user.id, area.id, estado, user.name);
-    return painel(estado, hoje, user, area, acesso, conta, await rankingAtual(estado, hoje, user, area, conta));
+    return { ...painel(estado, hoje, user, area, acesso, conta, await rankingAtual(estado, hoje, user, area, conta)), amigosLista: await listarAmigos(user.id).catch(() => []) };
   });
 }
 
 const CHECKS: Check[] = ["leu", "orou", "missao"];
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => ({}))) as { acao?: string; dia?: number; check?: string; valor?: boolean; horario?: string | null; acertos?: number; ids?: unknown };
+  const body = (await request.json().catch(() => ({}))) as { acao?: string; dia?: number; check?: string; valor?: boolean; horario?: string | null; acertos?: number; ids?: unknown; para?: string };
   return withUser(request, async (user, area) => {
     const acesso = await exigir(user, area);
     let acao: Acao;
@@ -97,14 +98,24 @@ export async function POST(request: Request) {
     else if (body.acao === "pratica") acao = { tipo: "pratica", acertos: Number(body.acertos), ids: Array.isArray(body.ids) ? body.ids.map((x) => String(x).slice(0, 60)).slice(0, 5) : [] };
     else if (body.acao === "limparResultadoLiga") acao = { tipo: "limparResultadoLiga" };
     else if (body.acao === "limparAvisos") acao = { tipo: "limparAvisos" };
+    else if (body.acao === "comprarBrasa") acao = { tipo: "comprarBrasa" };
+    else if (body.acao === "restaurar") acao = { tipo: "restaurar", modo: "talentos" };
+    else if (body.acao === "leituraVolta") acao = { tipo: "leituraVolta" };
+    else if (body.acao === "comprarEscudo") acao = { tipo: "comprarEscudo" };
+    else if (body.acao === "fazerVoto") acao = { tipo: "fazerVoto" };
+    else if (body.acao === "darBrasa") acao = { tipo: "darBrasa", para: String(body.para ?? "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12) };
     else throw new OpError("Ação desconhecida.");
     const hoje = dataSP();
     const conta = await carregarConta(user.id);
-    const r = aplicarAcao(await emDia(await carregarEstado(user.id), hoje, user, area, conta), acao, hoje, acesso.pago, diasDasMetas(carregarMarcos()));
+    // Brasa de irmão: só para quem a pessoa convidou (o servidor confere; a regra pura decide se pode).
+    const amigo = acao.tipo === "darBrasa" ? ((await listarAmigos(user.id)).find((a) => a.codigo === acao.para) ?? null) : undefined;
+    const r = aplicarAcao(await emDia(await carregarEstado(user.id), hoje, user, area, conta), acao, hoje, acesso.pago, diasDasMetas(carregarMarcos()), { agora: Date.now(), maxBrasas: maxBrasasDoPlano(acesso.plano), amigo });
     if (r.erro) throw new OpError(r.erro);
+    // Grava a brasa do amigo antes do estado de quem deu: se falhar, ninguém perde brasa.
+    if (acao.tipo === "darBrasa" && !(await darBrasaAoAmigo(user.id, acao.para))) throw new OpError("Seu amigo já está com as brasas cheias.");
     await salvarEstado(user.id, area.id, r.estado, user.name);
     // Amigo convidado completou o dia 1: quem convidou ganha XP e brasa (uma vez só).
     if (r.completouDia === 1) await premiarConvidador(area.id, user.id, hoje).catch((e) => console.error("chama-convite", e));
-    return { ...painel(r.estado, hoje, user, area, acesso, conta, await rankingAtual(r.estado, hoje, user, area, conta)), completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa, xpGanho: r.xpGanho };
+    return { ...painel(r.estado, hoje, user, area, acesso, conta, await rankingAtual(r.estado, hoje, user, area, conta)), amigosLista: await listarAmigos(user.id).catch(() => []), completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa, xpGanho: r.xpGanho };
   });
 }

@@ -1,11 +1,13 @@
 "use client";
 
+import { AvisoNoite, BarraTesouro, LeituraVoltaTela, RestaurarCard, TesouroTela } from "./Tesouro";
+import { maxBrasasDoPlano } from "@/lib/chama-acesa/talentos";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bricolage_Grotesque, Inter, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
 import type { Armazem, RespostaAcao } from "@/lib/chama-acesa/armazem";
 import type { Dia } from "@/lib/chama-acesa/dias";
 import type { Painel } from "@/lib/chama-acesa/painel";
-import { diaAtual, diasConcluidos, inicioSemana, MAX_BRASAS, NOME_JORNADA, podeAbrir, somarDias, statusDoDia, TOTAL_DIAS, XP, type Check, type StatusDia } from "@/lib/chama-acesa/regras";
+import { diaAtual, diasConcluidos, inicioSemana, NOME_JORNADA, ultimoDiaGratis, podeAbrir, somarDias, statusDoDia, TOTAL_DIAS, XP, type Check, type StatusDia } from "@/lib/chama-acesa/regras";
 import { progressoBiblia } from "@/lib/chama-acesa/biblia-estudo";
 import { aplicarTemaNaPagina, lerTema, salvarTema, type Tema } from "@/lib/chama-acesa/tema";
 import { diasDasMetas, idEstudo, metaDoDia, metasAlcancadas, proximaMeta, type Meta } from "@/lib/chama-acesa/marcos";
@@ -23,6 +25,7 @@ import { Biblia } from "./Biblia";
 import { Avatar } from "./Avatar";
 import { Chama } from "./Chama";
 import { ContaTela } from "./Conta";
+import { ExtrasCard, FaixaVigilia } from "./Extras";
 import { OfertasBloco } from "./Ofertas";
 import { Anel, IconeAba, IconeCheck, IconeCoracao, IconeEnvio, IconeLivro, IconeVoltar, MiniChama, type IdAba } from "./Icones";
 import "./chama.css";
@@ -58,7 +61,9 @@ type Vista =
   | { v: "celebracao" }
   | { v: "meta"; dia: number }
   | { v: "estudo"; dia: number }
-  | { v: "conta" };
+  | { v: "conta" }
+  | { v: "tesouro" }
+  | { v: "volta" };
 
 export interface ChamaAppProps {
   armazem: Armazem;
@@ -328,7 +333,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         <header className="ch-pag-cab">
           <span className="ch-pag-selo"><span><MiniChama tam={18} /></span>{diasTxt(estado.chama)} de chama</span>
           <h1>Sua chama está em {diasTxt(estado.chama)}.<br />Não deixe ela apagar.</h1>
-          <p>Os 3 primeiros dias foram o começo. Continue de onde parou: dia {atual} da jornada, com a mesma rotina de 5 minutos. Seu progresso fica guardado.</p>
+          <p>Os 3 dias grátis foram o começo. Continue de onde parou: dia {atual} da jornada, com a mesma rotina de 5 minutos. Seu progresso fica guardado.</p>
         </header>
         {blocoCompra()}
         <button type="button" className="ch-link" onClick={() => irPara({ v: "abas" })}>Voltar</button>
@@ -339,7 +344,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
       <Acendeu
         chama={estado.chama}
         r={vista.r}
-        cobrar={vista.r.completouDia === 3 && !pago ? blocoCompra() : null}
+        cobrar={!pago && (vista.r.completouDia === 3 || ultimoDiaGratis(estado, hoje)) ? blocoCompra() : null}
         nomeMeta={(id) => metaDe(Number(id.replace("meta", "")))?.nome ?? id}
         onCompartilhar={() => void compartilhar()}
         onContinuar={() => {
@@ -399,6 +404,30 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         <button type="button" className="ch-btn ch-btn-claro" onClick={() => void compartilhar()}>Compartilhar minha chama</button>
         <button type="button" className="ch-link" onClick={() => irPara({ v: "abas" })}>Ver minhas conquistas</button>
       </div>
+    );
+  }
+
+  const maxBrasas = maxBrasasDoPlano(painel.perfil.plano);
+  if (vista.v === "tesouro") {
+    corpo = (
+      <TesouroTela
+        estado={estado}
+        max={maxBrasas}
+        vitalicio={maxBrasas > 2}
+        hoje={hoje}
+        onVoltar={() => irPara({ v: "abas" })}
+        extras={<ExtrasCard estado={estado} hoje={hoje} agir={agir} toast={toast} amigos={painel.amigosLista} onPraticar={() => irPara({ v: "pratica" })} />}
+        onComprarBrasa={async () => { if (await agir({ tipo: "comprarBrasa" })) toast("Brasa guardada. Sua chama está mais protegida."); }}
+        onRestaurar={async () => { if (await agir({ tipo: "restaurar", modo: "talentos" })) { toast("A chama voltou!"); irPara({ v: "abas" }); } }}
+      />
+    );
+  } else if (vista.v === "volta") {
+    corpo = (
+      <LeituraVoltaTela
+        feito={Boolean(estado.restauravel?.passos.leitura)}
+        onVoltar={() => irPara({ v: "abas" })}
+        onConcluir={async () => { if (await agir({ tipo: "leituraVolta" })) irPara({ v: "abas" }); }}
+      />
     );
   }
 
@@ -490,7 +519,12 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
           <b>Sua brasa guardada salvou a chama!</b> Você ficou um dia sem entrar e a brasa cobriu. Cuide dela hoje.
         </Faixa>
       )}
-      {estado.avisos.includes("chama_apagou") && (
+      {estado.avisos.includes("chama_restaurada") && (
+        <Faixa tom="brasa" onFechar={() => void agir({ tipo: "limparAvisos" })}>
+          <b>A chama voltou!</b> {diasTxt(estado.chama)} de chama acesa. “Tinha-se perdido, e foi achado.”
+        </Faixa>
+      )}
+      {estado.avisos.includes("chama_apagou") && !estado.restauravel && (
         <Faixa tom="apagou" onFechar={() => void agir({ tipo: "limparAvisos" })}>
           <b>A chama apagou.</b> Sem problema: a jornada continua do dia {atual}. Acenda de novo hoje.
         </Faixa>
@@ -543,8 +577,22 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
               })}
             </div>
             <div className="ch-xpl"><span><b>{estado.xp}</b> XP no total</span><span><b>{estado.xpSemana[inicioSemana(hoje)] ?? 0}</b> XP nesta semana</span></div>
-            {estado.brasas > 0 && <div className="ch-brasas" title="Brasa guardada">{Array.from({ length: estado.brasas }, (_, i) => <i key={i} />)}<span>{estado.brasas === 1 ? "1 brasa guardada" : `${estado.brasas} brasas guardadas`}</span></div>}
+            <BarraTesouro brasas={estado.brasas} max={maxBrasas} talentos={estado.talentos ?? 0} onAbrir={() => irPara({ v: "tesouro" })} />
           </section>
+
+          {estado.restauravel && hoje <= estado.restauravel.ate && (
+            <RestaurarCard
+              r={estado.restauravel}
+              hoje={hoje}
+              talentos={estado.talentos ?? 0}
+              onLeitura={() => irPara({ v: "volta" })}
+              onPratica={() => setVista({ v: "pratica" })}
+              onFazerDia={() => document.querySelector(".ch-dia")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onTalentos={async () => { if (await agir({ tipo: "restaurar", modo: "talentos" })) toast("A chama voltou!"); }}
+            />
+          )}
+          <FaixaVigilia estado={estado} onPraticar={() => setVista({ v: "pratica" })} />
+          {!feitoHoje && !estado.restauravel && <AvisoNoite brasas={estado.brasas} hora={painel.hora} chama={estado.chama} />}
 
           <button type="button" className="ch-faixa-liga" onClick={() => irAba("liga")}>
             <span className="pos">{sit.posicao}º</span>
@@ -751,9 +799,10 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             <button type="button" className="ch-btn" onClick={() => setConvidar(true)}>Convidar um amigo</button>
           </div>
           <div className="ch-card">
-            <h2>Brasas guardadas</h2>
-            <p className="ch-suave">Você ganha 1 brasa a cada 7 dias de chama (no máximo {MAX_BRASAS}). Se pular um dia, a brasa é usada sozinha e a chama não apaga.</p>
-            <div className="ch-brasas grande">{Array.from({ length: MAX_BRASAS }, (_, i) => <i key={i} className={i < estado.brasas ? "" : "vazia"} />)}</div>
+            <h2>Brasas e talentos</h2>
+            <p className="ch-suave">Você ganha 1 brasa a cada 7 dias de chama (no máximo {maxBrasas}). Se pular um dia, a brasa é usada sozinha e a chama não apaga. Você tem {estado.talentos ?? 0} talentos para gastar no Tesouro.</p>
+            <div className="ch-brasas grande">{Array.from({ length: maxBrasas }, (_, i) => <i key={i} className={i < estado.brasas ? "" : "vazia"} />)}</div>
+            <button type="button" className="ch-btn" onClick={() => irPara({ v: "tesouro" })}>Abrir o Tesouro</button>
           </div>
           <button type="button" className="ch-btn ch-btn-claro" onClick={() => void papelDeParede()}>Papel de parede da chama</button>
         </section>
@@ -842,7 +891,7 @@ function Hoje(p: {
       <div className="ch-card ch-trava">
         <span className="ch-etiqueta">Dia {p.atual}</span>
         <h2>Sua chama tem {diasTxt(p.chama)}</h2>
-        <p className="ch-suave">Para seguir do dia 4 em diante, escolha como continuar: vitalício ou mensal. Seu progresso fica guardado.</p>
+        <p className="ch-suave">Seus 3 dias grátis acabaram. Para continuar a jornada, escolha como seguir: vitalício ou mensal. Seu progresso fica guardado.</p>
         <button type="button" className="ch-btn ch-btn-grande" onClick={p.onPagamento}>Continuar a jornada</button>
       </div>
     );
