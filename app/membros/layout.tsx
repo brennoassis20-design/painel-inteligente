@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Figtree } from "next/font/google";
 import "./membros.css";
+
+// Fonte da área de membros (todas as áreas): legível em tela pequena, forte nos títulos.
+const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"], variable: "--font-gp", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Gênio Play",
@@ -14,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A0C12",
+  themeColor: "#101012",
   viewportFit: "cover",
 };
 
@@ -22,5 +26,5 @@ export const dynamic = "force-dynamic";
 
 // O pixel da Meta é ligado pela própria tela, com o id da área do endereço (cada produtor mede a dele).
 export default function MembrosLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <div className={figtree.variable}>{children}</div>;
 }

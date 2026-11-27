@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-27T19:15:56.361589+00:00",
+  "title": "Design System: Gênio Play",
+  "extensions": {
+    "colorMeta": {
+      "area-bg": {
+        "role": "neutral",
+        "displayName": "Fundo da Área",
+        "canonical": "var(--gp-bg)",
+        "note": "Configurável por área no admin; padrão #101012; Gênio Play #0A0C12.",
+        "tonalRamp": [
+          "#050506",
+          "#0b0b0c",
+          "#101012",
+          "#1c1c1e",
+          "#262627",
+          "#343435",
+          "#4a4a4e",
+          "#6f6f78"
+        ]
+      },
+      "area-bg-raised": {
+        "role": "neutral",
+        "displayName": "Fundo Elevado",
+        "canonical": "color-mix(in srgb, var(--gp-bg), #fff 5%)",
+        "tonalRamp": [
+          "#101012",
+          "#161618",
+          "#1c1c1e",
+          "#222224",
+          "#28282a",
+          "#2e2e30",
+          "#343435",
+          "#3a3a3c"
+        ]
+      },
+      "area-card": {
+        "role": "neutral",
+        "displayName": "Cartão",
+        "canonical": "color-mix(in srgb, var(--gp-bg), #fff 9%)",
+        "tonalRamp": [
+          "#1c1c1e",
+          "#202022",
+          "#262627",
+          "#2c2c2d",
+          "#323233",
+          "#383839",
+          "#3e3e3f",
+          "#444445"
+        ]
+      },
+      "area-line": {
+        "role": "neutral",
+        "displayName": "Linha",
+        "canonical": "color-mix(in srgb, var(--gp-bg), #fff 15%)",
+        "tonalRamp": [
+          "#262627",
+          "#2c2c2d",
+          "#343435",
+          "#3c3c3d",
+          "#454546",
+          "#4e4e4f",
+          "#575758",
+          "#606061"
+        ]
+      },
+      "area-accent": {
+        "role": "primary",
+        "displayName": "Cor da Área",
+        "canonical": "var(--gp-accent)",
+        "note": "Variável por área, definida pelo produtor. Só progresso, preço/compra, selos e aula atual. Padrão do código #f2b441; Gênio Play #7040f2. Variante clara --gp-gold2 = color-mix(accent, #fff 38%).",
+        "tonalRamp": [
+          "#3d2b06",
+          "#6b4c0b",
+          "#a87414",
+          "#d99a28",
+          "#f2b441",
+          "#f5c66f",
+          "#f8d89c",
+          "#fbeacb"
+        ]
+      },
+      "area-on-accent": {
+        "role": "primary",
+        "displayName": "Tinta sobre a Cor da Área",
+        "canonical": "onAccent(--gp-accent)",
+        "note": "#14110a para destaques claros, #ffffff para escuros (luminância > 0.179).",
+        "tonalRamp": [
+          "#14110a",
+          "#14110a",
+          "#14110a",
+          "#14110a",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "genio-play-bg": {
+        "role": "neutral",
+        "displayName": "Fundo Gênio Play (área 1)",
+        "canonical": "#0A0C12",
+        "note": "Valor configurado no admin da área 1, não fixado no CSS.",
+        "tonalRamp": [
+          "#030407",
+          "#06080c",
+          "#0A0C12",
+          "#151822",
+          "#20242f",
+          "#2e3340",
+          "#454b5a",
+          "#6a7182"
+        ]
+      },
+      "genio-play-accent": {
+        "role": "primary",
+        "displayName": "Roxo Gênio Play (área 1)",
+        "canonical": "#7040f2",
+        "note": "Valor configurado no admin da área 1; tinta sobre ele = #ffffff.",
+        "tonalRamp": [
+          "#1d0f45",
+          "#2f1972",
+          "#4527a6",
+          "#5a33d4",
+          "#7040f2",
+          "#9572f5",
+          "#b9a3f8",
+          "#ddd2fc"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#f5f5f6"
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Tinta Apagada",
+        "canonical": "#a8a8b0"
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Tinta Suave",
+        "canonical": "#e4e4e8"
+      },
+      "ghost-gray": {
+        "role": "neutral",
+        "displayName": "Cinza Translúcido",
+        "canonical": "#6d6d7466"
+      },
+      "promo-green": {
+        "role": "semantic",
+        "displayName": "Verde Promoção",
+        "canonical": "#22c55e",
+        "tonalRamp": [
+          "#052e14",
+          "#0a5226",
+          "#11833d",
+          "#1aa64d",
+          "#22c55e",
+          "#5bd685",
+          "#94e5ad",
+          "#cdf4d8"
+        ]
+      },
+      "done-green": {
+        "role": "semantic",
+        "displayName": "Verde Feito",
+        "canonical": "#46c98a"
+      },
+      "alert-red": {
+        "role": "semantic",
+        "displayName": "Vermelho Alerta",
+        "canonical": "#f06a6a"
+      },
+      "live-red": {
+        "role": "semantic",
+        "displayName": "Vermelho Ao Vivo",
+        "canonical": "#e5484d"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Título do billboard; um por tela; 32px no celular."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Título da tela do produto, da sheet (28/24px) e do login (30px)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Cabeçalho de trilho; título da aula 24px; módulo 17px."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Corpo e botões (700); nunca abaixo de 16px no celular."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Nome e estado embaixo da capa, posição da aula, progresso."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Rótulo da barra de abas; selo da capa em 11px 800 maiúsculo."
+      }
+    },
+    "shadows": [
+      {
+        "name": "tile-focus",
+        "value": "0 10px 28px #000000b3, 0 0 0 2px #ffffffcc",
+        "purpose": "Hover da capa no desktop, com scale(1.035)."
+      },
+      {
+        "name": "poster",
+        "value": "0 14px 36px #000000a6",
+        "purpose": "Pôster do billboard no celular."
+      },
+      {
+        "name": "menu",
+        "value": "0 18px 40px #000a",
+        "purpose": "Menu da conta e painel do sino."
+      },
+      {
+        "name": "sheet",
+        "value": "0 24px 60px #000c",
+        "purpose": "Modal de detalhes e cadeado."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-gp",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Hover da capa (0.35s), subida da sheet (0.32s), topo sólido (0.3s)."
+      },
+      {
+        "name": "button-press",
+        "value": "transform: scale(0.98) 0.12s",
+        "purpose": "Botão pressionado."
+      },
+      {
+        "name": "modal-fade",
+        "value": "opacity 0.2s ease-out",
+        "purpose": "Entrada do véu do modal."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "prefers-reduced-motion desliga transições de capa, modal, sheet, botão, spinner e promo."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sheet-drawer",
+        "value": "640px",
+        "purpose": "Abaixo: sheet vira gaveta de baixo."
+      },
+      {
+        "name": "player-stack",
+        "value": "860px",
+        "purpose": "Abaixo: vídeo e módulos em uma coluna."
+      },
+      {
+        "name": "mobile",
+        "value": "899px",
+        "purpose": "Abaixo: barra de abas, pôster no billboard, sem nav do topo, gutter 16px."
+      },
+      {
+        "name": "desktop",
+        "value": "900px",
+        "purpose": "Acima: gutter 48px, billboard ponta a ponta, setas nos trilhos."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botão Principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Assistir/Continuar e Entrar: branco, padrão streaming.",
+      "html": "<button class=\"ds-btn ds-btn-primary\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z\"/></svg>Continuar</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;border:0;border-radius:6px;padding:0 22px;font:700 16px Figtree,system-ui,sans-serif;cursor:pointer;transition:background-color .18s,transform .12s}.ds-btn:active{transform:scale(.98)}.ds-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}.ds-btn-primary{background:#fff;color:#0b0b0c}.ds-btn-primary:hover{background:#ffffffd9}"
+    },
+    {
+      "name": "Botão Comprar",
+      "kind": "button",
+      "refersTo": "button-buy",
+      "description": "Desbloquear/comprar: cor da área com tinta de onAccent().",
+      "html": "<button class=\"ds-btn-buy\" style=\"--gp-accent:#7040f2;--gp-on-accent:#fff\">Desbloquear por R$ 47,00</button>",
+      "css": ".ds-btn-buy{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border:0;border-radius:6px;padding:0 22px;font:700 16px Figtree,system-ui,sans-serif;background:var(--gp-accent,#f2b441);color:var(--gp-on-accent,#14110a);cursor:pointer;transition:background-color .18s,transform .12s}.ds-btn-buy:hover{background:color-mix(in srgb,var(--gp-accent,#f2b441),#fff 12%)}.ds-btn-buy:active{transform:scale(.98)}.ds-btn-buy:focus-visible{outline:2px solid #fff;outline-offset:2px}"
+    },
+    {
+      "name": "Botão Secundário",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Trailer, Aulas, Detalhes: cinza translúcido.",
+      "html": "<button class=\"ds-btn-ghost\">Aulas</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border:0;border-radius:6px;padding:0 22px;font:700 16px Figtree,system-ui,sans-serif;background:#6d6d7466;color:#fff;cursor:pointer;transition:background-color .18s}.ds-btn-ghost:hover{background:#6d6d7499}.ds-btn-ghost:focus-visible{outline:2px solid #fff;outline-offset:2px}"
+    },
+    {
+      "name": "Capa do Trilho",
+      "kind": "card",
+      "refersTo": "tile-cover",
+      "description": "Capa 2:3 sozinha, sinais por cima (selo, cadeado, progresso), nome e meta embaixo.",
+      "html": "<button class=\"ds-tile\" style=\"--gp-accent:#7040f2;--gp-on-accent:#fff\"><span class=\"ds-tile-img\"><span class=\"ds-badge\">Novo</span><span class=\"ds-bar\"><i style=\"width:40%\"></i></span></span><span class=\"ds-tile-meta\"><b>Método Gênio</b><span>Aula 3 de 25</span></span></button>",
+      "css": ".ds-tile{display:grid;gap:8px;width:160px;background:none;border:0;padding:0;text-align:left;cursor:pointer;color:#f5f5f6;font-family:Figtree,system-ui,sans-serif}.ds-tile-img{position:relative;aspect-ratio:2/3;border-radius:6px;overflow:hidden;background:#262627;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s cubic-bezier(.22,1,.36,1)}.ds-tile:hover .ds-tile-img{transform:scale(1.035);box-shadow:0 10px 28px #000000b3,0 0 0 2px #ffffffcc}.ds-tile:focus-visible{outline:none}.ds-tile:focus-visible .ds-tile-img{box-shadow:0 0 0 3px #fff}.ds-badge{position:absolute;bottom:10px;left:0;font-size:11px;font-weight:800;background:var(--gp-accent,#f2b441);color:var(--gp-on-accent,#14110a);padding:4px 8px;border-radius:0 4px 4px 0;text-transform:uppercase;letter-spacing:.03em}.ds-bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:#ffffff40}.ds-bar i{display:block;height:100%;background:var(--gp-accent,#f2b441)}.ds-tile-meta{display:grid;gap:2px;font-size:14px;line-height:1.3}.ds-tile-meta b{font-weight:700}.ds-tile-meta span{color:#a8a8b0}"
+    },
+    {
+      "name": "Barra de Abas",
+      "kind": "nav",
+      "refersTo": "tab-bar",
+      "description": "Navegação fixa do celular: Início, Meus, Loja, Ajuda; ativa em branco, sem cor da área.",
+      "html": "<nav class=\"ds-tabbar\"><button class=\"is-on\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 10.5L12 4l8 6.5V20h-5.5v-6h-5v6H4z\"/></svg>Início</button><button><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"4\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"13\" y=\"4\" width=\"7\" height=\"9\" rx=\"1\"/><path d=\"M4 17h16M4 20h10\"/></svg>Meus</button><button><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 8h14l-1 12H6zM9 8a3 3 0 0 1 6 0\"/></svg>Loja</button></nav>",
+      "css": ".ds-tabbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:color-mix(in srgb,#101012,#000 30%);border-top:1px solid #343435;padding:4px 8px 6px;width:360px}.ds-tabbar button{display:grid;justify-items:center;gap:3px;min-height:52px;align-content:center;background:none;border:0;color:#a8a8b0;font:600 11.5px Figtree,system-ui,sans-serif;cursor:pointer}.ds-tabbar button:hover{color:#fff}.ds-tabbar button:focus-visible{outline:2px solid #fff;outline-offset:2px}.ds-tabbar .is-on{color:#fff}"
+    },
+    {
+      "name": "Campo",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Campo do login e formulários: 52px, borda branca no foco.",
+      "html": "<label class=\"ds-field\">E-mail<input type=\"email\" placeholder=\"voce@email.com\"></label>",
+      "css": ".ds-field{display:grid;gap:6px;font:500 14px Figtree,system-ui,sans-serif;color:#a8a8b0;width:320px}.ds-field input{width:100%;min-height:52px;background:color-mix(in srgb,#101012,#fff 7%);color:#f5f5f6;border:1px solid #343435;border-radius:6px;padding:12px 14px;font:16px Figtree,system-ui,sans-serif;caret-color:var(--gp-accent,#f2b441)}.ds-field input:focus{border-color:#fff;outline:none}"
+    },
+    {
+      "name": "Medidor de Progresso",
+      "kind": "custom",
+      "refersTo": "progress-meter",
+      "description": "Linha de 4px na cor da área: billboard, capa, cabeçalho do produto.",
+      "html": "<span class=\"ds-meter\" style=\"--gp-accent:#7040f2\"><i style=\"width:12%\"></i></span>",
+      "css": ".ds-meter{display:block;width:320px;height:4px;border-radius:2px;background:#ffffff33;overflow:hidden}.ds-meter i{display:block;height:100%;background:var(--gp-accent,#f2b441)}"
+    },
+    {
+      "name": "Linha de Aula",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Aula na lista de módulos; aula atual com fundo Cartão e número na variante clara do destaque.",
+      "html": "<button class=\"ds-lesson is-current\" style=\"--gp-accent:#7040f2\"><span class=\"ds-num\">3</span><span>Tour do painel</span><small>12 min</small></button>",
+      "css": ".ds-lesson{width:360px;display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;text-align:left;background:none;border:0;padding:10px 8px;min-height:52px;border-radius:6px;cursor:pointer;font:15px/1.3 Figtree,system-ui,sans-serif;color:#f5f5f6}.ds-lesson:hover{background:#ffffff0f}.ds-lesson:focus-visible{outline:2px solid #fff;outline-offset:2px}.ds-lesson.is-current{background:#262627;font-weight:700}.ds-num{font:800 19px/1 Figtree,system-ui,sans-serif;color:#6f6f78;text-align:center;font-variant-numeric:tabular-nums}.ds-lesson.is-current .ds-num{color:color-mix(in srgb,var(--gp-accent,#f2b441),#fff 38%)}.ds-lesson small{color:#a8a8b0;font-size:13px;font-weight:500}"
+    }
+  ],
+  "narrative": {
+    "northStar": "A Sala de Streaming",
+    "overview": "O Gênio Play executa o padrão de streaming escolhido pelo Brenno, com a Netflix como régua de acabamento. Não existe mundo visual próprio aqui: o mérito está em executar o canon sem enfeite e sem ironia. A tela é escura e neutra, as capas dos produtos fazem todo o trabalho de cor, e a interface recua para que o aluno ache a próxima aula em um toque. O billboard abre a home com o produto em andamento, os trilhos horizontais de capas 2:3 vêm logo embaixo, e no celular uma barra de abas fixa fica ao alcance do polegar.\n\nO sistema é um esqueleto único para todas as áreas de membros. Cada produtor configura no admin duas cores, o fundo (`--gp-bg`) e o destaque (`--gp-accent`); todo o resto deriva delas por mistura. A área 1, Gênio Play, usa destaque roxo (#7040f2) sobre fundo azul-quase-preto (#0A0C12); outras áreas mantêm as cores que configuraram e continuam reconhecíveis como delas. Por isso o destaque é tratado como variável de área, nunca como cor de marca fixa, e só aparece onde trabalha.\n\nDensidade de streaming: muita capa, pouco texto, tipografia pesada e compacta nos títulos, corpo em 16px para um público leigo e muitas vezes mais velho. Rejeições confirmadas: brilho (glow), botão com degradê e vidro (glass/blur).",
+    "keyCharacteristics": [
+      "Fundo neutro quase preto, texto branco, cinzas neutros; a cor vem das capas.",
+      "Botão principal branco; secundário cinza translúcido; cor da área só para comprar.",
+      "Destaque da área restrito a progresso, preço, selos e aula atual.",
+      "Capas sem moldura, cantos de 6px, imagem sozinha e informação embaixo.",
+      "Celular primeiro: barra de abas fixa, alvos de 44px ou mais, sheet que sobe de baixo."
+    ],
+    "rules": [
+      {
+        "name": "The Work-Only Accent Rule",
+        "body": "A cor da área só aparece onde informa estado ou preço: progresso, preço, selo, aula atual. Se o destaque estiver decorando, está errado.",
+        "section": "colors"
+      },
+      {
+        "name": "The Producer's Palette Rule",
+        "body": "Nenhuma regra pode depender do valor do destaque. Todo uso precisa funcionar com amarelo (#f2b441), roxo (#7040f2) ou qualquer cor que o produtor escolha; a tinta sobre ela vem sempre de `onAccent()` e os tons derivados sempre de `color-mix` com `--gp-bg`/`--gp-accent`.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight-Not-Size Rule",
+        "body": "Hierarquia por peso e tracking, não por fonte nova. Uma família, Figtree, em toda área.",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Glow Rule",
+        "body": "Nenhuma sombra ou anel colorido, nenhum brilho, nenhum vidro. O único degradê permitido é o véu do próprio fundo sobre imagem (billboard, capa da sheet, topo transparente), que serve à legibilidade.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** usar `var(--gp-accent)` apenas em progresso, preço/compra, selos e aula atual, e obter a tinta sobre ele com `onAccent()`.",
+      "**Do** derivar superfícies de `--gp-bg` com `color-mix(in srgb, var(--gp-bg), #fff N%)` para que toda área configurada continue coerente.",
+      "**Do** manter o botão principal branco (#fff com tinta #0b0b0c) e o secundário cinza translúcido (#6d6d7466).",
+      "**Do** deixar a capa sozinha: título, preço e estado vão embaixo, fora da arte.",
+      "**Do** testar cada tela com o destaque padrão (#f2b441) e com o do Gênio Play (#7040f2 sobre #0A0C12).",
+      "**Do** manter corpo em 16px, alvos de 44px ou mais e foco com contorno branco de 2px."
+    ],
+    "donts": [
+      "**Don't** fixar a cor de marca do Gênio Play no CSS; ela vem do admin como qualquer outra área.",
+      "**Don't** usar a cor da área em fundos de seção, títulos, navegação ou no botão de assistir.",
+      "**Don't** usar brilho (glow), sombra colorida, botão com degradê ou vidro/desfoque.",
+      "**Don't** pôr rótulo pequeno acima do título (kicker/eyebrow) nem dividir o destaque em texto|imagem.",
+      "**Don't** emoldurar capas nem escrever por cima delas.",
+      "**Don't** usar emoji ou caractere como ícone."
+    ]
+  }
+}

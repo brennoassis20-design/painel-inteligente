@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   const base = `${root}${areaPath}` || "/";
   const name = settings && settings.slug === areaDoChama() ? "Chama Acesa" : settings?.brand_name || "Gênio Play";
   const icons = appIcons(settings?.slug);
-  const bg = /^#[0-9a-f]{6}$/i.test(settings?.bg_color || "") ? settings!.bg_color : "#0A0C12";
+  const bg = /^#[0-9a-f]{6}$/i.test(settings?.bg_color || "") ? settings!.bg_color : "#101012";
   return Response.json(
     {
       id: base,
