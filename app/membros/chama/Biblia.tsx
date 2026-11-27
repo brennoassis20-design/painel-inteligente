@@ -319,7 +319,7 @@ export function Biblia({ biblia, onAtivarPush, abrirEm }: AbaBibliaProps) {
     <section className="ch-tela ch-biblia">
       {cab}
       {menu}
-      <p className="ch-suave" style={{ margin: 0 }}>Grátis para sempre. Ler aqui não muda a sua jornada nem a sua chama.</p>
+      <p className="ch-suave" style={{ margin: 0 }}>Grátis para sempre. Ler aqui não acende a chama, mas cada capítulo conta na sua Palavra no coração.</p>
       {falha}
       {!indice && !erro && <p className="ch-suave">Abrindo…</p>}
       {indice && (

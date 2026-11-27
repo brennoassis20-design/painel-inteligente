@@ -19,7 +19,6 @@ export interface PropsExtras {
 }
 
 const dataBr = (d: string) => d.split("-").reverse().slice(0, 2).join("/");
-const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 /** Faixa da Hora da vigília: contagem regressiva do XP em dobro. Some quando acaba. */
 export function FaixaVigilia({ estado, onPraticar }: { estado: Estado; onPraticar?: () => void }) {
@@ -27,16 +26,16 @@ export function FaixaVigilia({ estado, onPraticar }: { estado: Estado; onPratica
   const ate = estado.extras?.vigiliaAte ?? null;
   useEffect(() => {
     if (!ate || Date.now() >= ate) return;
-    const t = window.setInterval(() => setAgora(Date.now()), 1000);
+    const t = window.setInterval(() => setAgora(Date.now()), 30000);
     return () => window.clearInterval(t);
   }, [ate]);
   const s = segundosDeVigilia(estado.extras ?? {}, agora);
   if (s <= 0) return null;
   return (
-    <div className="ch-card" role="status" style={{ borderColor: "var(--ch-btn-bg)" }}>
+    <div className="ch-card" style={{ borderColor: "var(--ch-btn-bg)" }}>
       <h2>Hora da vigília</h2>
-      <p><b>XP em dobro por {mmss(s)}</b></p>
-      <p className="ch-suave">&ldquo;Não pudestes vigiar comigo uma hora?&rdquo; (Mt 26:40). Aproveite o fogo aceso e faça o Desafio da Palavra.</p>
+      <p><b>XP em dobro no Desafio da Palavra</b> <span className="ch-suave">· mais {Math.ceil(s / 60)} min</span></p>
+      <p className="ch-suave">&ldquo;Não pudestes vigiar comigo uma hora?&rdquo; (Mt 26:40).{estado.chama > 0 ? " Aproveite o fogo aceso." : ""}</p>
       {onPraticar && <button type="button" className="ch-btn ch-btn-claro" onClick={onPraticar}>Fazer o Desafio da Palavra</button>}
     </div>
   );
@@ -57,6 +56,7 @@ export function ExtrasCard({ estado, hoje, agir, toast, amigos = [], onPraticar 
   const ex = estado.extras ?? {};
   const voto = ex.voto ?? null;
   const [ocupado, setOcupado] = useState(false);
+  const [confirmarVoto, setConfirmarVoto] = useState(false);
   const executar = async (a: Acao, ok: string) => {
     if (ocupado) return;
     setOcupado(true);
@@ -76,7 +76,7 @@ export function ExtrasCard({ estado, hoje, agir, toast, amigos = [], onPraticar 
       {(estado.avisos.includes("voto_cumprido") || estado.avisos.includes("voto_quebrado")) && (
         <div className="ch-card" role="status">
           {estado.avisos.includes("voto_cumprido") && <p><b>Voto cumprido!</b> Você guardou a palavra e recebeu {PRECO.voto * 2} talentos.</p>}
-          {estado.avisos.includes("voto_quebrado") && <p><b>O voto se quebrou.</b> A chama apagou e a aposta de {PRECO.voto} talentos foi perdida. Comece outro quando quiser.</p>}
+          {estado.avisos.includes("voto_quebrado") && <p><b>O voto se quebrou.</b> A chama apagou e os {PRECO.voto} talentos separados se perderam. Comece outro quando quiser.</p>}
           <button type="button" className="ch-btn ch-btn-claro" onClick={() => void agir({ tipo: "limparAvisos" })}>Entendi</button>
         </div>
       )}
@@ -94,11 +94,19 @@ export function ExtrasCard({ estado, hoje, agir, toast, amigos = [], onPraticar 
           )}
         </Item>
 
-        <Item titulo="Voto de 7 dias" ref_="Sl 116:14" texto={`Aposte ${PRECO.voto} talentos que vai completar 7 dias seguidos. Cumpriu, recebe ${PRECO.voto * 2}. Se a chama apagar, perde a aposta (brasa guardada não quebra o voto).`}>
+        <Item titulo="Voto de 7 dias" ref_="Sl 116:14" texto={`Separe ${PRECO.voto} talentos e prometa 7 dias seguidos. Cumpriu, recebe ${PRECO.voto * 2}. Se a chama apagar, os talentos separados se perdem (brasa guardada não quebra o voto).`}>
           {voto ? (
             <p><b>Voto em andamento: {diasDoVoto} de {DIAS_DO_VOTO} dias.</b> Desde {dataBr(voto.inicio)}.</p>
+          ) : confirmarVoto ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <p style={{ margin: 0 }}><b>Separar {PRECO.voto} dos seus {talentos} talentos?</b> Você recebe {PRECO.voto * 2} quando completar os 7 dias.</p>
+              <button type="button" className="ch-btn" disabled={ocupado} onClick={() => { setConfirmarVoto(false); void executar({ tipo: "fazerVoto" }, "Voto feito. Agora é guardar a palavra."); }}>
+                Sim, fazer o voto
+              </button>
+              <button type="button" className="ch-link" onClick={() => setConfirmarVoto(false)}>Agora não</button>
+            </div>
           ) : (
-            <button type="button" className="ch-btn ch-btn-claro" disabled={ocupado || talentos < PRECO.voto} onClick={() => void executar({ tipo: "fazerVoto" }, "Voto feito. Agora é guardar a palavra.")}>
+            <button type="button" className="ch-btn ch-btn-claro" disabled={ocupado || talentos < PRECO.voto} onClick={() => setConfirmarVoto(true)}>
               Fazer o voto por {PRECO.voto} talentos
             </button>
           )}

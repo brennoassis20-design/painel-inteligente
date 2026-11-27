@@ -5,12 +5,12 @@ import type { ArmazemConta } from "@/lib/chama-acesa/armazem";
 import { MAX_NOME, ROTULO_PLANO, type Conta as DadosConta } from "@/lib/chama-acesa/conta";
 import { reduzirFoto } from "@/lib/chama-acesa/foto";
 import { PRECO_MENSAL, PRECO_VITALICIO } from "@/lib/chama-acesa/precos";
-import type { Tema } from "@/lib/chama-acesa/tema";
+import type { Letra, Tema } from "@/lib/chama-acesa/tema";
 import { Avatar } from "./Avatar";
 import { IconeCamera, IconeVoltar } from "./Icones";
 
 /** Tela "Conta": nome de exibição, foto, e-mail (só leitura), plano, preferência do ranking e sair. */
-export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama, ligaNome, lembrete, tema, onTema, topo }: {
+export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama, ligaNome, lembrete, tema, onTema, letra = "normal", onLetra, topo }: {
   /** Resumo no topo (talentos, brasas, versículos, maná). */
   topo?: React.ReactNode;
   armazem: ArmazemConta;
@@ -18,9 +18,12 @@ export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama
   chama: number;
   ligaNome: string;
   lembrete: string | null;
-  /** Aparência: claro (padrão) ou escuro; a escolha fica salva no aparelho. */
+  /** Aparência: escuro (padrão) ou claro; a escolha fica salva no aparelho. */
   tema: Tema;
   onTema: (t: Tema) => void;
+  /** Tamanho da letra do app inteiro. */
+  letra?: Letra;
+  onLetra?: (l: Letra) => void;
   onVoltar: () => void;
   /** Avisa o app que nome, foto ou preferência mudaram (para atualizar o ranking e o topo). */
   onMudou: () => void;
@@ -93,7 +96,7 @@ export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama
           />
           <button type="button" className="ch-camera" aria-label={conta.foto ? "Trocar a foto" : "Colocar uma foto"} disabled={ocupado} onClick={() => arquivo.current?.click()}><IconeCamera /></button>
         </div>
-        <span className="ch-suave" style={{ fontSize: 13 }}>{chama} {chama === 1 ? "dia" : "dias"} de chama · Liga {ligaNome}</span>
+        <span className="ch-suave" style={{ fontSize: 14 }}>{chama} {chama === 1 ? "dia" : "dias"} de chama · Liga {ligaNome}</span>
         {conta.foto && <button type="button" className="ch-link" disabled={ocupado} onClick={() => void rodar(() => armazem.agir({ tipo: "removerFoto" }), "Foto removida.")}>Remover a foto</button>}
       </section>
 
@@ -101,7 +104,7 @@ export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama
         <label className="ch-campo">
           <span>Nome no ranking</span>
           <input type="text" value={nome} maxLength={MAX_NOME} onChange={(e) => setNome(e.target.value)} autoComplete="nickname" />
-          <small className="ch-suave" style={{ fontWeight: 400, fontSize: 12 }}>Só o primeiro nome aparece para os outros.</small>
+          <small className="ch-suave" style={{ fontWeight: 400, fontSize: 14 }}>Só o primeiro nome aparece para os outros.</small>
         </label>
         <button type="button" className="ch-btn" disabled={ocupado || !mudouNome} onClick={() => void rodar(() => armazem.agir({ tipo: "nome", nome }), "Nome salvo.")}>Salvar o nome</button>
         <div className="ch-troca">
@@ -131,6 +134,16 @@ export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama
             <button type="button" role="radio" aria-checked={tema === "escuro"} onClick={() => onTema("escuro")}>Escuro</button>
           </div>
         </div>
+        {onLetra && (
+          <div className="ch-item">
+            <span id="ch-rotulo-letra">Tamanho da letra</span>
+            <div className="ch-segm" role="radiogroup" aria-labelledby="ch-rotulo-letra">
+              <button type="button" role="radio" aria-checked={letra === "normal"} onClick={() => onLetra("normal")}>Normal</button>
+              <button type="button" role="radio" aria-checked={letra === "grande"} onClick={() => onLetra("grande")}>Grande</button>
+              <button type="button" role="radio" aria-checked={letra === "maior"} onClick={() => onLetra("maior")}>Maior</button>
+            </div>
+          </div>
+        )}
         <div className="ch-item"><span>Plano</span><span className="plano">{ROTULO_PLANO[conta.plano]}</span></div>
       </section>
 

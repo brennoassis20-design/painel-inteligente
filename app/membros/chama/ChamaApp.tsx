@@ -9,7 +9,7 @@ import type { Dia } from "@/lib/chama-acesa/dias";
 import type { Painel } from "@/lib/chama-acesa/painel";
 import { diaAtual, diasConcluidos, inicioSemana, NOME_JORNADA, ultimoDiaGratis, podeAbrir, somarDias, statusDoDia, TOTAL_DIAS, XP, type Check, type StatusDia } from "@/lib/chama-acesa/regras";
 import { progressoBiblia } from "@/lib/chama-acesa/biblia-estudo";
-import { aplicarTemaNaPagina, lerTema, salvarTema, type Tema } from "@/lib/chama-acesa/tema";
+import { aplicarTemaNaPagina, lerLetra, lerTema, salvarLetra, salvarTema, type Letra, type Tema } from "@/lib/chama-acesa/tema";
 import { diasDasMetas, idEstudo, metaDoDia, metasAlcancadas, proximaMeta, type Meta } from "@/lib/chama-acesa/marcos";
 import { montarDiaContinuo, type DiaContinuo, type LeituraPlano } from "@/lib/chama-acesa/continuo";
 import { situacaoDoPlano } from "@/lib/chama-acesa/biblia-estudo";
@@ -41,9 +41,9 @@ const serifada = Newsreader({ subsets: ["latin"], weight: ["400", "500"], style:
 const FONTES = `${bric.variable} ${inter.variable} ${jakarta.variable} ${serifada.variable}`;
 
 /** Raiz do app: marca o tema (claro/escuro), as fontes e o fundo da tela inteira. */
-function Raiz({ tema, className = "", children }: { tema: Tema; className?: string; children: React.ReactNode }) {
+function Raiz({ tema, letra = "normal", className = "", children }: { tema: Tema; letra?: Letra; className?: string; children: React.ReactNode }) {
   return (
-    <div className={`ch ${FONTES}${className ? ` ${className}` : ""}`} data-tema={tema}>
+    <div className={`ch ${FONTES}${className ? ` ${className}` : ""}`} data-tema={tema} data-letra={letra === "normal" ? undefined : letra}>
       <div className="ch-fundo" aria-hidden="true" />
       {children}
     </div>
@@ -111,13 +111,23 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lê a permissão do navegador depois de montar
     setAvisosAtivos(pushPermission() === "granted");
   }, [popupAvisos]);
-  // Tema: claro é o padrão para todo mundo; a escolha fica salva no aparelho (localStorage).
+  // Tema: escuro é o padrão para todo mundo; a escolha fica salva no aparelho (localStorage).
   const [tema, setTema] = useState<Tema>(() => lerTema());
   useEffect(() => aplicarTemaNaPagina(tema), [tema]);
   const trocarTema = (t: Tema) => {
     setTema(t);
     salvarTema(t);
   };
+  // Tamanho da letra (Minha conta): vale para o app inteiro, salvo no aparelho.
+  const [letra, setLetra] = useState<Letra>("normal");
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- lê a preferência do aparelho depois de montar
+  useEffect(() => setLetra(lerLetra()), []);
+  const trocarLetra = (l: Letra) => {
+    setLetra(l);
+    salvarLetra(l);
+  };
+  // Depois de fazer um passo, a tela Hoje volta rolada até o dia (e não até o topo).
+  const rolarAteODia = useRef(false);
   // Jornada: capítulos da Bíblia lidos (só se o armazém da Bíblia existir; senão a tela mostra o XP).
   const [capitulos, setCapitulos] = useState<number | null>(null);
   useEffect(() => {
@@ -216,6 +226,15 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     };
   }, [painelOk, feitoHoje, jornadaAcabou]);
 
+  useEffect(() => {
+    if (vista.v !== "abas" || !rolarAteODia.current) return;
+    rolarAteODia.current = false;
+    const el = document.querySelector(".ch-dia");
+    if (!el) return window.scrollTo({ top: 0 });
+    const topo = el.getBoundingClientRect().top + window.scrollY - 16;
+    window.scrollTo({ top: Math.max(0, topo), behavior: "instant" as ScrollBehavior });
+  }, [vista]);
+
   const toast = (t: string) => {
     setAviso(t);
     window.setTimeout(() => setAviso((a) => (a === t ? "" : a)), 3500);
@@ -239,16 +258,21 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     setVista(v);
     window.scrollTo({ top: 0 });
   };
+  const voltarAoDia = () => {
+    rolarAteODia.current = true;
+    setAba("hoje");
+    setVista({ v: "abas" });
+  };
 
   if (erro && !painel) {
     return (
-      <Raiz tema={tema} className="ch-centro">
+      <Raiz tema={tema} letra={letra} className="ch-centro">
         <p role="alert">{erro}</p>
         <button type="button" className="ch-btn" onClick={carregar}>Tentar de novo</button>
       </Raiz>
     );
   }
-  if (!painel) return <Raiz tema={tema} className="ch-centro">Acendendo o fogo…</Raiz>;
+  if (!painel) return <Raiz tema={tema} letra={letra} className="ch-centro">Acendendo o fogo…</Raiz>;
 
   const { estado, hoje, pago } = painel;
   const conteudo = (n: number): DiaContinuo | Dia | undefined =>
@@ -281,7 +305,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     const r = await agir({ tipo: "check", dia, check });
     if (!r) return;
     if (r.completouDia) irPara({ v: "acendeu", r: { completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa, xpGanho: r.xpGanho } });
-    else irPara({ v: "abas" });
+    else voltarAoDia();
   };
 
   const abrirDia = (dia: number) => {
@@ -345,9 +369,9 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     const para = painel.ligas.ligas[Math.min(res.para, painel.ligas.ligas.length - 1)];
     corpo = (
       <div className="ch-cheia">
-        <span className="ch-liga-icone" aria-hidden="true">{res.resultado === "subiu" ? "🚀" : res.resultado === "desceu" ? "📉" : "🛡️"}</span>
+        <Chama dias={Math.max(estado.chama, 1)} tamanho={96} acendendo={res.resultado === "subiu"} />
         <h1>{res.resultado === "subiu" ? "Você subiu de liga!" : res.resultado === "desceu" ? "Você desceu de liga" : "Você ficou na liga"}</h1>
-        <p className="ch-grande">{res.resultado === "ficou" ? `${de.icone} ${de.nome}` : `${de.icone} ${de.nome} → ${para.icone} ${para.nome}`}</p>
+        <p className="ch-grande">{res.resultado === "ficou" ? `Liga ${de.nome}` : `${de.nome} → ${para.nome}`}</p>
         <p className="ch-suave">Você terminou a semana em {res.posicao}º lugar com {res.xp} XP. {res.resultado === "subiu" ? "A disputa agora é mais forte. Vamos!" : res.resultado === "desceu" ? "Semana nova, chance nova: volte a ganhar XP todo dia." : "Mais uma semana para tentar subir."}</p>
         <button type="button" className="ch-btn ch-btn-grande" onClick={() => void agir({ tipo: "limparResultadoLiga" })}>Começar a nova semana</button>
       </div>
@@ -371,7 +395,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         dia={d}
         passo={vista.passo}
         feito={Boolean(estado.checks[vista.dia]?.[vista.passo])}
-        onVoltar={() => irPara({ v: "abas" })}
+        onVoltar={voltarAoDia}
         onAbrirBiblia={() => { setAba("biblia"); irPara({ v: "abas" }); }}
         onConcluir={() => void marcar(vista.dia, vista.passo)}
       />
@@ -520,6 +544,8 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         lembrete={estado.lembrete}
         tema={tema}
         onTema={trocarTema}
+        letra={letra}
+        onLetra={trocarLetra}
         topo={
           <ResumoConta
             talentos={estado.talentos ?? 0}
@@ -569,7 +595,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
   if (corpo) {
     return (
-      <Raiz tema={tema}>
+      <Raiz tema={tema} letra={letra}>
         {corpo}
         {xpPop && <div className="ch-xp-pop" key={xpPop.k} aria-live="polite">+{xpPop.n} XP</div>}
         {aviso && <p className="ch-toast" role="status">{aviso}</p>}
@@ -602,7 +628,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     { id: "conquistas", icone: "conquistas", nome: "Metas" },
   ];
   return (
-    <Raiz tema={tema}>
+    <Raiz tema={tema} letra={letra}>
       {estado.avisos.includes("brasa_salvou") && (
         <Faixa tom="brasa" onFechar={() => void agir({ tipo: "limparAvisos" })}>
           <b>Sua brasa guardada salvou a chama!</b> Você ficou um dia sem entrar e a brasa cobriu. Cuide dela hoje.
@@ -644,10 +670,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
               <div className="ch-hero-num">
                 <span className="ch-hero-sel so-claro-bloco">Chama acesa</span>
                 <span className={`ch-hero-n${String(estado.chama).length > 3 ? " longo" : ""}`}>{estado.chama}</span>
-                <span className="ch-hero-sub">
-                  <span className="so-claro">{estado.chama === 1 ? "dia seguido com Deus" : "dias seguidos com Deus"}</span>
-                  <span className="so-escuro">{estado.chama === 1 ? "dia de chama acesa" : "dias de chama acesa"}</span>
-                </span>
+                <span className="ch-hero-sub">{estado.chama === 1 ? "dia seguido com Deus" : "dias seguidos com Deus"}</span>
                 <span className="ch-hero-liga">Liga {sit.liga.nome} · {sit.posicao}º lugar</span>
               </div>
               <div className="ch-hero-chama"><Chama dias={estado.chama} tamanho={58} /></div>
@@ -680,15 +703,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
               onTalentos={async () => { if (await agir({ tipo: "restaurar", modo: "talentos" })) toast("A chama voltou!"); }}
             />
           )}
-          {manaPendente && <ManaPronto onAbrir={() => irPara({ v: "mana" })} />}
-          <FaixaVigilia estado={estado} onPraticar={() => setVista({ v: "pratica" })} />
           {!feitoHoje && !estado.restauravel && <AvisoNoite brasas={estado.brasas} hora={painel.hora} chama={estado.chama} />}
-
-          <button type="button" className="ch-faixa-liga" onClick={() => irAba("liga")}>
-            <span className="pos">{sit.posicao}º</span>
-            <span className="nome">Liga {sit.liga.nome}{proximaLiga && sit.limites.sobem > 0 ? ` · até o ${sit.limites.sobem}º sobe` : ""}</span>
-            <span className="tempo">{tempoLiga}</span>
-          </button>
 
           <Hoje
             atual={atual}
@@ -704,6 +719,15 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             onJejum={(valor) => void agir({ tipo: "jejum", dia: atual, valor })}
             onPagamento={() => irPara({ v: "pagamento" })}
           />
+
+          {manaPendente && <ManaPronto onAbrir={() => irPara({ v: "mana" })} />}
+          <FaixaVigilia estado={estado} />
+
+          <button type="button" className="ch-faixa-liga" onClick={() => irAba("liga")}>
+            <span className="pos">{sit.posicao}º</span>
+            <span className="nome">Liga {sit.liga.nome}{proximaLiga && sit.limites.sobem > 0 ? ` · até o ${sit.limites.sobem}º sobe` : ""}</span>
+            <span className="tempo">{tempoLiga}</span>
+          </button>
 
           <button type="button" className="ch-proxima" onClick={() => irAba("conquistas")} aria-label={`Próxima meta: ${nomeMeta(proxima)}. Abrir as metas`}>
             <Anel pct={(estado.chama / proxima) * 100} tam={48} espessura={4} texto={String(proxima)} tamTexto={proxima >= 1000 ? 11 : 13} rotulo={`${estado.chama} de ${proxima} dias`} />
@@ -723,7 +747,6 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
           <button type="button" className="ch-btn ch-btn-claro" onClick={() => void compartilhar()} disabled={estado.chama === 0 && concl === 0}>
             Compartilhar minha chama
           </button>
-          {onAreaMembros && <button type="button" className="ch-link" onClick={onAreaMembros}>Voltar para a área de membros</button>}
         </section>
       )}
 
@@ -904,6 +927,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             <button type="button" className="ch-btn" onClick={() => irPara({ v: "tesouro" })}>Abrir o Tesouro</button>
           </div>
           <button type="button" className="ch-btn ch-btn-claro" onClick={() => void papelDeParede()}>Papel de parede da chama</button>
+          {onAreaMembros && <button type="button" className="ch-link" onClick={onAreaMembros}>Voltar para a área de membros</button>}
         </section>
       )}
 

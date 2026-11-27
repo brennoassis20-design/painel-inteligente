@@ -1,4 +1,4 @@
-// Testes do tema do Chama Acesa: claro é o padrão e a escolha vem do localStorage (sem nunca lançar erro).
+// Testes do tema do Chama Acesa: escuro é o padrão e a escolha vem do localStorage (sem nunca lançar erro).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CHAVE_TEMA, COR_DO_TEMA, ehTema, lerTema, salvarTema, SCRIPT_TEMA, TEMA_PADRAO } from "../lib/chama-acesa/tema.ts";
@@ -9,31 +9,31 @@ const memoria = (ini = {}) => {
   return { getItem: (k) => (k in d ? d[k] : null), setItem: (k, v) => { d[k] = String(v); }, d };
 };
 
-test("o tema padrão é o claro, para todo mundo", () => {
-  assert.equal(TEMA_PADRAO, "claro");
-  assert.equal(lerTema(memoria()), "claro");
-  assert.equal(lerTema(null), "claro");
+test("o tema padrão é o escuro, para todo mundo", () => {
+  assert.equal(TEMA_PADRAO, "escuro");
+  assert.equal(lerTema(memoria()), "escuro");
+  assert.equal(lerTema(null), "escuro");
 });
 
 test("lê o tema salvo e ignora valores estranhos", () => {
   assert.equal(lerTema(memoria({ [CHAVE_TEMA]: "escuro" })), "escuro");
   assert.equal(lerTema(memoria({ [CHAVE_TEMA]: "claro" })), "claro");
-  assert.equal(lerTema(memoria({ [CHAVE_TEMA]: "roxo" })), "claro");
+  assert.equal(lerTema(memoria({ [CHAVE_TEMA]: "roxo" })), "escuro");
   assert.equal(ehTema("escuro"), true);
   assert.equal(ehTema(undefined), false);
 });
 
-test("localStorage bloqueado não quebra: cai no claro e salvar devolve false", () => {
+test("localStorage bloqueado não quebra: cai no escuro e salvar devolve false", () => {
   const quebrado = { getItem: () => { throw new Error("bloqueado"); }, setItem: () => { throw new Error("bloqueado"); } };
-  assert.equal(lerTema(quebrado), "claro");
+  assert.equal(lerTema(quebrado), "escuro");
   assert.equal(salvarTema("escuro", quebrado), false);
 });
 
 test("salvar e ler de volta", () => {
   const m = memoria();
-  assert.equal(salvarTema("escuro", m), true);
-  assert.equal(m.d[CHAVE_TEMA], "escuro");
-  assert.equal(lerTema(m), "escuro");
+  assert.equal(salvarTema("claro", m), true);
+  assert.equal(m.d[CHAVE_TEMA], "claro");
+  assert.equal(lerTema(m), "claro");
 });
 
 test("script anti-piscada e cores da barra do navegador", () => {
