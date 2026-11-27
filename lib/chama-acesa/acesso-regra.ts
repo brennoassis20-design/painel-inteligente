@@ -77,5 +77,5 @@ export function calcularAcesso(args: {
 
 /** Ícones oficiais do app (public/chama-acesa/): valem mesmo que a área no banco não tenha ícone. */
 export const CHAMA_ICONES = { i180: "/chama-acesa/icone-180.png", i192: "/chama-acesa/icone-192.png", i512: "/chama-acesa/icone-512.png" };
-export const CHAMA_COR = "#0a0f1f";
+export const CHAMA_COR = "#0B0D14"; // fundo do tema escuro (padrão): abertura do app instalado sem piscar
 export const CHAMA_NOME = "Chama Acesa";

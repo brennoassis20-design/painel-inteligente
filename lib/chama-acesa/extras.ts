@@ -97,7 +97,7 @@ export function fazerVoto(e: Estado, hoje: string): Res {
   return { estado: { ...e, talentos: e.talentos - PRECO.voto, extras: { ...ex(e), voto: { inicio: hoje, chamaInicio: e.chama, aposta: PRECO.voto } } } };
 }
 
-/** Chama apagou com voto ativo: a aposta se perde. */
+/** Chama apagou com voto ativo: os talentos separados se perdem. */
 export function quebrarVoto(extras: Extras, avisos: Aviso[]): { extras: Extras; avisos: Aviso[] } {
   return extras.voto ? { extras: { ...extras, voto: null }, avisos: [...avisos, "voto_quebrado"] } : { extras, avisos };
 }
