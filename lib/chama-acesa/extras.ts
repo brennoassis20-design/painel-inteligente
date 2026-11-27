@@ -21,6 +21,8 @@ export interface Extras {
   versos?: Record<string, number>;
   /** Maná do dia: último dia recolhido e quantos dias seguidos. */
   mana?: { dia: string | null; seq: number };
+  /** Aviso de domingo "Palavra no coração": semana (segunda) em que foi enviado e o total de versículos naquela hora. */
+  versosSemana?: { semana: string; total: number } | null;
 }
 
 export const VIGILIA_MS = 15 * 60 * 1000;
