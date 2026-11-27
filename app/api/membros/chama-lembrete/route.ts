@@ -3,11 +3,13 @@ import { areaUrl, getArea } from "@/lib/membros";
 import { pushParaUsuarios } from "@/lib/membros-avisos";
 import { areaDoChama } from "@/lib/chama-acesa/acesso-regra";
 import { rodarCobranca } from "@/lib/chama-acesa/cobranca";
-import { carregarLigas, carregarMarcos, carregarTextos, carregarVersiculos } from "@/lib/chama-acesa/conteudo-servidor";
+import { carregarDias, carregarLigas, carregarMarcos, carregarTextos, carregarVersiculos } from "@/lib/chama-acesa/conteudo-servidor";
 import { diasDasMetas } from "@/lib/chama-acesa/marcos";
 import { HORA_VERSICULO, mensagemVersiculo, quemRecebe, quemRecebeExtras, quemRecebeVersiculo, registrarEnvio, versiculoDoDia, type PerfilLembrete } from "@/lib/chama-acesa/lembretes";
 import { ligaRealMinimo, type PerfilRanking } from "@/lib/chama-acesa/ranking";
 import { dataSP, inicioSemana } from "@/lib/chama-acesa/regras";
+import { ehDomingo, fontesDoPerfil, podeReceberVersos, quemRecebeVersosSemana, totalDoPerfil, type CandidatoVersos } from "@/lib/chama-acesa/versos-domingo";
+import { diasJornadaEmLote, gravarVersosSemana, lidosEmLote } from "@/lib/chama-acesa/versos-servidor";
 import { quemRecebeBiblia } from "@/lib/chama-acesa/biblia-estudo";
 import { perfisComLembreteBiblia } from "@/lib/chama-acesa/persistencia-biblia";
 
@@ -19,6 +21,7 @@ export const maxDuration = 60;
 // recebe o de risco, quem já fez recebe o do dia seguinte (noite_feito); categoria e texto sorteados pela situação (lembretes-textos.json); (2) na hora CHAMA_COBRANCA_HORA (padrão 10), a
 // cobrança do dia 4 (push + e-mail) para quem completou o dia 3 ontem e não comprou. (3) Lembrete da LEITURA DA BÍBLIA, no horário que
 // a pessoa escolheu na aba Bíblia (separado do lembrete da jornada; não manda se já leu hoje; erro aqui nunca derruba os outros). ?dry=1 só conta e mostra a prévia; ?hora=07 força a hora.
+// (6) Domingo 20h (reserva 22h): aviso \"Palavra no coração\" (versos-domingo.ts), 1 por semana.
 // (5) Toda hora, avisos extras (lembretes.ts: avisoExtra) para quem tem aparelho inscrito; ?extras_todos=1 com dry inclui todos na prévia.
 // (4) Às 12h (CHAMA_VERSICULO_HORA) o versículo do dia para quem abriu o app nos últimos 14 dias; ?versiculo=1 força.
 // Aceita o CRON_SECRET (crons da Vercel) ou o CHAMA_CRON_SECRET, próprio do timer da VPS: o CRON_SECRET é variável
@@ -41,8 +44,8 @@ export async function GET(request: Request) {
     const hoje = dataSP();
     const area = await getArea(areaDoChama());
     const textos = carregarTextos();
-    const perfis = await supabaseRest<PerfilLembrete[]>(
-      `/chama_perfil?area_id=eq.${area.id}&select=user_id,nome,chama_atual,maior_chama,ultima_data,ultimo_acesso,horario_lembrete,dias_feitos,xp_semana,liga,lembretes_hist`,
+    const perfis = await supabaseRest<(PerfilLembrete & { inicio?: string | null; praticas?: Record<string, number> | null; extras?: CandidatoVersos["extras"] })[]>(
+      `/chama_perfil?area_id=eq.${area.id}&select=user_id,nome,chama_atual,maior_chama,ultima_data,ultimo_acesso,horario_lembrete,dias_feitos,xp_semana,liga,lembretes_hist,inicio,praticas,extras`,
     );
     // Liga igual à do app (real ou mista). Se a leitura falhar, o lembrete segue com a liga fictícia.
     const liga = await supabaseRest<PerfilRanking[]>(
@@ -61,6 +64,7 @@ export async function GET(request: Request) {
       }
     }
     // Avisos extras (tá tranquilo, alguém passou você na liga, último dia da liga): só para quem tem aparelho inscrito.
+    const extrasIds: string[] = [];
     let extras: { alvos: number; enviados: number; previa?: { categoria: string; titulo: string; corpo: string }[]; erro?: string } = { alvos: 0, enviados: 0 };
     try {
       const subs = await supabaseRest<{ user_id: string }[]>(`/mp_push_subs?area_id=eq.${area.id}&select=user_id`);
@@ -77,6 +81,7 @@ export async function GET(request: Request) {
       }
       const lista = quemRecebeExtras(elegiveis, hora, hoje, Date.now(), concluidos, textos, carregarLigas(), liga);
       extras = { alvos: lista.length, enviados: 0 };
+      lista.forEach((x) => extrasIds.push(x.perfil.user_id));
       if (dry) extras.previa = lista.slice(0, 20).map((x) => ({ categoria: x.mensagem.categoria, titulo: x.mensagem.titulo, corpo: x.mensagem.corpo }));
       else {
         for (const { perfil, mensagem } of lista) {
@@ -93,10 +98,10 @@ export async function GET(request: Request) {
       extras = { alvos: 0, enviados: 0, erro: e instanceof Error ? e.message.slice(0, 200) : "erro" };
     }
     // Lembrete da leitura bíblica: bloco isolado (antes da migration banco-biblia-estudo.sql a tabela não existe; segue tudo normal).
-    let biblia: { alvos: number; enviados: number; erro?: string; previa?: { titulo: string; corpo: string }[] } = { alvos: 0, enviados: 0 };
+    let biblia: { alvos: number; enviados: number; erro?: string; previa?: { titulo: string; corpo: string }[]; ids: string[] } = { alvos: 0, enviados: 0, ids: [] };
     try {
       const entregasBiblia = quemRecebeBiblia(await perfisComLembreteBiblia(area.id), hora, hoje);
-      biblia = { alvos: entregasBiblia.length, enviados: 0 };
+      biblia = { alvos: entregasBiblia.length, enviados: 0, ids: entregasBiblia.map((x) => x.perfil.user_id) };
       if (dry) biblia.previa = entregasBiblia.slice(0, 10).map((e) => e.mensagem);
       else {
         for (const { perfil, mensagem } of entregasBiblia) {
@@ -105,7 +110,38 @@ export async function GET(request: Request) {
       }
     } catch (e) {
       console.error("chama-lembrete-biblia", e);
-      biblia = { alvos: 0, enviados: 0, erro: e instanceof Error ? e.message.slice(0, 200) : "erro" };
+      biblia = { alvos: 0, enviados: 0, ids: [], erro: e instanceof Error ? e.message.slice(0, 200) : "erro" };
+    }
+    // "Palavra no coração" (domingo, 20h; reserva 22h): versículos da semana e desde o início, só para quem tem aparelho,
+    // abriu o app nos últimos 7 dias e tem 10+. Nunca na mesma hora de outro aviso (manhã/noite, extras, Bíblia): nesse caso tenta às 22h.
+    let versos: { alvos: number; enviados: number; erro?: string; previa?: { categoria: string; titulo: string; corpo: string }[] } = { alvos: 0, enviados: 0 };
+    try {
+      const jaNaHora = new Set<string>([...entregas.map((x) => x.perfil.user_id), ...extrasIds, ...biblia.ids]);
+      const pre = perfis.filter((p) => podeReceberVersos(p, Number(hora), hoje, jaNaHora));
+      if (pre.length) {
+        const subs = await supabaseRest<{ user_id: string }[]>(`/mp_push_subs?area_id=eq.${area.id}&select=user_id`);
+        const comAparelho = new Set(subs.map((s) => s.user_id));
+        if (params.get("extras_todos") === "1" && dry) perfis.forEach((p) => comAparelho.add(p.user_id));
+        const cand = pre.filter((p) => comAparelho.has(p.user_id));
+        const ids = cand.map((p) => p.user_id);
+        const [lidos, jornada] = ids.length ? await Promise.all([lidosEmLote(ids), diasJornadaEmLote(ids)]) : [new Map(), new Map()];
+        const refPorDia: Record<number, string> = {};
+        for (const d of carregarDias().dias) refPorDia[d.dia] = d.referencia;
+        const comTotal: CandidatoVersos[] = cand.map((p) => ({ ...p, total: totalDoPerfil(fontesDoPerfil(p, jornada.get(p.user_id) ?? [], refPorDia, lidos.get(p.user_id) ?? {})) }));
+        const lista = quemRecebeVersosSemana(comTotal, hora, hoje, textos, jaNaHora);
+        versos = { alvos: lista.length, enviados: 0 };
+        if (dry) versos.previa = lista.slice(0, 10).map((x) => ({ categoria: x.mensagem.categoria, titulo: x.mensagem.titulo, corpo: x.mensagem.corpo }));
+        else {
+          for (const { perfil, mensagem } of lista) {
+            const n = await pushParaUsuarios(area.id, [perfil.user_id], { title: mensagem.titulo, body: mensagem.corpo, url: `${areaUrl(area)}/?app=1`, tag: "chama-versos-semana" });
+            versos.enviados += n;
+            if (n > 0) await gravarVersosSemana(perfil.user_id, hoje, (perfil as CandidatoVersos).total, mensagem.chave, perfil.lembretes_hist ?? {});
+          }
+        }
+      }
+    } catch (e) {
+      console.error("chama-lembrete-versos", e);
+      versos = { alvos: 0, enviados: 0, erro: e instanceof Error ? e.message.slice(0, 200) : "erro" };
     }
     // Versículo do meio-dia (CHAMA_VERSICULO_HORA, padrão 12): o mesmo para todos, a quem abriu o app nos últimos 14 dias.
     let versiculo: { alvos: number; enviados: number; previa?: { titulo: string; corpo: string } } = { alvos: 0, enviados: 0 };
@@ -122,7 +158,7 @@ export async function GET(request: Request) {
     }
     const horaCobranca = String(process.env.CHAMA_COBRANCA_HORA || "10").padStart(2, "0");
     const cobranca = hora === horaCobranca || params.get("cobranca") === "1" ? await rodarCobranca(area, hoje, textos, dry) : null;
-    return Response.json({ dry, hora, alvos: entregas.length, enviados, extras, versiculo, biblia, cobranca, ...(dry ? { previa: entregas.slice(0, 20).map((e) => ({ categoria: e.mensagem.categoria, titulo: e.mensagem.titulo, corpo: e.mensagem.corpo })) } : {}) });
+    return Response.json({ dry, hora, alvos: entregas.length, enviados, extras, versos, versiculo, biblia: { ...biblia, ids: undefined }, cobranca, ...(dry ? { previa: entregas.slice(0, 20).map((e) => ({ categoria: e.mensagem.categoria, titulo: e.mensagem.titulo, corpo: e.mensagem.corpo })) } : {}) });
   } catch (error) {
     console.error("chama-lembrete", error);
     return jsonError(error instanceof Error ? error.message : "Erro no lembrete.", 500);

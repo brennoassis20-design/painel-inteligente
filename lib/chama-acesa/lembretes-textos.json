@@ -406,5 +406,77 @@
     "tom": "leve",
     "titulo": "Último dia da liga",
     "corpo": "Você está em {posicao}º na liga {liga}. Fecha em {horas}h: cada prática conta."
+  },
+  {
+    "cat": "versos_semana",
+    "tom": "carinhoso",
+    "titulo": "Palavra no coração 📖",
+    "corpo": "{nome}, nesta semana você leu {semana} versículos. Desde {desde}, já são {total}. {comparacao}"
+  },
+  {
+    "cat": "versos_semana",
+    "tom": "carinhoso",
+    "titulo": "Olha o que Deus fez em você",
+    "corpo": "Nesta semana: {semana} versículos guardados. Desde {desde}: {total}. {comparacao}"
+  },
+  {
+    "cat": "versos_semana",
+    "tom": "confronto",
+    "titulo": "{nome}, a Palavra está rendendo",
+    "corpo": "Você leu {semana} versículos nesta semana. Desde {desde}, {total}. {comparacao} E semana que vem, dá para mais?"
+  },
+  {
+    "cat": "versos_semana",
+    "tom": "confronto",
+    "titulo": "Fim de semana, hora de contar",
+    "corpo": "{semana} versículos nesta semana, {total} desde {desde}. {comparacao} Bora fazer a próxima semana valer mais?"
+  },
+  {
+    "cat": "versos_semana",
+    "tom": "engracado",
+    "titulo": "Spoiler: você está lendo muito 😄",
+    "corpo": "Nesta semana foram {semana} versículos. Desde {desde}, {total}. {comparacao} O algoritmo não tem nada a ver com isso."
+  },
+  {
+    "cat": "versos_semana",
+    "tom": "engracado",
+    "titulo": "Placar de domingo 🏆",
+    "corpo": "Palavra {semana} x 0 scroll infinito nesta semana. Desde {desde}: {total} versículos. {comparacao}"
+  },
+  {
+    "cat": "versos_semana_inicio",
+    "tom": "carinhoso",
+    "titulo": "Palavra no coração 📖",
+    "corpo": "{nome}, desde {desde} você já leu {total} versículos. {comparacao} Cada um ficou guardado."
+  },
+  {
+    "cat": "versos_semana_inicio",
+    "tom": "carinhoso",
+    "titulo": "Olha só até onde você chegou",
+    "corpo": "Já são {total} versículos lidos desde {desde}. {comparacao} Que Deus continue a obra."
+  },
+  {
+    "cat": "versos_semana_inicio",
+    "tom": "confronto",
+    "titulo": "{nome}, você parou para contar?",
+    "corpo": "{total} versículos lidos desde {desde}. {comparacao} Na próxima semana, vamos passar disso?"
+  },
+  {
+    "cat": "versos_semana_inicio",
+    "tom": "confronto",
+    "titulo": "Domingo é dia de prestar contas (da Palavra)",
+    "corpo": "Você já leu {total} versículos desde {desde}. {comparacao} Quanto mais você lê, mais a chama sobe."
+  },
+  {
+    "cat": "versos_semana_inicio",
+    "tom": "engracado",
+    "titulo": "Contador de versículos 🔢",
+    "corpo": "{total} versículos desde {desde}, e o contador não para. {comparacao} Seu pastor vai ficar orgulhoso."
+  },
+  {
+    "cat": "versos_semana_inicio",
+    "tom": "engracado",
+    "titulo": "Você viciou na Palavra? 😅",
+    "corpo": "Já são {total} versículos desde {desde}. {comparacao} Se for vício, é dos bons."
   }
 ]

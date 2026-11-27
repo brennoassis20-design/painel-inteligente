@@ -224,7 +224,7 @@ export const MAX_EXTRAS_DIA = 4;
 export const MAX_PASSOU_DIA = 2;
 export const XP_PRATICA_MAX = 5 * 5 + 10; // 5 acertos de 5 XP + prática perfeita
 export const HORAS_ULTIMO_DIA = [10, 15, 19] as const;
-const CATS_EXTRAS = ["tranquilo", "liga_passou", "liga_ultimo_sobe", "liga_ultimo_perto", "liga_ultimo_desce", "liga_ultimo"];
+const CATS_EXTRAS = ["tranquilo", "versos_semana", "versos_semana_inicio", "liga_passou", "liga_ultimo_sobe", "liga_ultimo_perto", "liga_ultimo_desce", "liga_ultimo"];
 
 /** Quantos avisos destas categorias já foram enviados hoje (pelo histórico "cat|titulo" -> data). */
 export function enviadosHoje(hist: Record<string, string>, hoje: string, cats: readonly string[] = CATS_EXTRAS): number {
