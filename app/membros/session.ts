@@ -24,6 +24,8 @@ export function writeSession(session: Session | null) {
 }
 
 export class AuthError extends Error {}
+// 403: a pessoa entrou, mas não tem permissão (ex.: aluno abrindo /admin).
+export class ForbiddenError extends Error {}
 
 // Área pelo endereço: membros.bagencymidia.site/<area> (ou /membros/<area> no endereço do painel).
 // Sem nome (raiz, /admin, /gratis) = área principal (Gênio Play).
@@ -88,6 +90,7 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
     writeSession(null);
     throw new AuthError(data.error || "Entre de novo.");
   }
+  if (response.status === 403) throw new ForbiddenError(data.error || "Você não tem permissão para isso.");
   if (!response.ok) throw new Error(data.error || "Algo deu errado. Tente de novo.");
   return data as T;
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Login from "../Login";
 import ImageField from "./ImageField";
 import "./admin.css";
-import { api, areaBase, areaSlug, AuthError, brl, readSession } from "../session";
+import { api, areaBase, areaSlug, AuthError, brl, ForbiddenError, readSession, writeSession } from "../session";
 
 type Product = {
   id: string;
@@ -78,6 +78,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [info, setInfo] = useState<{ principal: boolean; admin_plataforma: boolean; endereco: string } | null>(null);
+  const [denied, setDenied] = useState(false);
 
   const flash = useCallback((text: string) => {
     setToast(text);
@@ -97,6 +98,7 @@ export default function AdminPage() {
       setError("");
     } catch (err) {
       if (err instanceof AuthError) setLogged(false);
+      else if (err instanceof ForbiddenError) setDenied(true);
       else setError(err instanceof Error ? err.message : "Erro ao carregar.");
     }
   }, []);
@@ -121,6 +123,22 @@ export default function AdminPage() {
   }
 
   const home = areaBase() || "/";
+
+  // Aluno (ou admin de outra área) que abriu /admin: nada do painel aparece, só o aviso.
+  if (denied) {
+    return (
+      <div className="gp">
+        <main className="gp-admin-deny">
+          <h1>Esta parte é só de quem administra a área</h1>
+          <p>Sua conta é de aluno aqui. Suas aulas e compras continuam na área normal.</p>
+          <a className="gp-btn gp-btn-light" href={home}>Voltar para a área</a>
+          <button type="button" className="gp-btn gp-btn-ghost" onClick={() => { writeSession(null); setDenied(false); setLogged(false); }}>
+            Entrar com outra conta
+          </button>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="gp">

@@ -13,6 +13,9 @@ export async function areaFrom(request: Request) {
 
 type User = { id: string; email: string; name?: string };
 
+// Logado, mas não administra esta área: responde 403 (a tela mostra "só para quem administra").
+class AdminOnlyError extends OpError {}
+
 export async function withUser<T>(request: Request, handler: (user: User, area: Area) => Promise<T>) {
   let area: Area;
   try {
@@ -29,6 +32,7 @@ export async function withUser<T>(request: Request, handler: (user: User, area: 
   try {
     return Response.json(await handler(user, area));
   } catch (error) {
+    if (error instanceof AdminOnlyError) return jsonError(error.message, 403);
     if (error instanceof OpError) return jsonError(error.message, 400);
     console.error("membros", error);
     return jsonError(error instanceof Error ? error.message : "Erro inesperado.", 500);
@@ -37,7 +41,7 @@ export async function withUser<T>(request: Request, handler: (user: User, area: 
 
 export async function withAdmin<T>(request: Request, handler: (user: User, area: Area) => Promise<T>) {
   return withUser(request, async (user, area) => {
-    if (!(await isAdmin(user.email, area))) throw new OpError("Só administradores podem fazer isso.");
+    if (!(await isAdmin(user.email, area))) throw new AdminOnlyError("Só administradores podem fazer isso.");
     return handler(user, area);
   });
 }
