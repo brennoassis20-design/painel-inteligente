@@ -19,6 +19,8 @@ export interface Extras {
   presentes?: Record<string, boolean>;
   /** Desafio da Palavra: id do versículo -> quantas vezes a pessoa acertou (3+ = guardado no coração). */
   versos?: Record<string, number>;
+  /** Maná do dia: último dia recolhido e quantos dias seguidos. */
+  mana?: { dia: string | null; seq: number };
 }
 
 export const VIGILIA_MS = 15 * 60 * 1000;

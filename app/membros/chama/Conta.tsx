@@ -10,7 +10,9 @@ import { Avatar } from "./Avatar";
 import { IconeCamera, IconeVoltar } from "./Icones";
 
 /** Tela "Conta": nome de exibição, foto, e-mail (só leitura), plano, preferência do ranking e sair. */
-export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama, ligaNome, lembrete, tema, onTema }: {
+export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama, ligaNome, lembrete, tema, onTema, topo }: {
+  /** Resumo no topo (talentos, brasas, versículos, maná). */
+  topo?: React.ReactNode;
   armazem: ArmazemConta;
   /** Dias de chama, liga e horário do lembrete diário (só para mostrar). */
   chama: number;
@@ -73,6 +75,7 @@ export function ContaTela({ armazem, onVoltar, onMudou, onAssinar, onSair, chama
         <button type="button" className="ch-voltar" aria-label="Voltar" onClick={onVoltar}><IconeVoltar /></button>
         <h1>Minha conta</h1>
       </header>
+      {topo}
 
       <section className="ch-conta-foto" aria-label="Foto">
         <div className="ch-foto-grande">

@@ -12,6 +12,7 @@ import { diasLiberados, type Painel } from "./painel.ts";
 import type { OfertasChama } from "./precos.ts";
 import type { Versiculo } from "./pratica.ts";
 import { maxBrasasDoPlano } from "./talentos.ts";
+import type { PremioMana } from "./mana.ts";
 import { aplicarAcao, atualizarParaHoje, diffDias, dataSP, estadoVazio, horaSP, inicioSemana, premiarConvite, registrarAcesso, somarDias, somarXp, XP, type Acao, type Estado, type Medalha } from "./regras.ts";
 
 export interface RespostaAcao extends Painel {
@@ -19,6 +20,8 @@ export interface RespostaAcao extends Painel {
   novasMedalhas: Medalha[];
   ganhouBrasa: boolean;
   xpGanho: number;
+  /** Prêmio(s) do Maná do dia, na ação abrirMana. */
+  mana?: PremioMana[];
 }
 
 export type AcaoConta =
@@ -194,7 +197,7 @@ export function criarArmazemLocal(
       if (r.erro) throw new Error(r.erro);
       g.estado = r.estado;
       gravar(g);
-      return { ...painel(g, c), completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa, xpGanho: r.xpGanho };
+      return { ...painel(g, c), completouDia: r.completouDia, novasMedalhas: r.novasMedalhas, ganhouBrasa: r.ganhouBrasa, xpGanho: r.xpGanho, mana: r.mana };
     },
     dev: {
       avancar(dias) {

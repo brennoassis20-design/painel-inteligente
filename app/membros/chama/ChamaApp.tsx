@@ -16,6 +16,8 @@ import { situacaoDoPlano } from "@/lib/chama-acesa/biblia-estudo";
 import { situacaoNaLiga } from "@/lib/chama-acesa/ligas";
 import { posicaoDaReferencia, versiculosGuardados } from "@/lib/chama-acesa/pratica";
 import { Desafio } from "./Desafio";
+import { ManaPronto, ManaTela, PalavraNoCoracao, ResumoConta } from "./Mana";
+import { contarVersosLidos, marcoAlcancado } from "@/lib/chama-acesa/versos-lidos";
 import { InstalarApp, useVisaoInstalar, type ForcarInstalacao } from "./Instalar";
 import { pushPermission } from "../app";
 import { compartilharCartao, gerarCartao, gerarPapelDeParede } from "@/lib/chama-acesa/cartao";
@@ -64,6 +66,8 @@ type Vista =
   | { v: "estudo"; dia: number }
   | { v: "conta" }
   | { v: "tesouro" }
+  | { v: "mana" }
+  | { v: "marcoVersos"; n: number }
   | { v: "volta" };
 
 export interface ChamaAppProps {
@@ -156,6 +160,27 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
     setPopupAvisos(true);
   }, [painel, onAtivarPush]);
 
+  // Palavra no coração: capítulos lidos na Bíblia (para somar os versículos lidos).
+  const [lidosBiblia, setLidosBiblia] = useState<Record<string, number[]> | null>(null);
+  useEffect(() => {
+    if (!armazem.biblia) return void setLidosBiblia({});
+    let vivo = true;
+    armazem.biblia.carregar().then((b) => vivo && setLidosBiblia(b.estado.lidos ?? {})).catch(() => vivo && setLidosBiblia({}));
+    return () => { vivo = false; };
+  }, [armazem, aba]);
+  const totalVersos = painel && lidosBiblia ? versosLidosDe(painel, lidosBiblia) : null;
+  // Marco de versículos (100, 250, 500...): tela de comemoração uma vez (lembrado no aparelho).
+  useEffect(() => {
+    if (totalVersos === null) return;
+    let visto = 0;
+    try { visto = Number(localStorage.getItem("chama-marco-versos")) || 0; } catch { /* sem armazenamento */ }
+    const m = marcoAlcancado(totalVersos, visto);
+    if (!m) return;
+    try { localStorage.setItem("chama-marco-versos", String(m)); } catch { /* segue */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- comemoração quando a soma cruza um marco
+    if (visto > 0 || m > 100 || totalVersos >= 100) setVista((v) => (v.v === "abas" ? { v: "marcoVersos", n: m } : v));
+  }, [totalVersos]);
+
   // Depois do dia 21 a Palavra do dia é o capítulo do plano de leitura ativo (se houver): vem do armazém da Bíblia.
   const [leitura, setLeitura] = useState<LeituraPlano | null>(null);
   const precisaLeitura = painel ? diaAtual(painel.estado) > TOTAL_DIAS : false;
@@ -176,6 +201,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
 
   // Selo no ícone: aceso enquanto o dia de hoje não estiver completo; confere ao abrir e ao voltar ao foco.
   const feitoHoje = painel ? completouHoje(painel.estado.concluidos, painel.hoje) : true;
+  const manaPendente = Boolean(painel && completouHoje(painel.estado.concluidos, painel.hoje) && painel.estado.extras?.mana?.dia !== painel.hoje);
   const jornadaAcabou = false;
   const painelOk = Boolean(painel);
   useEffect(() => {
@@ -373,6 +399,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         chama={estado.chama}
         r={vista.r}
         cobrar={!pago && (vista.r.completouDia === 3 || ultimoDiaGratis(estado, hoje)) ? blocoCompra() : null}
+        extra={manaPendente ? <button type="button" className="ch-btn ch-btn-claro" onClick={() => irPara({ v: "mana" })}>Recolher o maná do dia</button> : null}
         nomeMeta={(id) => metaDe(Number(id.replace("meta", "")))?.nome ?? id}
         onCompartilhar={() => void compartilhar()}
         onContinuar={() => {
@@ -436,7 +463,28 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
   }
 
   const maxBrasas = maxBrasasDoPlano(painel.perfil.plano);
-  if (vista.v === "tesouro") {
+  if (vista.v === "mana") {
+    corpo = (
+      <ManaTela
+        mana={estado.extras?.mana}
+        hoje={hoje}
+        ontem={somarDias(hoje, -1)}
+        onRecolher={async () => (await agir({ tipo: "abrirMana" }))?.mana ?? null}
+        onVoltar={() => irPara({ v: "abas" })}
+      />
+    );
+  } else if (vista.v === "marcoVersos") {
+    corpo = (
+      <div className="ch-cheia ch-celebra">
+        <div className="ch-confete" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ left: `${(i * 7 + 3) % 100}%`, animationDelay: `${(i % 7) * 0.25}s` }} />)}</div>
+        <Chama dias={30} acendendo />
+        <h1>{vista.n.toLocaleString("pt-BR")} versículos lidos!</h1>
+        <p className="ch-grande">A Palavra está criando raiz em você.</p>
+        <p className="ch-suave">“Lâmpada para os meus pés é a tua palavra, e luz para o meu caminho.” Salmos 119:105</p>
+        <button type="button" className="ch-btn ch-btn-grande" onClick={() => irPara({ v: "abas" })}>Continuar</button>
+      </div>
+    );
+  } else if (vista.v === "tesouro") {
     corpo = (
       <TesouroTela
         estado={estado}
@@ -472,6 +520,19 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
         lembrete={estado.lembrete}
         tema={tema}
         onTema={trocarTema}
+        topo={
+          <ResumoConta
+            talentos={estado.talentos ?? 0}
+            brasas={estado.brasas}
+            maxBrasas={maxBrasas}
+            versos={totalVersos}
+            desde={estado.inicio}
+            manaPendente={manaPendente}
+            feitoHoje={feitoHoje}
+            onTesouro={() => irPara({ v: "tesouro" })}
+            onMana={() => irPara({ v: "mana" })}
+          />
+        }
       />
     );
   } else if (vista.v === "meta") {
@@ -566,9 +627,9 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
               <h1>{primeiroNome && primeiroNome !== "Você" ? `${saudacao}, ${primeiroNome}` : saudacao}</h1>
             </div>
             <div className="ch-cab-acoes">
-              <button type="button" className="ch-sino" aria-label={avisosAtivos ? "Avisos" : "Avisos: 1 novo"} onClick={() => setPopupAvisos(true)}>
+              <button type="button" className="ch-sino" aria-label={avisosAtivos && !manaPendente ? "Avisos" : `Avisos: ${(avisosAtivos ? 0 : 1) + (manaPendente ? 1 : 0)} novo`} onClick={() => (manaPendente ? irPara({ v: "mana" }) : setPopupAvisos(true))}>
                 <IconeSino />
-                {!avisosAtivos && <span className="ch-sino-n" aria-hidden="true">1</span>}
+                {(!avisosAtivos || manaPendente) && <span className="ch-sino-n" aria-hidden="true">{(avisosAtivos ? 0 : 1) + (manaPendente ? 1 : 0)}</span>}
               </button>
               {armazem.conta && (
                 <button type="button" className="ch-perfil-btn" aria-label="Minha conta" onClick={() => irPara({ v: "conta" })}>
@@ -619,6 +680,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
               onTalentos={async () => { if (await agir({ tipo: "restaurar", modo: "talentos" })) toast("A chama voltou!"); }}
             />
           )}
+          {manaPendente && <ManaPronto onAbrir={() => irPara({ v: "mana" })} />}
           <FaixaVigilia estado={estado} onPraticar={() => setVista({ v: "pratica" })} />
           {!feitoHoje && !estado.restauravel && <AvisoNoite brasas={estado.brasas} hora={painel.hora} chama={estado.chama} />}
 
@@ -676,6 +738,7 @@ export function ChamaApp({ armazem, marca = "Chama Acesa", onAreaMembros, onAtiv
             <div><b>{alcancadas.length}</b><span>{alcancadas.length === 1 ? "meta alcançada" : "metas alcançadas"}</span></div>
             {capitulos !== null ? <div><b>{capitulos}</b><span>{capitulos === 1 ? "capítulo lido" : "capítulos lidos"}</span></div> : <div><b>{estado.xp}</b><span>XP no total</span></div>}
           </div>
+          <PalavraNoCoracao total={totalVersos ?? 0} desde={estado.inicio} carregando={totalVersos === null} />
 
           <section className="ch-mapa" aria-label="Mapa da chama">
             <div className="ch-mapa-cab"><h2>Últimas 5 semanas</h2><span>cada quadrado = 1 dia</span></div>
@@ -1119,7 +1182,7 @@ function Vazio({ onVoltar }: { onVoltar: () => void }) {
   );
 }
 
-function Acendeu({ chama, r, cobrar, nomeMeta, onContinuar, onCompartilhar }: { chama: number; r: Pick<RespostaAcao, "completouDia" | "novasMedalhas" | "ganhouBrasa" | "xpGanho">; cobrar: React.ReactNode | null; nomeMeta: (id: string) => string; onContinuar: () => void; onCompartilhar: () => void }) {
+function Acendeu({ chama, r, cobrar, nomeMeta, onContinuar, onCompartilhar, extra }: { extra?: React.ReactNode; chama: number; r: Pick<RespostaAcao, "completouDia" | "novasMedalhas" | "ganhouBrasa" | "xpGanho">; cobrar: React.ReactNode | null; nomeMeta: (id: string) => string; onContinuar: () => void; onCompartilhar: () => void }) {
   return (
     <div className="ch-cheia ch-acendeu">
       <Chama dias={chama} acendendo tamanho={130} />
@@ -1129,9 +1192,9 @@ function Acendeu({ chama, r, cobrar, nomeMeta, onContinuar, onCompartilhar }: { 
       {r.xpGanho > 0 && <div className="ch-pill">⚡ +{r.xpGanho} XP neste dia</div>}
       {cobrar !== null && (
         <div className="ch-card ch-oferta">
-          <span className="ch-etiqueta">Seu dia 3 está feito</span>
+          <span className="ch-etiqueta">Último dia grátis</span>
           <h2>Garanta a sua jornada</h2>
-          <p>Você acendeu a chama por 3 dias. A partir do dia 4 o app pede uma das duas opções abaixo. Seu progresso fica guardado e a Bíblia continua grátis.</p>
+          <p>Seus 3 dias grátis terminam hoje. A partir de amanhã o app pede uma das duas opções abaixo. Seu progresso fica guardado e a Bíblia continua grátis.</p>
           {cobrar}
         </div>
       )}
@@ -1141,6 +1204,7 @@ function Acendeu({ chama, r, cobrar, nomeMeta, onContinuar, onCompartilhar }: { 
         : <div key={m} className="ch-ganho medalha">🏅 Meta alcançada: <b>{nomeMeta(m)}</b><small>{diasTxt(Number(m.replace("meta", "")))} de chama</small></div>
       ))}
       <button type="button" className="ch-btn ch-btn-grande" onClick={onContinuar}>Continuar</button>
+      {extra}
       <button type="button" className="ch-btn ch-btn-claro" onClick={onCompartilhar}>Compartilhar minha chama</button>
     </div>
   );
@@ -1260,3 +1324,11 @@ function ConviteSheet({ texto, link, onFechar, chama }: { texto: string; link: s
   );
 }
 
+
+/** Soma dos versículos lidos (dias da jornada + desafio + capítulos da Bíblia). */
+function versosLidosDe(p: Painel, lidos: Record<string, number[]>): number {
+  const diasJornada = Object.keys(p.estado.concluidos).map(Number).filter((d) => d <= TOTAL_DIAS);
+  const refsDosDias = diasJornada.map((d) => p.dias.find((x) => x.dia === d)?.referencia ?? "").filter(Boolean);
+  const diasContinuos = Math.max(0, diasConcluidos(p.estado) - diasJornada.length);
+  return contarVersosLidos({ refsDosDias, diasContinuos, idsDesafio: Object.keys(p.estado.praticas ?? {}), lidos });
+}
