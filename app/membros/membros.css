@@ -422,3 +422,29 @@
 .gp-promo-fine { text-align: center; margin: 0; padding: 0 14px; }
 
 .gp-offer-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Minha conta: coluna única, seções separadas por linha (sem cartões aninhados) */
+.gp-conta { max-width: 760px; display: grid; gap: 0; padding-block: 12px 48px; }
+.gp-conta-head { display: grid; gap: 4px; padding-bottom: 24px; }
+.gp-conta-head h1 { font-size: clamp(30px, 4vw, 40px); font-weight: 900; letter-spacing: -0.03em; }
+.gp-conta-head p { margin: 0; overflow-wrap: anywhere; }
+.gp-conta-sec { display: grid; gap: 16px; padding-block: 26px; border-top: 1px solid var(--gp-line); }
+.gp-conta-sec h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+.gp-compras { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.gp-compras li { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 8px 0; }
+.gp-compra-capa { width: 44px; aspect-ratio: 2 / 3; border-radius: 4px; background: var(--gp-card) center / cover no-repeat; }
+.gp-compra-info { display: grid; gap: 2px; min-width: 0; }
+.gp-compra-info b { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-compra-info small, .gp-conta-row small { color: var(--gp-muted); font-size: 14px; }
+.gp-conta-link { justify-self: start; font-weight: 600; min-height: 44px; }
+.gp-conta-box { display: grid; gap: 14px; padding: 18px; border-radius: 8px; background: var(--gp-card); }
+.gp-conta-box h3 { font-size: 17px; font-weight: 800; }
+.gp-conta-box p { margin: 0; }
+.gp-conta-box .gp-field input, .gp-conta-box .gp-field select { background: var(--gp-bg); }
+.gp-conta-actions { display: flex; align-items: center; gap: 16px 20px; flex-wrap: wrap; }
+.gp-conta-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; }
+.gp-conta-row > span:first-child { display: grid; gap: 2px; min-width: 0; }
+.gp-conta-row .gp-pill { white-space: nowrap; }
+.gp-field input[readonly] { color: var(--gp-muted); }
+.gp-conta-sair { justify-self: start; margin-top: 8px; }
+@media (max-width: 560px) { .gp-conta-actions .gp-btn { width: 100%; } .gp-conta-box { padding: 16px 14px; } }
