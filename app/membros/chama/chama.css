@@ -704,3 +704,78 @@
 .ch-tesouro .ch-card, .ch-volta { text-align: left; width: 100%; }
 .ch-volta { justify-items: stretch; }
 .ch-volta h1, .ch-volta .ch-etiqueta { text-align: left; }
+
+/* ---------------------------------------------------------------- Desafio da Palavra (27/11) */
+.ch-btn-desafio { flex-direction: column; gap: 2px; }
+.ch-btn-desafio small { font-size: 13px; font-weight: 600; color: var(--ch-suave); }
+.ch-desafio { text-align: left; justify-items: stretch; }
+.ch-seguidas { display: inline-flex; align-items: center; gap: 2px; min-width: 44px; justify-content: flex-end; color: var(--ch-ouro); font-variant-numeric: tabular-nums; }
+.ch-seguidas b { font-size: 17px; }
+.ch-seguidas.acesa { animation: ch-seguidas-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes ch-seguidas-pop { from { transform: scale(0.8); } to { transform: scale(1); } }
+.ch-desafio-status { margin: -6px 0 0; font-size: 14px; color: var(--ch-suave); text-align: center; }
+.ch-desafio-pergunta { font-size: 18px; margin: 4px 0 0; color: var(--ch-texto2); }
+.ch-opcoes button { -webkit-tap-highlight-color: transparent; user-select: none; transition: transform 0.12s ease; color: var(--ch-fg); }
+.ch-opcoes button:active:not(:disabled) { transform: scale(0.97); }
+.ch-feedback blockquote { margin: 8px 0 4px; font-weight: 500; color: var(--ch-fg); line-height: 1.5; }
+.ch-feedback small { display: block; font-weight: 600; }
+.ch-desafio-fim .ch-desafio-ganho { margin: 0; font-size: 20px; }
+.ch-desafio-fim .ch-desafio-ganho b { font-family: var(--ch-f-num); font-size: 28px; color: var(--ch-ouro); }
+.ch-desafio-lista { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 8px; text-align: left; }
+.ch-desafio-lista button { display: flex; gap: 12px; align-items: flex-start; width: 100%; min-height: 56px; padding: 12px 14px; background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 16px; font: inherit; color: var(--ch-fg); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.12s ease; }
+.ch-desafio-lista button:active { transform: scale(0.98); }
+.ch-desafio-lista .marca { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+.ch-desafio-lista .marca.certa { background: var(--ch-ok-bg); color: var(--ch-ok); }
+.ch-desafio-lista .marca.errada { background: var(--ch-erro-bg); color: var(--ch-erro); }
+.ch-desafio-lista .tx { display: grid; gap: 2px; min-width: 0; }
+.ch-desafio-lista small { color: var(--ch-suave); font-size: 14px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ch-guardados { width: 100%; text-align: left; background: var(--ch-destaque); border-radius: 16px; padding: 14px 16px; }
+.ch-guardados p { margin: 0 0 4px; color: var(--ch-fg); }
+.ch-guardados small { color: var(--ch-destaque-txt); font-style: italic; }
+@media (prefers-reduced-motion: reduce) { .ch-seguidas.acesa { animation: none; } .ch-opcoes button, .ch-desafio-lista button { transition: none; } }
+.ch-desafio { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+
+/* ---------------------------------------------------------------- Maná do dia + Palavra no coração (27/11) */
+.ch-mana-pronto { display: flex; align-items: center; gap: 14px; width: 100%; margin-top: 12px; min-height: 64px; padding: 14px 16px; border: 1.5px solid var(--ch-amarelo); border-radius: 20px; background: var(--ch-aviso-bg); font: inherit; color: var(--ch-fg); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.12s ease; }
+.ch-mana-pronto:active { transform: scale(0.98); }
+.ch-mana-pronto .tx { display: grid; gap: 2px; }
+.ch-mana-pronto small { color: var(--ch-texto2); }
+.ch-mana-pronto .graos { position: relative; width: 36px; height: 36px; flex: none; }
+.ch-mana-pronto .graos i { position: absolute; width: 9px; height: 7px; border-radius: 50%; background: #FFF6DA; box-shadow: inset 0 -1px 0 #E6C77A, 0 0 0 1px rgba(184, 116, 10, 0.35); }
+.ch-mana-pronto .graos i:nth-child(1) { left: 4px; top: 20px; } .ch-mana-pronto .graos i:nth-child(2) { left: 14px; top: 24px; } .ch-mana-pronto .graos i:nth-child(3) { left: 24px; top: 19px; }
+.ch-mana-pronto .graos i:nth-child(4) { left: 9px; top: 11px; } .ch-mana-pronto .graos i:nth-child(5) { left: 20px; top: 8px; }
+
+.ch-mana { position: relative; overflow: hidden; }
+.ch-mana h1 { margin-top: 0; }
+.ch-mana-cena { position: relative; width: 180px; height: 150px; }
+.ch-mana-cena i { position: absolute; top: -12px; width: 12px; height: 9px; border-radius: 50%; background: #FFF6DA; box-shadow: inset 0 -1px 0 #E6C77A, 0 0 0 1px rgba(184, 116, 10, 0.3); opacity: 0; }
+.ch-mana.aberto .ch-mana-cena i { animation: ch-mana-cai 0.9s cubic-bezier(0.3, 0.6, 0.4, 1) forwards; }
+@keyframes ch-mana-cai { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 1; transform: translateY(118px); } }
+.ch-mana-cena .cesto { position: absolute; left: 30px; right: 30px; bottom: 0; height: 46px; border-radius: 6px 6px 40px 40px; background: repeating-linear-gradient(90deg, #B97A3D 0 8px, #9C6330 8px 16px); box-shadow: inset 0 6px 0 rgba(0, 0, 0, 0.12); }
+.ch-mana-versiculo { font-style: italic; color: var(--ch-texto2); max-width: 32ch; }
+.ch-mana-premios { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 10px; width: 100%; }
+.ch-mana-premios li { display: flex; align-items: center; gap: 14px; justify-content: center; padding: 16px; border-radius: 20px; background: var(--ch-card); border: 1.5px solid var(--ch-amarelo); font-size: 20px; opacity: 0; animation: ch-mana-premio 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+@keyframes ch-mana-premio { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+.ch-mana-premios .ico { display: grid; place-items: center; min-width: 40px; height: 40px; border-radius: 12px; font-weight: 800; font-size: 15px; color: var(--ch-ouro); background: var(--ch-destaque); }
+.ch-mana-premios .ico .ch-brasa-i { width: 22px; height: 22px; }
+
+.ch-palavra { margin-top: 12px; }
+.ch-palavra h2 { margin: 0 0 4px; }
+.ch-palavra-n { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 0 0 4px; }
+.ch-palavra-n b { font-family: var(--ch-f-num); font-size: 40px; line-height: 1; color: var(--ch-ouro); font-variant-numeric: tabular-nums; }
+.ch-palavra-n span { color: var(--ch-texto2); }
+
+.ch-resumo-conta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-bottom: 14px; }
+.ch-resumo-item { display: grid; justify-items: center; gap: 2px; padding: 12px 6px; background: var(--ch-card); border: 1px solid var(--ch-linha); border-radius: 18px; font: inherit; color: var(--ch-fg); text-align: center; }
+button.ch-resumo-item { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ch-resumo-item b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.ch-resumo-item small { color: var(--ch-suave); font-size: 12px; line-height: 1.3; }
+.ch-resumo-mana { grid-column: 1 / -1; display: grid; gap: 2px; text-align: left; padding: 14px 16px; border-radius: 18px; border: 1px solid var(--ch-linha); background: var(--ch-card2); font: inherit; color: var(--ch-fg); cursor: pointer; min-height: 56px; }
+.ch-resumo-mana.pronto { background: var(--ch-aviso-bg); border: 1.5px solid var(--ch-amarelo); }
+.ch-resumo-mana:disabled { cursor: default; opacity: 0.75; }
+.ch-resumo-mana small { color: var(--ch-texto2); }
+@media (prefers-reduced-motion: reduce) {
+  .ch-mana.aberto .ch-mana-cena i { animation: none; opacity: 1; transform: translateY(118px); }
+  .ch-mana-premios li { animation: none; opacity: 1; }
+  .ch-mana-pronto { transition: none; }
+}

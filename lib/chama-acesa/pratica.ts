@@ -74,3 +74,33 @@ export function montarSessao(banco: Versiculo[], vistos: Record<string, number>,
     return { tipo: "lacuna" as const, id: v.id, enunciado: "Complete a palavra que falta", trecho: esconder(v.texto, v.lacuna), opcoes, correta: opcoes.indexOf(v.lacuna), referencia: v.referencia, texto: v.texto };
   });
 }
+
+// ------------------------------------------------------------------ Desafio da Palavra (27/11)
+
+/** Quantas vezes acertar o mesmo versículo para ele ficar "guardado no coração" (Sl 119:11). */
+export const ACERTOS_PARA_GUARDAR = 3;
+
+export interface PosicaoVersiculo { sigla: string; cap: number; versiculo: number }
+
+const semAcentoP = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+/** "1 Coríntios 10:31" -> { sigla, cap: 10, versiculo: 31 } pelo índice da Bíblia do app. null se não achar. */
+export function posicaoDaReferencia(ref: string, livros: readonly { sigla: string; nome: string; capitulos?: number }[]): PosicaoVersiculo | null {
+  const m = ref.trim().match(/^(.+?)\s+(\d+):(\d+)/);
+  if (!m) return null;
+  const alvo = semAcentoP(m[1]);
+  const l = livros.find((x) => semAcentoP(x.nome) === alvo);
+  const cap = Number(m[2]);
+  if (!l || cap < 1 || (l.capitulos && cap > l.capitulos)) return null;
+  return { sigla: l.sigla, cap, versiculo: Number(m[3]) };
+}
+
+/** Versículos guardados no coração (acertados ACERTOS_PARA_GUARDAR vezes ou mais). */
+export function versiculosGuardados(acertos: Record<string, number> | undefined): number {
+  return Object.values(acertos ?? {}).filter((n) => n >= ACERTOS_PARA_GUARDAR).length;
+}
+
+/** Sessão só com os versículos errados (treino, sem XP). */
+export function sessaoDosErrados(perguntas: Pergunta[], errados: string[]): Pergunta[] {
+  return perguntas.filter((p) => errados.includes(p.id));
+}

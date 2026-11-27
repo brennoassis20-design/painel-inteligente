@@ -57,7 +57,7 @@ export function RestaurarCard({ r, hoje, talentos, onLeitura, onPratica, onFazer
   const passos = [
     { id: "leitura", nome: `Ler "${LEITURA_VOLTA.titulo}" (${LEITURA_VOLTA.referencia})`, feito: Boolean(r.passos.leitura), acao: onLeitura, botao: "Ler" },
     { id: "dia", nome: "Fazer o dia de hoje", feito: Boolean(r.passos.dia), acao: onFazerDia, botao: "Fazer" },
-    { id: "pratica", nome: "Praticar 5 versículos", feito: Boolean(r.passos.pratica), acao: onPratica, botao: "Praticar" },
+    { id: "pratica", nome: "Fazer o Desafio da Palavra", feito: Boolean(r.passos.pratica), acao: onPratica, botao: "Fazer" },
   ];
   const feitos = passos.filter((p) => p.feito).length;
   const podePagar = talentos >= PRECO.restaurar;
@@ -154,7 +154,7 @@ export function TesouroTela({ estado, max, vitalicio, hoje, onComprarBrasa, onRe
           <li><span>Completar o dia</span><b>+{TALENTOS_GANHO.dia}</b></li>
           <li><span>Alcançar uma meta de chama</span><b>+{TALENTOS_GANHO.meta}</b></li>
           <li><span>Concluir o estudo da meta</span><b>+{TALENTOS_GANHO.estudo}</b></li>
-          <li><span>Acertar os 5 versículos da prática</span><b>+{TALENTOS_GANHO.praticaPerfeita}</b></li>
+          <li><span>Acertar as 5 do Desafio da Palavra</span><b>+{TALENTOS_GANHO.praticaPerfeita}</b></li>
           <li><span>Subir de liga</span><b>+{TALENTOS_GANHO.ligaSubiu}</b></li>
           <li><span>Ficar na liga</span><b>+{TALENTOS_GANHO.ligaFicou}</b></li>
           <li><span>Amigo convidado fazer o dia 1</span><b>+{TALENTOS_GANHO.convite}</b></li>

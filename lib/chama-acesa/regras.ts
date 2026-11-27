@@ -2,6 +2,7 @@
 // Datas são sempre "AAAA-MM-DD" no fuso de São Paulo.
 import { DIAS_METAS_PADRAO, ehMeta, idEstudo, idMeta, metaAlcancada, temMeta } from "./marcos.ts";
 import { DIAS_PARA_RESTAURAR, PASSOS_VOLTA, PRECO, TALENTOS_GANHO, type PassoVolta } from "./talentos.ts";
+import { proximoMana, sortearMana, SORTEIOS_MANA, TALENTOS_NO_LUGAR_DA_BRASA, type PremioMana } from "./mana.ts";
 import { aoCompletarDia, comprarEscudo, darBrasa, diasCobertosPorExtras, fazerVoto, multiplicadorXp, quebrarVoto, semEscudoPassado, type AmigoChama, type Extras } from "./extras.ts";
 
 export const FUSO = "America/Sao_Paulo";
@@ -257,7 +258,7 @@ export type Acao =
   | { tipo: "jejum"; dia: number; valor: boolean }
   | { tipo: "estudo"; dia: number }
   | { tipo: "lembrete"; horario: string | null }
-  | { tipo: "pratica"; acertos: number; ids: string[] }
+  | { tipo: "pratica"; acertos: number; ids: string[]; certos?: string[] }
   | { tipo: "limparResultadoLiga" }
   | { tipo: "limparAvisos" }
   | { tipo: "comprarBrasa" }
@@ -265,7 +266,8 @@ export type Acao =
   | { tipo: "leituraVolta" }
   | { tipo: "comprarEscudo" }
   | { tipo: "fazerVoto" }
-  | { tipo: "darBrasa"; para: string };
+  | { tipo: "darBrasa"; para: string }
+  | { tipo: "abrirMana" };
 
 /** Contexto do servidor: instante atual (vigília) e limite de brasas do plano (vitalício = 3). */
 export interface Contexto {
@@ -273,6 +275,8 @@ export interface Contexto {
   maxBrasas?: number;
   /** Amigo que vai receber a brasa (o servidor confere que foi convidado por esta pessoa). Sem ele, darBrasa falha. */
   amigo?: AmigoChama | null;
+  /** Maná do dia: números de 0 a 1 sorteados no servidor (SORTEIOS_MANA). */
+  sorteio?: number[];
 }
 
 export interface Resultado {
@@ -283,6 +287,8 @@ export interface Resultado {
   ganhouBrasa: boolean;
   /** XP ganho por esta ação. */
   xpGanho: number;
+  /** Prêmio(s) do Maná do dia, quando a ação foi abrir o maná. */
+  mana?: PremioMana[];
   erro?: string;
 }
 
@@ -313,6 +319,28 @@ function aplicarAcaoBase(entrada: Estado, acao: Acao, hoje: string, pago: boolea
 
   if (acao.tipo === "limparAvisos") return { ...nada(), estado: { ...base, avisos: [] } };
   if (acao.tipo === "limparResultadoLiga") return { ...nada(), estado: { ...base, liga: { ...base.liga, resultado: null } } };
+  if (acao.tipo === "abrirMana") {
+    // Só depois de fazer o dia; um por dia.
+    if (!Object.values(base.concluidos).includes(hoje)) return nada("O maná abre depois que você faz o dia de hoje.");
+    const ex = base.extras ?? {};
+    if (ex.mana?.dia === hoje) return nada("Você já recolheu o maná de hoje. Amanhã tem mais.");
+    const { mana, sabado } = proximoMana(ex.mana, hoje, somarDias(hoje, -1));
+    const rs = ctx.sorteio && ctx.sorteio.length >= SORTEIOS_MANA ? ctx.sorteio : Array.from({ length: SORTEIOS_MANA }, () => Math.random());
+    const premios = sortearMana(rs, sabado).map((p): PremioMana => (p.tipo === "brasa" && base.brasas >= maxBrasas ? { tipo: "talentos", n: TALENTOS_NO_LUGAR_DA_BRASA, deBrasa: true } : p));
+    let estado: Estado = { ...base, extras: { ...ex, mana } };
+    for (const p of premios) {
+      if (p.tipo === "xp") estado = somarXp(estado, p.n, hoje);
+      else if (p.tipo === "talentos") estado = { ...estado, talentos: (estado.talentos ?? 0) + p.n };
+      else if (p.tipo === "brasa") estado = { ...estado, brasas: Math.min(maxBrasas, estado.brasas + 1) };
+      else {
+        const agora = ctx.agora ?? Date.now();
+        const e2 = estado.extras ?? {};
+        estado = { ...estado, extras: { ...e2, vigiliaAte: Math.max(e2.vigiliaAte ?? 0, agora) + p.minutos * 60_000 } };
+      }
+    }
+    // XP do maná não passa pelo dobro da vigília (o prêmio é o prêmio).
+    return { ...nada(), estado, mana: premios };
+  }
   if (acao.tipo === "comprarBrasa") {
     if (base.brasas >= maxBrasas) return nada(`Você já tem ${maxBrasas} brasas guardadas (o máximo).`);
     if ((base.talentos ?? 0) < PRECO.brasa) return nada(`Faltam talentos: a brasa custa ${PRECO.brasa}.`);
@@ -336,8 +364,16 @@ function aplicarAcaoBase(entrada: Estado, acao: Acao, hoje: string, pago: boolea
     const xp = acao.acertos * XP.acertoPratica + (n === 5 && acao.acertos === 5 ? XP.praticaPerfeita : 0);
     const praticas = { ...base.praticas };
     for (const id of acao.ids) praticas[id] = (praticas[id] ?? 0) + 1;
+    // Desafio da Palavra: acertos por versículo (só ids da sessão, sem repetir, e batendo com o total de acertos).
+    const certos = [...new Set((acao.certos ?? []).filter((id) => acao.ids.includes(id)))];
+    let extrasBase = base.extras ?? {};
+    if (certos.length === acao.acertos && certos.length > 0) {
+      const versos = { ...(extrasBase.versos ?? {}) };
+      for (const id of certos) versos[id] = (versos[id] ?? 0) + 1;
+      extrasBase = { ...extrasBase, versos };
+    }
     // Prática não completa o dia nem mexe na chama: só XP, talentos (se perfeita) e o contador de versículos vistos.
-    let estado: Estado = { ...somarXp(base, xp, hoje), praticas };
+    let estado: Estado = { ...somarXp(base, xp, hoje), praticas, extras: extrasBase };
     if (n === 5 && acao.acertos === 5) estado = ganharTalentos(estado, TALENTOS_GANHO.praticaPerfeita);
     // Prática completa (5 versículos) conta como passo da volta.
     if (n === 5) estado = marcarPassoVolta(estado, "pratica", hoje);

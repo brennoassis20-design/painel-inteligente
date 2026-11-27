@@ -17,6 +17,12 @@ export interface Extras {
   voto?: { inicio: string; chamaInicio: number; aposta: number } | null;
   /** semana (segunda) -> já deu brasa a um irmão nesta semana. */
   presentes?: Record<string, boolean>;
+  /** Desafio da Palavra: id do versículo -> quantas vezes a pessoa acertou (3+ = guardado no coração). */
+  versos?: Record<string, number>;
+  /** Maná do dia: último dia recolhido e quantos dias seguidos. */
+  mana?: { dia: string | null; seq: number };
+  /** Aviso de domingo "Palavra no coração": semana (segunda) em que foi enviado e o total de versículos naquela hora. */
+  versosSemana?: { semana: string; total: number } | null;
 }
 
 export const VIGILIA_MS = 15 * 60 * 1000;
